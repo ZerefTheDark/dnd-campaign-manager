@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Oracle's Codex</title>
+    <title>Oracle's Codex | D&D 5e Character Forge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Georgia&display=swap" rel="stylesheet">
@@ -72,7 +72,6 @@
             gap: 1.2rem;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 0.5rem;
         }
 
         @media (min-width: 768px) {
@@ -178,12 +177,12 @@
 
         /* 3D MODEL PANEL */
         .model-panel {
-            background: rgba(10, 10, 15, 0.85);
+            background: rgba(10, 10, 15, 0.85) url('Wood-4566.jpg');
+            background-blend-mode: multiply;
             border: 3px solid #8b5a2b;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-            grid-row: 1;
             height: 480px;
             position: relative;
         }
@@ -206,6 +205,7 @@
             padding: 0.5rem;
             border-radius: 6px;
             font-size: 0.85rem;
+            text-align: center;
             pointer-events: none;
         }
 
@@ -238,6 +238,16 @@
             color: #d4a017;
             text-align: center;
             margin-bottom: 0.8rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .character-container {
+                grid-template-columns: 1fr;
+            }
+            .model-panel {
+                height: 360px;
+            }
         }
     </style>
 </head>
@@ -337,15 +347,14 @@
         <div class="model-panel">
             <model-viewer
                 id="hero-model"
-                src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
-                alt="3D Character Model"
+                src="https://vaztohu.github.io/3d-models/gltf/character_warrior/scene.gltf"
+                alt="3D Fantasy Warrior"
                 auto-rotate
                 camera-controls
                 shadow-intensity="1"
                 exposure="1.2"
-                poster="loading.webp"
-                ar
-                style="width:100%;height:100%">
+                style="width:100%;height:100%"
+                poster="https://vaztohu.github.io/3d-models/gltf/character_warrior/thumbnail.jpg">
             </model-viewer>
             <div class="model-hint">🖱️ Drag to rotate • 🖱️ Scroll to zoom</div>
         </div>
@@ -392,16 +401,15 @@
             const cls = document.getElementById('class').value;
             const model = document.getElementById('hero-model');
 
-            // Map combinations to public glTF models (you can host your own)
-            const modelMap = {
-                'tiefling-wizard': 'https://models.readyplayer.me/avatars/64e8d4b1e8b2e4e9c8a9d9f2.glb?morphTargets=ARKit&textureSize=2048&lod=0',
-                'elf-ranger': 'https://modelviewer.dev/shared-assets/models/Walking.glb',
-                'dwarf-fighter': 'https://sketchfab.com/3d-models/dwarven-warrior-5b1b5d7d8e9f4f2c8b5d7d8e9f4f2c8b',
-                'human-cleric': 'https://models.example.com/human-cleric.glb'
-            };
-
-            const key = `${race}-${cls}`;
-            model.src = modelMap[key] || 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+            // Simple logic: always show warrior
+            // You can expand this with different models
+            if (race === 'tiefling' && cls === 'wizard') {
+                model.src = 'https://vaztohu.github.io/3d-models/gltf/character_wizard_red/scene.gltf';
+            } else if (cls === 'wizard') {
+                model.src = 'https://vaztohu.github.io/3d-models/gltf/character_wizard/scene.gltf';
+            } else {
+                model.src = 'https://vaztohu.github.io/3d-models/gltf/character_warrior/scene.gltf';
+            }
 
             // Blood pulse
             document.body.classList.toggle('infernal-mode', race === 'tiefling');
@@ -429,9 +437,13 @@
             }
         }
 
-        window.onload = updateLastChar;
+        window.onload = () => {
+            updateModel();
+            updateLastChar();
+        };
     </script>
 
+    <!-- Font Awesome for Icons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
 </html>
