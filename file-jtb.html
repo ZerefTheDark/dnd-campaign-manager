@@ -345,17 +345,16 @@
 
         <!-- RIGHT: 3D MODEL -->
         <div class="model-panel">
-            <model-viewer
-                id="hero-model"
-                src="https://vaztohu.github.io/3d-models/gltf/character_warrior/scene.gltf"
-                alt="3D Fantasy Warrior"
-                auto-rotate
-                camera-controls
-                shadow-intensity="1"
-                exposure="1.2"
-                style="width:100%;height:100%"
-                poster="https://vaztohu.github.io/3d-models/gltf/character_warrior/thumbnail.jpg">
-            </model-viewer>
+           <model-viewer
+    id="hero-model"
+    src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb"
+    alt="3D Duck Model"
+    auto-rotate
+    camera-controls
+    shadow-intensity="1"
+    style="width:100%;height:100%;background:#1a1a2e"
+    poster="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/Screenshot/screenshot.png">
+</model-viewer>
             <div class="model-hint">🖱️ Drag to rotate • 🖱️ Scroll to zoom</div>
         </div>
     </main>
@@ -401,23 +400,19 @@
     const cls = document.getElementById('class').value;
     const model = document.getElementById('hero-model');
 
-    const base = "https://models.readyplayer.me/avatars/";
-    const queryParams = "?morphTargets=ARKit,faceCapIKit&textureSize=1024&lod=0";
-
     const modelMap = {
-        'tiefling-wizard': base + "64e8d4b1e8b2e4e9c8a9d9f2.glb" + queryParams,
-        'tiefling-fighter': base + "64e8d4b1e8b2e4e9c8a9d9f2.glb" + queryParams,
-        'human-wizard': base + "67c9b2a1d3e4f5c6d7e8f9a0.glb" + queryParams,
-        'human-fighter': base + "67c9b2a1d3e4f5c6d7e8f9a0.glb" + queryParams,
-        'elf-wizard': base + "66b8a1c2d3e4f5a6b7c8d9e0.glb" + queryParams,
-        'dwarf-fighter': base + "65a7b2c3d4e5f6a7b8c9d0e1.glb" + queryParams
+        'human-wizard': 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb',
+        'elf-wizard': 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb',
+        'tiefling-wizard': 'https://opengameart.org/sites/default/files/DemonCharacterGLB.glb',
+        'dwarf-fighter': 'https://opengameart.org/sites/default/files/DwarfCharacterGLB.glb',
+        'human-fighter': 'https://opengameart.org/sites/default/files/KnightCharacterGLB.glb'
     };
 
-    const fallback = "https://vaztohu.github.io/3d-models/gltf/character_warrior/scene.gltf";
-    model.src = modelMap[`${race}-${cls}`] || fallback;
+    const fallback = 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb';
 
+    model.src = modelMap[`${race}-${cls}`] || fallback;
     document.body.classList.toggle('infernal-mode', race === 'tiefling');
-}
+}}
 
         // Save Character
         function saveCharacter() {
