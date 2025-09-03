@@ -1,121 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>D&D 5e Character Builder | Tome of Blood and Stone</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Beyond Free | Tome of Blood & Stone</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Georgia&display=swap" rel="stylesheet">
     <style>
-$/* === TEXTURES === */$
-        body {
+        /* === RESET & BASE === */
+        * {
             margin: 0;
-            font-family: 'Georgia', 'Times New Roman', serif;
-            background: #0d0d0c url('StoneWall-4580.jpg') fixed;
-            background-size: cover;
-            color: #e6d5b8;
-            line-height: 1.8;
-            min-height: 100vh;
             padding: 0;
-            position: relative;
+            box-sizing: border-box;
         }
 
-        /* Blood Overlay (haunting effect) */
+        /* === TEXTURED D&D BACKGROUND === */
+        body {
+            font-family: 'Georgia', serif;
+            background: #0d0d0c url('MossyStoneWall.jpg') fixed;
+            background-size: cover;
+            color: #e6d5b8;
+            line-height: 1.7;
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 3rem;
+        }
+
+        /* Blood Overlay - Haunting Effect */
         body::after {
             content: '';
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: url('BloodFabric01.png');
             background-size: cover;
-            opacity: 0.08;
+            opacity: 0.07;
             pointer-events: none;
             z-index: 1;
+            mix-blend-mode: soft-light;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 2rem auto;
-            padding: 1rem;
+$/* === HEADER === */$
+        .main-header {
+            background: rgba(26, 26, 46, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border-bottom: 2px solid #a67c52;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .site-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.4rem;
+            color: #d4a017;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.6);
+            margin: 0;
+        }
+
+        .main-nav {
+            display: flex;
+            gap: 1.8rem;
+        }
+
+        .nav-link {
+            color: #e6d5b8;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: #d4a017;
+            background: rgba(212, 160, 23, 0.15);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: #d4a017;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .nav-link:hover::after {
+            width: 75%;
+        }
+
+        /* === HERO BANNER (Parchment Texture Overlay) === */
+        .hero-banner {
+            text-align: center;
+            padding: 5rem 2rem 3rem;
             position: relative;
             z-index: 2;
         }
 
-        /* === CHARACTER SHEET - Parchment Base === */
-        .character-sheet {
-            background: #fdf6e3 url('Fabric-3062.jpg');
-            background-blend-mode: overlay;
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            background: url('parchmentpaper.jpg');
             background-size: cover;
+            background-blend-mode: overlay;
             padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: 
-                0 15px 40px rgba(0, 0, 0, 0.8),
-                inset 0 0 15px rgba(0, 0, 0, 0.3);
-            border: 3px solid #5c4033;
-            position: relative;
+            border-radius: 15px;
+            border: 4px double #8b5a2b;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
             color: #442d20;
+            position: relative;
         }
 
-        /* Wood Panel Frame Effect */
-        .character-sheet::before {
+        .hero-title {
+            font-family: 'Cinzel', serif;
+            font-size: 3.2rem;
+            color: #5c4033;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 3px #e6d5b8;
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #5c4033;
+            font-style: italic;
+        }
+
+        .cta-button {
+            background: #5c4033;
+            color: #f5e8c9;
+            border: 3px solid #3a291d;
+            padding: 1rem 2.2rem;
+            font-size: 1.15rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Cinzel', serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .cta-button:hover {
+            background: #3a291d;
+            color: #fff3c1;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+        }
+
+        /* === CHARACTER SECTION (Textured Parchment Card) === */
+        .character-section {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .character-tabs {
+            display: flex;
+            background: url('Wood-4566.jpg');
+            background-size: cover;
+            background-blend-mode: multiply;
+            border-radius: 10px 10px 0 0;
+            overflow: hidden;
+            border: 3px solid #5c4033;
+        }
+
+        .character-tab {
+            padding: 1.2rem 1.6rem;
+            background: rgba(92, 64, 51, 0.7);
+            color: #f5e8c9;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            flex: 1;
+            text-align: center;
+        }
+
+        .character-tab.active {
+            background: #8b5a2b;
+            color: #fff3c9;
+            font-weight: bold;
+        }
+
+        .character-tab:hover:not(.active) {
+            background: #6b4a33;
+        }
+
+        .tab-content {
+            display: none;
+            background: url('parchmentpaper.jpg');
+            background-size: cover;
+            background-blend-mode: overlay;
+            padding: 2.5rem;
+            border-radius: 0 0 10px 10px;
+            border: 3px solid #5c4033;
+            border-top: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            color: #442d20;
+            position: relative;
+        }
+
+        .tab-content::before {
             content: '';
             position: absolute;
             top: 10px; left: 10px; right: 10px; bottom: 10px;
             background: url('Wood-4566.jpg');
-            background-size: cover;
-            opacity: 0.1;
-            border-radius: 8px;
+            opacity: 0.08;
+            border-radius: 6px;
             z-index: -1;
-            pointer-events: none;
         }
 
-        /* Typography */
-        h1, h2, h3 {
-            color: #5c4033;
-            font-family: 'Cinzel', 'Georgia', serif;
-            text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.4);
-            letter-spacing: 1.5px;
+        .tab-content.active {
+            display: block;
         }
 
-        h1 {
-            text-align: center;
-            font-size: 2.6rem;
-            margin-bottom: 0.5rem;
-            border-bottom: 4px double #8b5a2b;
-            padding-bottom: 0.6rem;
-            background: linear-gradient(to right, transparent, #d4c2a8, transparent);
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: 80% 30%;
+        /* === CHARACTER FORM STYLES === */
+        .character-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.8rem;
         }
 
-        h2 {
-            font-size: 1.7rem;
-            margin-top: 1.8rem;
-            border-left: 10px solid #a67c52;
-            padding-left: 1.2rem;
-            background: rgba(210, 180, 140, 0.15);
-            padding: 0.5rem 1rem;
-            border-radius: 0 8px 8px 0;
-        }
-
-        /* Form Styles */
         .form-group {
-            margin-bottom: 1.4rem;
+            margin-bottom: 1.6rem;
         }
 
         label {
             display: block;
             font-weight: bold;
             color: #5c4033;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
+            margin-bottom: 0.6rem;
+            font-size: 1.05rem;
             text-shadow: 1px 1px 1px #f5e8c9;
         }
 
-        select, input, textarea {
+        input, select, textarea {
             width: 100%;
             padding: 0.8rem;
             border: 2px solid #8b5a2b;
-            border-radius: 6px;
-            background: rgba(255, 252, 245, 0.92);
+            border-radius: 8px;
+            background: rgba(255, 252, 245, 0.94);
             color: #442d20;
             font-family: 'Georgia', serif;
             font-size: 1rem;
@@ -123,286 +264,631 @@ $/* === TEXTURES === */$
         }
 
         textarea {
-            height: 100px;
+            height: 110px;
             resize: vertical;
             font-family: 'Courier New', monospace;
-            padding: 1rem;
+            padding: 0.9rem;
         }
 
-        /* Ability Scores - Wooden Table Style */
+        /* === ABILITY SCORES === */
         .abilities-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1.4rem;
-            margin: 1.6rem 0;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 1.3rem;
+            margin: 1.8rem 0;
         }
 
         .ability-block {
             text-align: center;
             background: #fdf6e3;
-            border: 2px solid #a67c52;
+            border: 2px solid #8b5a2b;
             border-radius: 10px;
-            padding: 0.9rem;
+            padding: 0.8rem;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             position: relative;
             transition: transform 0.2s ease;
         }
 
-        .ability-block:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
-        }
-
         .ability-block::before {
             content: '';
             position: absolute;
-            top: -8px; left: -8px;
-            width: 28px; height: 28px;
+            top: -6px; left: -6px;
+            width: 24px; height: 24px;
             background: url('Wood-4566.jpg');
             background-size: cover;
             border-radius: 50%;
-            z-index: 0;
             opacity: 0.6;
+            z-index: 0;
+        }
+
+        .ability-block:hover {
+            transform: translateY(-3px);
         }
 
         .ability-score {
-            font-size: 1.9rem;
+            font-size: 1.8rem;
             font-weight: bold;
             color: #5c4033;
             margin: 0;
             position: relative;
             z-index: 1;
-            text-shadow: 1px 1px 2px #ccc;
         }
 
         .ability-mod {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             color: #8b5a2b;
-            margin-top: 0.3rem;
+            margin-top: 0.2rem;
             font-weight: bold;
         }
 
-        /* Buttons */
+$/* === BUTTONS === */$
+        .form-actions {
+            grid-column: 1 / -1;
+            text-align: center;
+        }
+
         .btn {
             background: #5c4033;
             color: #f5e8c9;
             border: 3px solid #3a291d;
-            padding: 0.9rem 1.8rem;
+            padding: 0.9rem 2rem;
             border-radius: 10px;
             cursor: pointer;
-            font-weight: bold;
             font-family: 'Cinzel', serif;
-            font-size: 1.1rem;
+            font-size: 1.15rem;
+            font-weight: bold;
             transition: all 0.3s ease;
-            display: block;
-            width: 280px;
-            margin: 2.5rem auto 0;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: url('BloodFabric01.png');
-            opacity: 0.05;
-            z-index: -1;
+            display: inline-block;
+            margin: 0 0.7rem;
         }
 
         .btn:hover {
             background: #3a291d;
             color: #fff3c1;
             transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
         }
 
-        .btn.save {
-            background: #4a2f23;
-            border-color: #2f1f14;
-            font-size: 1.2rem;
-            width: 300px;
+        .btn-secondary {
+            background: #4a3325;
+            border-color: #2f2015;
         }
 
-        /* Race Features Box */
-        .race-features {
-            background: rgba(210, 180, 140, 0.3);
-            border: 2px dashed #8b5a2b;
-            border-radius: 8px;
-            padding: 1.1rem;
-            font-size: 0.98rem;
-            color: #5c4033;
-            margin-top: 1rem;
+        /* === CHARACTER CARD (Manage Tab) === */
+        .character-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.6rem;
+            margin-top: 2rem;
         }
 
-        .race-features::before {
-            content: '✦';
-            color: #a67c52;
-            margin-right: 0.5rem;
-        }
-
-        /* Footer Seal */
-        .seal {
-            text-align: center;
-            margin-top: 2.5rem;
-            color: #5c4033;
-            font-style: italic;
-            font-size: 0.95rem;
+        .character-card {
+            background: url('parchmentpaper.jpg');
+            background-size: cover;
+            background-blend-mode: overlay;
+            padding: 1.4rem;
+            border-radius: 10px;
+            border: 3px solid #8b5a2b;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
             position: relative;
         }
 
-        .seal::after {
-            content: '✧ ❝Blood calls to blood❞ ✧';
-            display: block;
-            font-size: 1.2rem;
-            color: #8b2e3d;
-            margin-top: 0.6rem;
+        .character-card::before {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            background: url('Wood-4566.jpg');
+            opacity: 0.07;
+            border-radius: 6px;
+            z-index: -1;
+        }
+
+        .character-card h3 {
+            color: #5c4033;
+            margin-bottom: 0.4rem;
+            font-family: 'Cinzel', serif;
+            font-size: 1.4rem;
+        }
+
+        .race-class {
+            color: #8b5a2b;
             font-weight: bold;
-            text-shadow: 1px 1px 2px black;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+
+        .character-actions {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.6rem;
+        }
+
+        .character-actions button {
+            background: rgba(92, 64, 51, 0.8);
+            color: #f5e8c9;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .character-actions button:hover {
+            background: #8b5a2b;
+            transform: scale(1.1);
+        }
+
+$/* === IMPORT TAB === */$
+        .import-section {
+            background: rgba(92, 64, 51, 0.15);
+            border: 2px dashed #8b5a2b;
+            border-radius: 10px;
+            padding: 1.6rem;
+            margin-top: 1.8rem;
+        }
+
+        .import-section h3 {
+            color: #5c4033;
+            margin-bottom: 0.8rem;
+            font-family: 'Cinzel', serif;
+        }
+
+        .step-by-step {
+            margin-top: 2.2rem;
+            background: url('parchmentpaper.jpg');
+            background-size: cover;
+            background-blend-mode: overlay;
+            padding: 2rem;
+            border-radius: 10px;
+            border: 2px solid #8b5a2b;
+        }
+
+        .step-by-step h3 {
+            color: #5c4033;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-family: 'Cinzel', serif;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.4rem;
+        }
+
+        .step {
+            text-align: center;
+            padding: 1.3rem;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            border: 2px solid #8b5a2b;
+        }
+
+        .step-number {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 36px;
+            height: 36px;
+            background: #5c4033;
+            color: #f5e8c9;
+            border-radius: 50%;
+            margin-bottom: 0.8rem;
+            font-weight: bold;
+            font-family: 'Cinzel', serif;
+        }
+
+        .step h4 {
+            color: #5c4033;
+            margin-bottom: 0.5rem;
+            font-family: 'Cinzel', serif;
+        }
+
+        .step p {
+            color: #442d20;
+            font-size: 0.95rem;
+        }
+
+        /* === OTHER SECTIONS (SRD, Homebrew, Campaigns) === */
+        .content-section {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 2.2rem;
+        }
+
+        .section-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.4rem;
+            color: #d4a017;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .section-subtitle {
+            color: #b8a580;
+            font-size: 1.1rem;
+        }
+
+        /* Filter & Search */
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-btn {
+            background: rgba(139, 90, 43, 0.2);
+            color: #8b5a2b;
+            border: 2px solid #8b5a2b;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background: #8b5a2b;
+            color: #f5e8c9;
+        }
+
+        .search-box {
+            max-width: 500px;
+            margin: 0 auto 2rem;
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 1rem 1.4rem;
+            border-radius: 50px;
+            border: 2px solid #8b5a2b;
+            background: rgba(139, 90, 43, 0.1);
+            color: #e6d5b8;
+            font-size: 1rem;
+        }
+
+        #search-input::placeholder {
+            color: #b8a580;
+        }
+
+        #search-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.3);
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: url('parchmentpaper.jpg');
+            background-size: cover;
+            background-blend-mode: overlay;
+            padding: 1.4rem;
+            border-radius: 10px;
+            border: 2px solid #8b5a2b;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.6);
+        }
+
+        .card h3 {
+            color: #5c4033;
+            margin-bottom: 0.5rem;
+            font-family: 'Cinzel', serif;
+        }
+
+        .card p {
+            color: #442d20;
+            font-size: 0.95rem;
+        }
+
+        /* Footer */
+        .main-footer {
+            background: rgba(26, 26, 46, 0.9);
+            padding: 2rem 0;
+            margin-top: 4rem;
+            border-top: 3px double #8b5a2b;
+            position: relative;
+            z-index: 2;
+        }
+
+        .footer-content p {
+            color: #b8a580;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .hero-title { font-size: 2.4rem; }
+            .main-nav { flex-wrap: wrap; justify-content: center; }
+            .step-by-step, .import-section { padding: 1.5rem; }
+            .abilities-grid, .character-form { grid-template-columns: 1fr; }
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div class="container">
-        <div class="character-sheet">
-            <h1>Character Codex</h1>
-            <p style="text-align:center; color:#5c4033; font-style:italic; font-size:1.1rem;">
-                "By blood and stone, a hero is forged in the fire of fate."
-            </p>
-
-            <!-- BASICS -->
-            <h2>Hero’s Essence</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" id="char-name" placeholder="e.g. Tharos the Blooded" />
-                </div>
-                <div class="form-group">
-                    <label>Player</label>
-                    <input type="text" id="player-name" placeholder="Your name" />
-                </div>
-                <div class="form-group">
-                    <label>Level</label>
-                    <input type="number" id="char-level" value="1" min="1" max="20" />
-                </div>
-                <div class="form-group">
-                    <label>Alignment</label>
-                    <select id="alignment">
-                        <option>Lawful Good</option>
-                        <option>Neutral Good</option>
-                        <option>Chaotic Good</option>
-                        <option>Lawful Neutral</option>
-                        <option>True Neutral</option>
-                        <option>Chaotic Neutral</option>
-                        <option>Lawful Evil</option>
-                        <option>Neutral Evil</option>
-                        <option>Chaotic Evil</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- RACE -->
-            <h2>Lineage</h2>
-            <div class="form-group">
-                <label>Race</label>
-                <select id="race" onchange="updateRaceFeatures()">
-                    <option value="human">Human</option>
-                    <option value="elf">Elf</option>
-                    <option value="dwarf">Dwarf</option>
-                    <option value="tiefling">Tiefling</option>
-                </select>
-            </div>
-            <div id="race-features" class="race-features">
-                <p><strong>Speed:</strong> 30 ft</p>
-                <p><strong>Ability:</strong> +1 to all (Human)</p>
-            </div>
-
-            <!-- CLASS -->
-            <h2>Calling</h2>
-            <div class="form-group">
-                <label>Class</label>
-                <select id="class">
-                    <option>Wizard</option>
-                    <option>Fighter</option>
-                    <option>Rogue</option>
-                    <option>Cleric</option>
-                    <option>Barbarian</option>
-                </select>
-            </div>
-
-            <!-- ABILITY SCORES -->
-            <h2>Abilities</h2>
-            <div class="abilities-grid">
-                <div class="ability-block">
-                    <label>STR</label>
-                    <input type="number" class="ability-score" id="str" value="10" onchange="calcMod('str')" />
-                    <div class="ability-mod" id="str-mod">+0</div>
-                </div>
-                <div class="ability-block">
-                    <label>DEX</label>
-                    <input type="number" class="ability-score" id="dex" value="10" onchange="calcMod('dex')" />
-                    <div class="ability-mod" id="dex-mod">+0</div>
-                </div>
-                <div class="ability-block">
-                    <label>CON</label>
-                    <input type="number" class="ability-score" id="con" value="10" onchange="calcMod('con')" />
-                    <div class="ability-mod" id="con-mod">+0</div>
-                </div>
-                <div class="ability-block">
-                    <label>INT</label>
-                    <input type="number" class="ability-score" id="int" value="10" onchange="calcMod('int')" />
-                    <div class="ability-mod" id="int-mod">+0</div>
-                </div>
-                <div class="ability-block">
-                    <label>WIS</label>
-                    <input type="number" class="ability-score" id="wis" value="10" onchange="calcMod('wis')" />
-                    <div class="ability-mod" id="wis-mod">+0</div>
-                </div>
-                <div class="ability-block">
-                    <label>CHA</label>
-                    <input type="number" class="ability-score" id="cha" value="10" onchange="calcMod('cha')" />
-                    <div class="ability-mod" id="cha-mod">+0</div>
-                </div>
-            </div>
-
-            <!-- BACKGROUND -->
-            <h2>Origin</h2>
-            <div class="form-group">
-                <label>Background</label>
-                <select id="background">
-                    <option>Sage</option>
-                    <option>Outlander</option>
-                    <option>Criminal</option>
-                    <option>Folk Hero</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Backstory</label>
-                <textarea id="backstory" placeholder="The fire took everything... but I survived."></textarea>
-            </div>
-
-            <!-- SAVE BUTTON -->
-            <button class="btn save" onclick="saveCharacter()">🖋️ Etch Character into Blood and Stone</button>
-
-            <div class="seal">
-                The Ancients Watch<br>
-                Year of the Crimson Wyrm, 2025
-            </div>
+    <header class="main-header">
+        <div class="header-content">
+            <h1 class="site-title">Tome of Blood & Stone</h1>
+            <nav class="main-nav">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#srd" class="nav-link">SRD Content</a>
+                <a href="#homebrew" class="nav-link">Homebrew</a>
+                <a href="#campaigns" class="nav-link">Campaigns</a>
+            </nav>
         </div>
-    </div>
+    </header>
 
+    <main class="main-content">
+        <!-- Hero -->
+        <section id="home" class="hero-banner">
+            <div class="hero-content">
+                <h2 class="hero-title">Forge Your Legend</h2>
+                <p class="hero-description">“By blood, by stone, by ancient rune — a hero is born in darkness.”</p>
+                <button class="cta-button" onclick="document.getElementById('character-section').scrollIntoView({behavior:'smooth'})">
+                    Begin Your Journey
+                </button>
+            </div>
+        </section>
+
+        <!-- Character Creator -->
+        <section id="character-section" class="character-section">
+            <h2 class="section-title">Character Codex</h2>
+            <p class="section-subtitle">Craft your hero, step by step, in true D&D 5e tradition</p>
+
+            <div class="character-tabs">
+                <div class="character-tab active" data-tab="create">Create</div>
+                <div class="character-tab" data-tab="manage">Manage</div>
+                <div class="character-tab" data-tab="import">Import Guide</div>
+            </div>
+
+            <!-- === CHARACTER CREATION (FULL D&D 5e WALKTHROUGH) === -->
+            <div class="tab-content active" id="create-tab">
+                <form class="character-form" id="character-form">
+                    <!-- Name & Basics -->
+                    <div class="form-group">
+                        <label>Character Name</label>
+                        <input type="text" id="char-name" placeholder="e.g. Tharos the Blooded" />
+                    </div>
+                    <div class="form-group">
+                        <label>Player Name</label>
+                        <input type="text" id="player-name" placeholder="Your name" />
+                    </div>
+                    <div class="form-group">
+                        <label>Level</label>
+                        <input type="number" id="char-level" value="1" min="1" max="20" />
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="alignment">
+                            <option>Lawful Good</option>
+                            <option>Neutral Good</option>
+                            <option>Chaotic Good</option>
+                            <option>Lawful Neutral</option>
+                            <option>True Neutral</option>
+                            <option>Chaotic Neutral</option>
+                            <option>Lawful Evil</option>
+                            <option>Neutral Evil</option>
+                            <option>Chaotic Evil</option>
+                        </select>
+                    </div>
+
+                    <!-- Race -->
+                    <div class="form-group">
+                        <label>Race</label>
+                        <select id="race" onchange="updateRaceFeatures()">
+                            <option value="human">Human</option>
+                            <option value="elf">Elf</option>
+                            <option value="dwarf">Dwarf</option>
+                            <option value="tiefling">Tiefling</option>
+                        </select>
+                    </div>
+                    <div id="race-features" class="race-features">
+                        <p><strong>Speed:</strong> 30 ft</p>
+                        <p><strong>Ability:</strong> +1 to all (Human)</p>
+                    </div>
+
+                    <!-- Class -->
+                    <div class="form-group">
+                        <label>Class</label>
+                        <select id="class">
+                            <option>Wizard</option>
+                            <option>Fighter</option>
+                            <option>Rogue</option>
+                            <option>Cleric</option>
+                            <option>Barbarian</option>
+                        </select>
+                    </div>
+
+                    <!-- Abilities -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Ability Scores</label>
+                        <div class="abilities-grid">
+                            <div class="ability-block">
+                                <label>STR</label>
+                                <input type="number" class="ability-score" id="str" value="10" onchange="calcMod('str')" />
+                                <div class="ability-mod" id="str-mod">+0</div>
+                            </div>
+                            <div class="ability-block">
+                                <label>DEX</label>
+                                <input type="number" class="ability-score" id="dex" value="10" onchange="calcMod('dex')" />
+                                <div class="ability-mod" id="dex-mod">+0</div>
+                            </div>
+                            <div class="ability-block">
+                                <label>CON</label>
+                                <input type="number" class="ability-score" id="con" value="10" onchange="calcMod('con')" />
+                                <div class="ability-mod" id="con-mod">+0</div>
+                            </div>
+                            <div class="ability-block">
+                                <label>INT</label>
+                                <input type="number" class="ability-score" id="int" value="10" onchange="calcMod('int')" />
+                                <div class="ability-mod" id="int-mod">+0</div>
+                            </div>
+                            <div class="ability-block">
+                                <label>WIS</label>
+                                <input type="number" class="ability-score" id="wis" value="10" onchange="calcMod('wis')" />
+                                <div class="ability-mod" id="wis-mod">+0</div>
+                            </div>
+                            <div class="ability-block">
+                                <label>CHA</label>
+                                <input type="number" class="ability-score" id="cha" value="10" onchange="calcMod('cha')" />
+                                <div class="ability-mod" id="cha-mod">+0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Background & Story -->
+                    <div class="form-group">
+                        <label>Background</label>
+                        <select id="background">
+                            <option>Sage</option>
+                            <option>Outlander</option>
+                            <option>Criminal</option>
+                            <option>Folk Hero</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Backstory</label>
+                        <textarea id="backstory" placeholder="The fire took everything... but I survived."></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('form').reset();">Reset</button>
+                        <button type="button" class="btn" onclick="saveCharacter()">Etch into Stone</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Manage Tab -->
+            <div class="tab-content" id="manage-tab">
+                <div class="character-cards" id="character-cards">
+                    <div class="character-card">
+                        <h3>Thalia Swiftarrow</h3>
+                        <span class="race-class">Wood Elf Ranger</span>
+                        <p>Level: 3</p>
+                        <p>Outlander who protects the forest from unnatural threats</p>
+                        <div class="character-actions">
+                            <button title="Edit"><i class="fas fa-edit"></i></button>
+                            <button title="Export"><i class="fas fa-download"></i></button>
+                            <button title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Tab -->
+            <div class="tab-content" id="import-tab">
+                <div class="import-section">
+                    <h3>Import to D&D Beyond</h3>
+                    <p>Export your character as a JSON file and import it into D&D Beyond campaigns</p>
+                    <div class="form-group">
+                        <label for="import-file">Select Character File</label>
+                        <input type="file" id="import-file" accept=".json">
+                    </div>
+                    <button class="btn">Import to D&D Beyond</button>
+                </div>
+
+                <div class="step-by-step">
+                    <h3>How to Import to D&D Beyond</h3>
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <h4>Export Your Character</h4>
+                            <p>Click the export button to download your character</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <h4>Go to D&D Beyond</h4>
+                            <p>Navigate to your campaign and open character import</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <h4>Select the File</h4>
+                            <p>Upload the downloaded JSON file</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <h4>Finalize</h4>
+                            <p>Review stats and complete the import</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Other Sections (SRD, Homebrew, Campaigns) -->
+        <section id="srd" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">SRD Content</h2>
+                <p class="section-subtitle">Legally available D&D 5e content</p>
+            </div>
+            <!-- (Keep your existing SRD logic here) -->
+            <div class="filter-buttons">...</div>
+            <div class="search-box">...</div>
+            <div id="content-display" class="content-grid">...</div>
+        </section>
+
+        <section id="homebrew" class="content-section">...</section>
+        <section id="campaigns" class="content-section">...</section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>© 2025 Tome of Blood & Stone — Forged in Darkness, Wielded in Light</p>
+            <p>Not affiliated with Wizards of the Coast LLC</p>
+        </div>
+    </footer>
+
+    <!-- Modal -->
+    <div id="details-modal" class="modal">...</div>
+
+    <!-- SCRIPTS -->
     <script>
+        // Tab Switching
+        document.querySelectorAll('.character-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                document.querySelectorAll('.character-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+
         // Calculate Ability Modifier
         function calcMod(stat) {
             const score = parseInt(document.getElementById(stat).value) || 10;
             const mod = Math.floor((score - 10) / 2);
             document.getElementById(`${stat}-mod`).textContent = mod >= 0 ? `+${mod}` : `${mod}`;
         }
-
-        // Initialize all modifiers
         ['str','dex','con','int','wis','cha'].forEach(calcMod);
 
         // Race Features
@@ -419,24 +905,17 @@ $/* === TEXTURES === */$
 
         // Save Character
         function saveCharacter() {
-            const data = {
-                name: document.getElementById('char-name').value || 'Unknown',
-                savedAt: new Date().toLocaleString()
-            };
-            localStorage.setItem('dnd-tome-entry', JSON.stringify(data));
-            alert(`✅ The blood whispers: "${data.name} is now etched in stone."`);
+            const name = document.getElementById('char-name').value || 'Unknown Hero';
+            alert(`✅ The ancient tome whispers: "${name}" has been etched in blood and stone.`);
+            localStorage.setItem('dnd-tome', JSON.stringify({ name, savedAt: new Date().toISOString() }));
         }
 
-        // Load on open
-        window.onload = () => {
-            updateRaceFeatures();
-            const saved = localStorage.getItem('dnd-tome-entry');
-            if (saved) {
-                const char = JSON.parse(saved);
-                alert(`📜 The tomb stirs... "${char.name}" lives within the blood.`);
-            }
-        };
+        // Load on start
+        window.onload = () => updateRaceFeatures();
     </script>
+
+    <!-- Font Awesome for Icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 
 </body>
 </html>
