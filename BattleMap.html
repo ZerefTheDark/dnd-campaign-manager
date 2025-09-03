@@ -12,13 +12,41 @@
     }
     *{box-sizing:border-box}
     body{
-      margin:0;height:100vh;display:flex;flex-direction:column;background:#000;color:var(--ink);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;overflow:hidden
+      margin:0;height:100vh;display:flex;flex-direction:column;color:var(--ink);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;overflow:hidden;
+      background:#0b0a10;
+    }
+    /* Atmosphere: moving nebula + vignette */
+    body::before,
+    body::after{
+      content:"";position:fixed;inset:-20vmax;z-index:-2;pointer-events:none;
+    }
+    /* soft galaxy gradient */
+    body::before{
+      background:
+        radial-gradient(1200px 800px at 15% 20%, rgba(56,30,86,.35), transparent 55%),
+        radial-gradient(1100px 900px at 85% 30%, rgba(17,67,120,.35), transparent 60%),
+        radial-gradient(900px 1000px at 60% 80%, rgba(120,74,23,.28), transparent 55%),
+        radial-gradient(1400px 900px at 40% 50%, rgba(230,197,127,.08), transparent 60%),
+        #0b0a10;
+      filter:saturate(110%) brightness(100%);
+      animation: drift 60s linear infinite;
+    }
+    /* vignette */
+    body::after{
+      background:
+        radial-gradient(70% 60% at 50% 50%, transparent 60%, rgba(0,0,0,.45) 100%);
+      z-index:-1;
+    }
+    @keyframes drift{
+      0%{transform:translate3d(0,0,0) scale(1)}
+      50%{transform:translate3d(2%, -1%, 0) scale(1.02)}
+      100%{transform:translate3d(0,0,0) scale(1)}
     }
 
     header{
       display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;
-      border-bottom:1px solid var(--accent);background:rgba(10,10,14,.9);backdrop-filter:blur(6px);
+      border-bottom:1px solid var(--accent);background:rgba(10,10,14,.78);backdrop-filter:blur(8px);
       position:relative;z-index:20
     }
     .brand{display:flex;flex-direction:column}
@@ -30,23 +58,24 @@
     .actions{display:flex;gap:.5rem;align-items:center}
     .btn{
       background:rgba(35,35,45,.85);border:1px solid var(--accent);color:var(--ink);
-      padding:.35rem .6rem;border-radius:8px;cursor:pointer
+      padding:.35rem .6rem;border-radius:10px;cursor:pointer;transition:.2s ease;
+      box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 0 0 0 rgba(230,197,127,.0)
     }
     .btn:hover{background:var(--accent);color:#000;box-shadow:0 0 14px rgba(230,197,127,.35)}
     .btn.toggled{background:var(--accent);color:#000}
     input,select{
       background:#1c1b24;border:1px solid var(--accent);color:var(--ink);
-      padding:.35rem;border-radius:6px;width:100%
+      padding:.35rem;border-radius:8px;width:100%
     }
 
     #stage{flex:1;display:grid;grid-template-columns:320px 1fr 360px;min-height:0}
     #left-panel{
-      background:var(--panel);border-right:1px solid var(--accent);overflow:auto;display:flex;flex-direction:column
+      background:linear-gradient(180deg, rgba(20,19,26,.9), rgba(20,19,26,.7));border-right:1px solid var(--accent);overflow:auto;display:flex;flex-direction:column
     }
     #right-panel{
-      background:var(--panel);border-left:1px solid var(--accent);overflow:auto
+      background:linear-gradient(180deg, rgba(20,19,26,.9), rgba(20,19,26,.7));border-left:1px solid var(--accent);overflow:auto
     }
-    #map-container{position:relative;overflow:hidden;background:#111}
+    #map-container{position:relative;overflow:hidden;background:rgba(17,17,20,.6)}
 
     .section{padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}
     .section h3{
@@ -57,7 +86,7 @@
 
     #map{
       position:absolute;inset:0;object-fit:contain;width:100%;height:100%;
-      transform-origin:top left;cursor:grab;z-index:1
+      transform-origin:top left;cursor:grab;z-index:1;filter:contrast(1.02) saturate(1.02)
     }
     canvas{position:absolute;left:0;top:0;pointer-events:none}
     #grid-layer{z-index:2}
@@ -67,20 +96,23 @@
     .token{
       position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;
       display:flex;align-items:center;justify-content:center;user-select:none;cursor:grab;
-      z-index:6;border:2px solid #fff;transform-origin:center;overflow:hidden
+      z-index:6;border:2px solid #fff;transform-origin:center;overflow:hidden;
+      box-shadow:0 6px 14px rgba(0,0,0,.45)
     }
     .token span{pointer-events:none}
     .token.has-img{background-size:cover;background-position:center;color:#fff;text-shadow:0 1px 2px #000}
     .portal{
-      position:absolute;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #8df,#15a);
-      border:2px solid #fff;box-shadow:0 0 10px #8df;z-index:7;cursor:pointer;transform-origin:center
+      position:absolute;width:26px;height:26px;border-radius:50%;
+      background:radial-gradient(circle at 30% 30%, #8df,#15a);
+      border:2px solid #fff;box-shadow:0 0 10px #8df, 0 0 24px rgba(141,213,255,.35);
+      z-index:7;cursor:pointer;transform-origin:center
     }
 
     #ctx{
       position:absolute;z-index:50;background:#1b1a22;border:1px solid var(--accent);
-      border-radius:8px;overflow:hidden;display:none;min-width:180px
+      border-radius:12px;overflow:hidden;display:none;min-width:180px;box-shadow:0 18px 50px rgba(0,0,0,.45)
     }
-    #ctx button{display:block;width:100%;text-align:left;padding:.5rem .7rem;background:transparent;color:var(--ink);border:none;cursor:pointer}
+    #ctx button{display:block;width:100%;text-align:left;padding:.6rem .8rem;background:transparent;color:var(--ink);border:none;cursor:pointer}
     #ctx button:hover{background:rgba(255,255,255,.08)}
 
     #submap-overlay{
@@ -450,10 +482,19 @@
       function setTool(t) {
         currentTool = t;
         toolButtons.forEach(b => b.classList.toggle('toggled', b.dataset.tool === t));
+        // enable fog painting hit-tests when fog mode is active
         fog.style.pointerEvents = fogModeSel.value !== 'none' ? 'auto' : 'none';
       }
       toolButtons.forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
       setTool('pan');
+
+      // Clear Templates button
+      clearTplBtn.addEventListener('click', () => { templates = []; redrawTemplates(); });
+
+      // fog pointer-events toggle on mode change
+      fogModeSel.addEventListener('change', () => {
+        fog.style.pointerEvents = fogModeSel.value !== 'none' ? 'auto' : 'none';
+      });
 
       /* Drawing + Fog */
       wrap.addEventListener('mousedown', e => {
@@ -810,7 +851,7 @@
       initNext.addEventListener('click', () => { if (initiative.length) initIdx = (initIdx + 1) % initiative.length; renderInitiative(); });
       initReset.addEventListener('click', () => { initiative = []; initIdx = -1; renderInitiative(); });
 
-      /* Submap Engine */
+      /* ===== Submap Engine ===== */
       const subOverlay = document.getElementById('submap-overlay');
       const subCanvas = document.getElementById('submap-canvas');
       const subTitleEl = document.getElementById('submap-title');
@@ -828,400 +869,439 @@
         ensureSubToolbar();
         const body = subCanvas.parentElement; const box = body.getBoundingClientRect(); subCanvas.width = box.width; subCanvas.height = box.height;
         const last = getSubmapState(id);
-        S = { id, name: sm.name, baseImage: sm.dataURL, scale: last?.scale ?? 1, offset: last?.offset ?? { x: 0, y: 0 }, cell: 50, tool: 'pan', snap: true, tokens: deepClone(last?.tokens) || [], templates: deepClone(last?.templates) || [], fogImg: null, isPanning: false, panStart: { x: 0, y: 0 }, drawing: null, draggingTemplate: null, dragOff: { x: 0, y: 0 }, paintingFog: false, beganStroke: false, undo: [], redo: [] };
+        S = {
+          id, name: sm.name, baseImage: sm.dataURL,
+          scale: last?.scale ?? 1, offset: last?.offset ?? { x: 0, y: 0 }, cell: 50, tool: 'pan', snap: true,
+          tokens: deepClone(last?.tokens) || [], templates: deepClone(last?.templates) || [],
+          fogImg: null, isPanning: false, panStart: { x: 0, y: 0 }, drawing: null,
+          draggingTemplate: null, dragOff: { x: 0, y: 0 }, paintingFog: false, beganStroke: false,
+          undo: [], redo: []
+        };
         subTitleEl.textContent = S.name;
-        const base = new Image(); base.onload = () => { S.base = base; if (last?.fogPNG) { const fogPic = new Image(); fogPic.onload = () => { S.fogImg = fogPic; redrawSub(); pushFogState(); }; fogPic.src = last.fogPNG; } else { clearFog(); } redrawSub(); }; base.src = S.baseImage;
-        subOverlay.style.display = 'block'; closeSub.onclick = () => { subOverlay.style.display = 'none'; S = null; };
+        const base = new Image();
+        base.onload = () => {
+          S.base = base;
+          if (last?.fogPNG) {
+            const fogPic = new Image();
+            fogPic.onload = () => { S.fogImg = fogPic; redrawSub(); pushSubFogState(); };
+            fogPic.src = last.fogPNG;
+          } else {
+            clearFog();
+          }
+          redrawSub();
+        };
+        base.src = S.baseImage;
+
+        subOverlay.style.display = 'block';
+        closeSub.onclick = () => { subOverlay.style.display = 'none'; S = null; };
       }
 
       function ensureSubToolbar() {
         if (document.getElementById('sub-toolbar')) return;
-        const tray = document.createElement('div'); tray.id = 'sub-toolbar'; tray.style.cssText = 'position:absolute;left:10px;top:52px;display:flex;flex-wrap:wrap;gap:6px;background:rgba(233,223,195,.9);border:1px solid #c9b27a;border-radius:8px;padding:6px;z-index:40';
-        tray.innerHTML = `<button class="btn" data-sbtool="pan">🖐️</button><button class="btn" data-sbtool="select">🖱️</button><button class="btn" data-sbtool="ruler">📏</button><button class="btn" data-sbtool="circle">⭕</button><button class="btn" data-sbtool="rect">▭</button><button class="btn" data-sbtool="cone">🔺</button><button class="btn" data-sbtool="token">🎯</button><label style="display:flex;align-items:center;gap:4px;background:#eadfbf;padding:2px 6px;border-radius:6px;border:1px solid #c9b27a;"><span>Fog</span><select id="sb-fog-mode"><option value="none">Off</option><option value="reveal">Reveal</option><option value="hide">Hide</option></select><select id="sb-brush"><option value="20">20</option><option value="40" selected>40</option><option value="80">80</option></select></label><button id="sb-fog-undo" class="btn">⟲</button><button id="sb-fog-redo" class="btn">⟳</button><button id="sb-clear" class="btn">Clear</button><button id="sb-save" class="btn">💾 Save</button><button id="sb-reset" class="btn">↺ Reset</button>`;
+        const tray = document.createElement('div');
+        tray.id = 'sub-toolbar';
+        tray.style.cssText = 'position:absolute;left:10px;top:52px;display:flex;flex-wrap:wrap;gap:6px;background:rgba(233,223,195,.9);border:1px solid #c9b27a;border-radius:8px;padding:6px;z-index:40';
+        tray.innerHTML = `
+          <button class="btn" data-sbtool="pan">🖐️</button>
+          <button class="btn" data-sbtool="select">🖱️</button>
+          <button class="btn" data-sbtool="ruler">📏</button>
+          <button class="btn" data-sbtool="circle">⭕</button>
+          <button class="btn" data-sbtool="rect">▭</button>
+          <button class="btn" data-sbtool="cone">🔺</button>
+          <button class="btn" data-sbtool="token">🎯</button>
+          <label style="display:flex;align-items:center;gap:4px;background:#eadfbf;padding:2px 6px;border-radius:6px;border:1px solid #c9b27a;">
+            <span>Fog</span>
+            <select id="sb-fog-mode"><option value="none">Off</option><option value="reveal">Reveal</option><option value="hide">Hide</option></select>
+            <select id="sb-brush"><option value="20">20</option><option value="40" selected>40</option><option value="80">80</option></select>
+          </label>
+          <button id="sb-fog-undo" class="btn">⟲</button>
+          <button id="sb-fog-redo" class="btn">⟳</button>
+          <button id="sb-clear" class="btn">Clear</button>
+          <button id="sb-save" class="btn">💾 Save</button>
+          <button id="sb-reset" class="btn">↺ Reset</button>`;
         subCanvas.parentElement.appendChild(tray);
-        tray.querySelectorAll('[data-sbtool]').forEach(btn => btn.addEventListener('click', () => { const t = btn.dataset.sbtool; if (S) S.tool = t; tray.querySelectorAll('[data-sbtool]').forEach(b => b.classList.toggle('toggled', b === btn)); }));
+
+        tray.querySelectorAll('[data-sbtool]').forEach(btn => {
+          btn.addEventListener('click', () => setSubTool(btn.dataset.sbtool));
+        });
         document.getElementById('sb-fog-undo').onclick = () => subFogUndo();
         document.getElementById('sb-fog-redo').onclick = () => subFogRedo();
-        document.getElementById('sb-clear').onclick = () => { if (S) S.templates = []; redrawSub(); };
+        document.getElementById('sb-clear').onclick = () => { if (S) { S.templates = []; redrawSub(); } };
         document.getElementById('sb-save').onclick = () => { if (S) saveActiveSubmap(); };
         document.getElementById('sb-reset').onclick = () => { if (S) resetToLastSave(); };
+
         setSubTool('pan');
       }
+
+      function setSubTool(tool){
+        const tray = document.getElementById('sub-toolbar');
+        if (!tray) return;
+        S && (S.tool = tool);
+        tray.querySelectorAll('[data-sbtool]').forEach(b => b.classList.toggle('toggled', b.dataset.sbtool === tool));
+      }
+
       function redrawSub() {
-  if (!S || !S.base) return;
+        if (!S || !S.base) return;
 
-  // clear and parchment bg
-  sctx.clearRect(0, 0, subCanvas.width, subCanvas.height);
-  sctx.fillStyle = '#d7ccb0';
-  sctx.fillRect(0, 0, subCanvas.width, subCanvas.height);
+        // clear and parchment bg
+        sctx.clearRect(0, 0, subCanvas.width, subCanvas.height);
+        sctx.fillStyle = '#d7ccb0';
+        sctx.fillRect(0, 0, subCanvas.width, subCanvas.height);
 
-  // world transform
-  sctx.save();
-  sctx.translate(S.offset.x, S.offset.y);
-  sctx.scale(S.scale, S.scale);
+        // world transform
+        sctx.save();
+        sctx.translate(S.offset.x, S.offset.y);
+        sctx.scale(S.scale, S.scale);
 
-  // base image
-  sctx.drawImage(S.base, 0, 0);
+        // base image
+        sctx.drawImage(S.base, 0, 0);
 
-  // grid (world space, uses S.cell)
-  const rune = getComputedStyle(document.documentElement).getPropertyValue('--rune');
-  sctx.strokeStyle = rune;
-  sctx.lineWidth = 1;
-  for (let x = 0; x < S.base.width; x += S.cell) {
-    sctx.beginPath(); sctx.moveTo(x, 0); sctx.lineTo(x, S.base.height); sctx.stroke();
-  }
-  for (let y = 0; y < S.base.height; y += S.cell) {
-    sctx.beginPath(); sctx.moveTo(0, y); sctx.lineTo(S.base.width, y); sctx.stroke();
-  }
+        // grid (world space, uses S.cell)
+        const rune = getComputedStyle(document.documentElement).getPropertyValue('--rune');
+        sctx.strokeStyle = rune;
+        sctx.lineWidth = 1;
+        for (let x = 0; x < S.base.width; x += S.cell) {
+          sctx.beginPath(); sctx.moveTo(x, 0); sctx.lineTo(x, S.base.height); sctx.stroke();
+        }
+        for (let y = 0; y < S.base.height; y += S.cell) {
+          sctx.beginPath(); sctx.moveTo(0, y); sctx.lineTo(S.base.width, y); sctx.stroke();
+        }
 
-  // templates
-  S.templates.forEach(tp => {
-    sctx.save();
-    sctx.lineWidth = 2 / S.scale;
-    sctx.strokeStyle = 'rgba(0,200,255,0.9)';
-    sctx.fillStyle = 'rgba(0,200,255,0.25)';
-    if (tp.type === 'circle') {
-      sctx.beginPath(); sctx.arc(tp.x, tp.y, tp.r, 0, Math.PI * 2); sctx.fill(); sctx.stroke();
-    } else if (tp.type === 'rect') {
-      sctx.beginPath(); sctx.rect(tp.x, tp.y, tp.w, tp.h); sctx.fill(); sctx.stroke();
-    } else if (tp.type === 'cone') {
-      sctx.beginPath();
-      sctx.moveTo(tp.x, tp.y);
-      sctx.lineTo(tp.x + Math.cos(tp.ang - tp.spread / 2) * tp.len, tp.y + Math.sin(tp.ang - tp.spread / 2) * tp.len);
-      sctx.arc(tp.x, tp.y, tp.len, tp.ang - tp.spread / 2, tp.ang + tp.spread / 2);
-      sctx.closePath(); sctx.fill(); sctx.stroke();
-    }
-    sctx.restore();
-  });
+        // templates
+        S.templates.forEach(tp => {
+          sctx.save();
+          sctx.lineWidth = 2 / S.scale;
+          sctx.strokeStyle = 'rgba(0,200,255,0.9)';
+          sctx.fillStyle = 'rgba(0,200,255,0.25)';
+          if (tp.type === 'circle') {
+            sctx.beginPath(); sctx.arc(tp.x, tp.y, tp.r, 0, Math.PI * 2); sctx.fill(); sctx.stroke();
+          } else if (tp.type === 'rect') {
+            sctx.beginPath(); sctx.rect(tp.x, tp.y, tp.w, tp.h); sctx.fill(); sctx.stroke();
+          } else if (tp.type === 'cone') {
+            sctx.beginPath();
+            sctx.moveTo(tp.x, tp.y);
+            sctx.lineTo(tp.x + Math.cos(tp.ang - tp.spread / 2) * tp.len, tp.y + Math.sin(tp.ang - tp.spread / 2) * tp.len);
+            sctx.arc(tp.x, tp.y, tp.len, tp.ang - tp.spread / 2, tp.ang + tp.spread / 2);
+            sctx.closePath(); sctx.fill(); sctx.stroke();
+          }
+          sctx.restore();
+        });
 
-  // tokens
-  S.tokens.forEach(tk => {
-    sctx.save();
-    sctx.lineWidth = 2 / S.scale;
-    if (tk.imgData) {
-      const img = new Image(); img.src = tk.imgData;
-      const r = tk.size / 2;
-      sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI * 2); sctx.closePath();
-      sctx.save(); sctx.clip(); sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size); sctx.restore();
-      sctx.strokeStyle = '#fff'; sctx.stroke();
-    } else {
-      sctx.fillStyle = tk.color || '#ff4444';
-      sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size / 2, 0, Math.PI * 2); sctx.fill();
-      sctx.strokeStyle = '#fff'; sctx.stroke();
-      sctx.fillStyle = '#000';
-      sctx.font = `${Math.max(10, tk.size / 3)}px system-ui`;
-      sctx.textAlign = 'center';
-      sctx.textBaseline = 'middle';
-      sctx.fillText((tk.name || 'TK').slice(0, 3).toUpperCase(), tk.x, tk.y);
-    }
-    sctx.restore();
-  });
+        // tokens
+        S.tokens.forEach(tk => {
+          sctx.save();
+          sctx.lineWidth = 2 / S.scale;
+          if (tk.imgData) {
+            const img = new Image(); img.src = tk.imgData;
+            const r = tk.size / 2;
+            sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI * 2); sctx.closePath();
+            sctx.save(); sctx.clip(); sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size); sctx.restore();
+            sctx.strokeStyle = '#fff'; sctx.stroke();
+          } else {
+            sctx.fillStyle = tk.color || '#ff4444';
+            sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size / 2, 0, Math.PI * 2); sctx.fill();
+            sctx.strokeStyle = '#fff'; sctx.stroke();
+            sctx.fillStyle = '#000';
+            sctx.font = \`\${Math.max(10, tk.size / 3)}px system-ui\`;
+            sctx.textAlign = 'center';
+            sctx.textBaseline = 'middle';
+            sctx.fillText((tk.name || 'TK').slice(0, 3).toUpperCase(), tk.x, tk.y);
+          }
+          sctx.restore();
+        });
 
-  // end world transform
-  sctx.restore();
+        // end world transform
+        sctx.restore();
 
-  // fog (screen space)
-  if (S.fogImg) sctx.drawImage(S.fogImg, 0, 0, subCanvas.width, subCanvas.height);
+        // fog (screen space)
+        if (S.fogImg) sctx.drawImage(S.fogImg, 0, 0, subCanvas.width, subCanvas.height);
 
-  // live preview
-  if (S.drawing) drawSubPreview();
-}
+        // live preview
+        if (S.drawing) drawSubPreview();
+      }
 
-    sctx.restore();
-  });
+      function drawSubPreview() {
+        if (!S || !S.drawing) return;
+        const d = S.drawing;
 
-  // end pan/zoom transform
-  sctx.restore();
+        // world-space preview for shapes/ruler
+        sctx.save();
+        sctx.translate(S.offset.x, S.offset.y);
+        sctx.scale(S.scale, S.scale);
 
-  // fog overlay (bitmap same size as subCanvas)
-  if (S.fogImg) sctx.drawImage(S.fogImg, 0, 0, subCanvas.width, subCanvas.height);
+        sctx.lineWidth = 2 / S.scale;
+        sctx.strokeStyle = 'rgba(0,200,255,0.9)';
+        sctx.fillStyle = 'rgba(0,200,255,0.25)';
 
-  // preview during draw
-  if (S.drawing) drawSubPreview();
-}
+        if (d.type === 'ruler') {
+          sctx.beginPath(); sctx.moveTo(d.start.x, d.start.y); sctx.lineTo(d.cur.x, d.cur.y); sctx.stroke();
+          const ft = Math.round((Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y) / S.cell) * 5);
+          sctx.restore();
 
-function drawSubPreview() {
-  if (!S || !S.drawing) return;
-  const d = S.drawing;
+          // small label in screen space for clarity
+          sctx.save();
+          const midX = (d.scrS.x + d.scrC.x) / 2, midY = (d.scrS.y + d.scrC.y) / 2;
+          sctx.fillStyle = 'rgba(0,0,0,.7)';
+          sctx.fillRect(midX - 18, midY - 10, 36, 18);
+          sctx.fillStyle = '#fff';
+          sctx.font = '12px system-ui';
+          sctx.textAlign = 'center';
+          sctx.fillText(ft + ' ft', midX, midY + 4);
+          sctx.restore();
+          return;
+        }
 
-  // world-space preview for shapes/ruler
-  sctx.save();
-  sctx.translate(S.offset.x, S.offset.y);
-  sctx.scale(S.scale, S.scale);
+        if (d.type === 'circle') {
+          const r = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y);
+          sctx.beginPath(); sctx.arc(d.start.x, d.start.y, r, 0, Math.PI * 2); sctx.fill(); sctx.stroke();
+        } else if (d.type === 'rect') {
+          sctx.beginPath(); sctx.rect(d.start.x, d.start.y, d.cur.x - d.start.x, d.cur.y - d.start.y); sctx.fill(); sctx.stroke();
+        } else if (d.type === 'cone') {
+          const ang = Math.atan2(d.cur.y - d.start.y, d.cur.x - d.start.x);
+          const len = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y);
+          const spread = Math.PI / 3;
+          sctx.beginPath();
+          sctx.moveTo(d.start.x, d.start.y);
+          sctx.lineTo(d.start.x + Math.cos(ang - spread / 2) * len, d.start.y + Math.sin(ang - spread / 2) * len);
+          sctx.arc(d.start.x, d.start.y, len, ang - spread / 2, ang + spread / 2);
+          sctx.closePath(); sctx.fill(); sctx.stroke();
+        }
+        sctx.restore();
+      }
 
-  sctx.lineWidth = 2 / S.scale;
-  sctx.strokeStyle = 'rgba(0,200,255,0.9)';
-  sctx.fillStyle = 'rgba(0,200,255,0.25)';
+      /* ===== Pointer helpers ===== */
+      function scr2world(sx, sy) { return { x: (sx - S.offset.x) / S.scale, y: (sy - S.offset.y) / S.scale }; }
+      function snapW(v) { return S.snap ? Math.round(v / S.cell) * S.cell : v; }
 
-  if (d.type === 'ruler') {
-    sctx.beginPath(); sctx.moveTo(d.start.x, d.start.y); sctx.lineTo(d.cur.x, d.cur.y); sctx.stroke();
-    const ft = Math.round((Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y) / S.cell) * 5);
-    sctx.restore();
+      /* ===== Submap mouse / wheel ===== */
+      subCanvas.addEventListener('wheel', (e) => {
+        if (!S) return;
+        e.preventDefault();
+        const old = S.scale;
+        const ns = Math.max(.2, Math.min(6, S.scale * (e.deltaY < 0 ? 1.15 : 0.87)));
+        const ax = e.offsetX, ay = e.offsetY;
+        const wx = (ax - S.offset.x) / old, wy = (ay - S.offset.y) / old;
+        S.scale = ns;
+        S.offset.x = ax - wx * ns;
+        S.offset.y = ay - wy * ns;
+        redrawSub();
+      }, { passive: false });
 
-    // small label in screen space for clarity
-    sctx.save();
-    const midX = (d.scrS.x + d.scrC.x) / 2, midY = (d.scrS.y + d.scrC.y) / 2;
-    sctx.fillStyle = 'rgba(0,0,0,.7)';
-    sctx.fillRect(midX - 18, midY - 10, 36, 18);
-    sctx.fillStyle = '#fff';
-    sctx.font = '12px system-ui';
-    sctx.textAlign = 'center';
-    sctx.fillText(ft + ' ft', midX, midY + 4);
-    sctx.restore();
-    return;
-  }
+      subCanvas.addEventListener('mousedown', (e) => {
+        if (!S) return;
+        const fogMode = (document.getElementById('sb-fog-mode') || {}).value || 'none';
+        const world = scr2world(e.offsetX, e.offsetY);
 
-  if (d.type === 'circle') {
-    const r = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y);
-    sctx.beginPath(); sctx.arc(d.start.x, d.start.y, r, 0, Math.PI * 2); sctx.fill(); sctx.stroke();
-  } else if (d.type === 'rect') {
-    sctx.beginPath(); sctx.rect(d.start.x, d.start.y, d.cur.x - d.start.x, d.cur.y - d.start.y); sctx.fill(); sctx.stroke();
-  } else if (d.type === 'cone') {
-    const ang = Math.atan2(d.cur.y - d.start.y, d.cur.x - d.start.x);
-    const len = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y);
-    const spread = Math.PI / 3;
-    sctx.beginPath();
-    sctx.moveTo(d.start.x, d.start.y);
-    sctx.lineTo(d.start.x + Math.cos(ang - spread / 2) * len, d.start.y + Math.sin(ang - spread / 2) * len);
-    sctx.arc(d.start.x, d.start.y, len, ang - spread / 2, ang + spread / 2);
-    sctx.closePath(); sctx.fill(); sctx.stroke();
-  }
-  sctx.restore();
-}
+        if (fogMode !== 'none') {
+          beginSubFogStroke();
+          paintSubFog(e.offsetX, e.offsetY, fogMode === 'reveal');
+          return;
+        }
 
-/* ===== Pointer helpers ===== */
-function scr2world(sx, sy) { return { x: (sx - S.offset.x) / S.scale, y: (sy - S.offset.y) / S.scale }; }
-function snapW(v) { return S.snap ? Math.round(v / S.cell) * S.cell : v; }
+        if (S.tool === 'pan') {
+          S.isPanning = true;
+          S.panStart = { x: e.clientX - S.offset.x, y: e.clientY - S.offset.y };
+          return;
+        }
 
-/* ===== Submap mouse / wheel ===== */
-subCanvas.addEventListener('wheel', (e) => {
-  if (!S) return;
-  e.preventDefault();
-  const old = S.scale;
-  const ns = Math.max(.2, Math.min(6, S.scale * (e.deltaY < 0 ? 1.15 : 0.87)));
-  const ax = e.offsetX, ay = e.offsetY;
-  const wx = (ax - S.offset.x) / old, wy = (ay - S.offset.y) / old;
-  S.scale = ns;
-  S.offset.x = ax - wx * ns;
-  S.offset.y = ay - wy * ns;
-  redrawSub();
-}, { passive: false });
+        if (['ruler', 'circle', 'rect', 'cone'].includes(S.tool)) {
+          const sx = snapW(world.x), sy = snapW(world.y);
+          S.drawing = { type: S.tool === 'ruler' ? 'ruler' : S.tool, start: { x: sx, y: sy }, cur: { x: sx, y: sy }, scrS: { x: e.offsetX, y: e.offsetY }, scrC: { x: e.offsetX, y: e.offsetY } };
+          redrawSub();
+          return;
+        }
 
-subCanvas.addEventListener('mousedown', (e) => {
-  if (!S) return;
-  const fogMode = (document.getElementById('sb-fog-mode') || {}).value || 'none';
-  const world = scr2world(e.offsetX, e.offsetY);
+        if (S.tool === 'token') {
+          const name = prompt('Token name?', 'Token');
+          if (name === null) return;
+          const size = parseInt(prompt('Size (px)?', '42') || '42', 10);
+          const color = prompt('Color (hex)?', '#ff4444') || '#ff4444';
+          const tk = { name, size: Math.max(24, Math.min(120, size)), color, x: snapW(world.x), y: snapW(world.y), imgData: null };
+          S.tokens.push(tk);
+          redrawSub();
+          return;
+        }
 
-  if (fogMode !== 'none') {
-    beginSubFogStroke();
-    paintSubFog(e.offsetX, e.offsetY, fogMode === 'reveal');
-    return;
-  }
+        if (S.tool === 'select') {
+          const hit = subHitTemplate(world.x, world.y);
+          if (hit) {
+            S.draggingTemplate = hit;
+            S.dragOff = { x: world.x - hit.x, y: world.y - hit.y };
+          }
+        }
+      });
 
-  if (S.tool === 'pan') {
-    S.isPanning = true;
-    S.panStart = { x: e.clientX - S.offset.x, y: e.clientY - S.offset.y };
-    return;
-  }
+      window.addEventListener('mousemove', (e) => {
+        if (!S) return;
+        if (S.isPanning) {
+          S.offset.x = e.clientX - S.panStart.x;
+          S.offset.y = e.clientY - S.panStart.y;
+          redrawSub();
+          return;
+        }
+        const fogMode = (document.getElementById('sb-fog-mode') || {}).value || 'none';
+        if (S.paintingFog) {
+          paintSubFog(e.offsetX, e.offsetY, fogMode === 'reveal');
+          return;
+        }
+        if (S.drawing) {
+          const w = scr2world(e.offsetX, e.offsetY);
+          S.drawing.cur = { x: snapW(w.x), y: snapW(w.y) };
+          S.drawing.scrC = { x: e.offsetX, y: e.offsetY };
+          redrawSub();
+        }
+        if (S.draggingTemplate) {
+          const w = scr2world(e.offsetX, e.offsetY);
+          S.draggingTemplate.x = snapW(w.x - S.dragOff.x);
+          S.draggingTemplate.y = snapW(w.y - S.dragOff.y);
+          redrawSub();
+        }
+      });
 
-  if (['ruler', 'circle', 'rect', 'cone'].includes(S.tool)) {
-    const sx = snapW(world.x), sy = snapW(world.y);
-    S.drawing = { type: S.tool === 'ruler' ? 'ruler' : S.tool, start: { x: sx, y: sy }, cur: { x: sx, y: sy }, scrS: { x: e.offsetX, y: e.offsetY }, scrC: { x: e.offsetX, y: e.offsetY } };
-    redrawSub();
-    return;
-  }
+      window.addEventListener('mouseup', () => {
+        if (!S) return;
+        if (S.isPanning) S.isPanning = false;
+        if (S.paintingFog) endSubFogStroke();
+        if (S.drawing) { finalizeSubTemplate(); S.drawing = null; }
+        if (S.draggingTemplate) S.draggingTemplate = null;
+      });
 
-  if (S.tool === 'token') {
-    const name = prompt('Token name?', 'Token');
-    if (name === null) return;
-    const size = parseInt(prompt('Size (px)?', '42') || '42', 10);
-    const color = prompt('Color (hex)?', '#ff4444') || '#ff4444';
-    const tk = { name, size: Math.max(24, Math.min(120, size)), color, x: snapW(world.x), y: snapW(world.y), imgData: null };
-    S.tokens.push(tk);
-    redrawSub();
-    return;
-  }
+      /* ===== Submap template finalize / hit-test ===== */
+      function finalizeSubTemplate() {
+        const d = S.drawing; if (!d) return;
+        const tp = { type: d.type, x: d.start.x, y: d.start.y };
+        if (d.type === 'circle') { tp.r = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y); }
+        if (d.type === 'rect')   { tp.w = d.cur.x - d.start.x; tp.h = d.cur.y - d.start.y; }
+        if (d.type === 'cone')   { tp.ang = Math.atan2(d.cur.y - d.start.y, d.cur.x - d.start.x); tp.len = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y); tp.spread = Math.PI / 3; }
+        if (d.type === 'ruler') return; // transient
+        S.templates.push(tp);
+        redrawSub();
+      }
+      function subHitTemplate(wx, wy) {
+        for (let i = S.templates.length - 1; i >= 0; i--) {
+          const tp = S.templates[i];
+          if (tp.type === 'circle') {
+            if (Math.hypot(wx - tp.x, wy - tp.y) <= tp.r) return tp;
+          } else if (tp.type === 'rect') {
+            if (wx >= tp.x && wx <= tp.x + tp.w && wy >= tp.y && wy <= tp.y + tp.h) return tp;
+          } else if (tp.type === 'cone') {
+            const ang = Math.atan2(wy - tp.y, wx - tp.x);
+            const d   = Math.hypot(wx - tp.x, wy - tp.y);
+            const da  = Math.abs((((ang - tp.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI));
+            if (da <= tp.spread / 2 && d <= tp.len) return tp;
+          }
+        }
+        return null;
+      }
 
-  if (S.tool === 'select') {
-    const hit = subHitTemplate(world.x, world.y);
-    if (hit) {
-      S.draggingTemplate = hit;
-      S.dragOff = { x: world.x - hit.x, y: world.y - hit.y };
-    }
-  }
-});
+      /* ===== Submap fog bitmap + undo/redo ===== */
+      function clearFog() {
+        const fc = document.createElement('canvas');
+        fc.width = subCanvas.width; fc.height = subCanvas.height;
+        S.fogImg = new Image();
+        S.fogImg.src = fc.toDataURL('image/png');
+        pushSubFogState();
+      }
+      function pushSubFogState() {
+        try {
+          const snap = exportFogPNG();
+          S.undo.push(snap);
+          if (S.undo.length > 15) S.undo.shift();
+          S.redo.length = 0;
+        } catch (e) {}
+      }
+      function beginSubFogStroke() { S.paintingFog = true; S.beganStroke = false; }
+      function endSubFogStroke() {
+        S.paintingFog = false;
+        try {
+          const snap = exportFogPNG();
+          S.undo.push(snap);
+          if (S.undo.length > 15) S.undo.shift();
+          S.redo.length = 0;
+        } catch (e) {}
+      }
+      function paintSubFog(sx, sy, reveal) {
+        if (!S.beganStroke) { pushSubFogState(); S.beganStroke = true; }
+        const fc = document.createElement('canvas');
+        fc.width = subCanvas.width; fc.height = subCanvas.height;
+        const fx = fc.getContext('2d');
+        if (S.fogImg) fx.drawImage(S.fogImg, 0, 0, fc.width, fc.height);
 
-window.addEventListener('mousemove', (e) => {
-  if (!S) return;
-  if (S.isPanning) {
-    S.offset.x = e.clientX - S.panStart.x;
-    S.offset.y = e.clientY - S.panStart.y;
-    redrawSub();
-    return;
-  }
-  const fogMode = (document.getElementById('sb-fog-mode') || {}).value || 'none';
-  if (S.paintingFog) {
-    paintSubFog(e.offsetX, e.offsetY, fogMode === 'reveal');
-    return;
-  }
-  if (S.drawing) {
-    const w = scr2world(e.offsetX, e.offsetY);
-    S.drawing.cur = { x: snapW(w.x), y: snapW(w.y) };
-    S.drawing.scrC = { x: e.offsetX, y: e.offsetY };
-    redrawSub();
-  }
-  if (S.draggingTemplate) {
-    const w = scr2world(e.offsetX, e.offsetY);
-    S.draggingTemplate.x = snapW(w.x - S.dragOff.x);
-    S.draggingTemplate.y = snapW(w.y - S.dragOff.y);
-    redrawSub();
-  }
-});
+        fx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
+        if (!reveal) fx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
+        const r = parseInt((document.getElementById('sb-brush') || {}).value || '40', 10);
+        fx.beginPath(); fx.arc(sx, sy, r, 0, Math.PI * 2); fx.fill();
+        fx.globalCompositeOperation = 'source-over';
 
-window.addEventListener('mouseup', () => {
-  if (!S) return;
-  if (S.isPanning) S.isPanning = false;
-  if (S.paintingFog) endSubFogStroke();
-  if (S.drawing) { finalizeSubTemplate(); S.drawing = null; }
-  if (S.draggingTemplate) S.draggingTemplate = null;
-});
+        S.fogImg = new Image();
+        S.fogImg.src = fc.toDataURL('image/png');
+        S.fogImg.onload = () => redrawSub();
+      }
+      function subFogUndo() {
+        if (!S || S.undo.length < 2) return;
+        const cur = S.undo.pop();
+        S.redo.push(cur);
+        const prev = S.undo[S.undo.length - 1];
+        S.fogImg = new Image();
+        S.fogImg.onload = () => redrawSub();
+        S.fogImg.src = prev;
+      }
+      function subFogRedo() {
+        if (!S || !S.redo.length) return;
+        const img = S.redo.pop();
+        S.undo.push(img);
+        S.fogImg = new Image();
+        S.fogImg.onload = () => redrawSub();
+        S.fogImg.src = img;
+      }
+      function exportFogPNG() {
+        const fc = document.createElement('canvas');
+        fc.width = subCanvas.width; fc.height = subCanvas.height;
+        const fx = fc.getContext('2d');
+        if (S.fogImg) fx.drawImage(S.fogImg, 0, 0, fc.width, fc.height);
+        return fc.toDataURL('image/png');
+      }
 
-/* ===== Submap template finalize / hit-test ===== */
-function finalizeSubTemplate() {
-  const d = S.drawing; if (!d) return;
-  const tp = { type: d.type, x: d.start.x, y: d.start.y };
-  if (d.type === 'circle') { tp.r = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y); }
-  if (d.type === 'rect')   { tp.w = d.cur.x - d.start.x; tp.h = d.cur.y - d.start.y; }
-  if (d.type === 'cone')   { tp.ang = Math.atan2(d.cur.y - d.start.y, d.cur.x - d.start.x); tp.len = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y); tp.spread = Math.PI / 3; }
-  if (d.type === 'ruler') return; // transient
-  S.templates.push(tp);
-  redrawSub();
-}
-function subHitTemplate(wx, wy) {
-  for (let i = S.templates.length - 1; i >= 0; i--) {
-    const tp = S.templates[i];
-    if (tp.type === 'circle') {
-      if (Math.hypot(wx - tp.x, wy - tp.y) <= tp.r) return tp;
-    } else if (tp.type === 'rect') {
-      if (wx >= tp.x && wx <= tp.x + tp.w && wy >= tp.y && wy <= tp.y + tp.h) return tp;
-    } else if (tp.type === 'cone') {
-      const ang = Math.atan2(wy - tp.y, wx - tp.x);
-      const d   = Math.hypot(wx - tp.x, wy - tp.y); // ✅ correct: use tp.x
-      const da  = Math.abs((((ang - tp.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI));
-      if (da <= tp.spread / 2 && d <= tp.len) return tp;
-    }
-  }
-  return null;
-}
+      /* ===== Save / Reset for submap ===== */
+      function saveActiveSubmap() {
+        if (!S) return;
+        const payload = {
+          image: S.baseImage,
+          tokens: deepClone(S.tokens),
+          templates: deepClone(S.templates),
+          fogPNG: exportFogPNG(),
+          offset: deepClone(S.offset),
+          scale: S.scale
+        };
+        saveSubmapState(S.id, payload);
+        alert('Submap saved.');
+      }
+      function resetToLastSave() {
+        if (!S) return;
+        const last = getSubmapState(S.id);
+        if (!last) {
+          S.tokens = []; S.templates = [];
+          clearFog(); S.offset = { x: 0, y: 0 }; S.scale = 1;
+          redrawSub();
+          return;
+        }
+        S.tokens = deepClone(last.tokens) || [];
+        S.templates = deepClone(last.templates) || [];
+        S.offset = deepClone(last.offset) || { x: 0, y: 0 };
+        S.scale = last.scale || 1;
+        if (last.fogPNG) {
+          const fogPic = new Image();
+          fogPic.onload = () => { S.fogImg = fogPic; redrawSub(); pushSubFogState(); };
+          fogPic.src = last.fogPNG;
+        } else {
+          clearFog();
+        }
+        redrawSub();
+      }
 
-/* ===== Submap fog bitmap + undo/redo ===== */
-function clearFog() {
-  const fc = document.createElement('canvas');
-  fc.width = subCanvas.width; fc.height = subCanvas.height;
-  S.fogImg = new Image();
-  S.fogImg.src = fc.toDataURL('image/png');
-  pushFogState();
-}
-function pushFogState() {
-  try {
-    const snap = exportFogPNG();
-    S.undo.push(snap);
-    if (S.undo.length > 15) S.undo.shift();
-    S.redo.length = 0;
-  } catch (e) {}
-}
-function beginSubFogStroke() { S.paintingFog = true; S.beganStroke = false; }
-function endSubFogStroke() {
-  S.paintingFog = false;
-  try {
-    const snap = exportFogPNG();
-    S.undo.push(snap);
-    if (S.undo.length > 15) S.undo.shift();
-    S.redo.length = 0;
-  } catch (e) {}
-}
-function paintSubFog(sx, sy, reveal) {
-  if (!S.beganStroke) { pushFogState(); S.beganStroke = true; }
-  const fc = document.createElement('canvas');
-  fc.width = subCanvas.width; fc.height = subCanvas.height;
-  const fx = fc.getContext('2d');
-  if (S.fogImg) fx.drawImage(S.fogImg, 0, 0, fc.width, fc.height);
-
-  fx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
-  if (!reveal) fx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
-  const r = parseInt((document.getElementById('sb-brush') || {}).value || '40', 10);
-  fx.beginPath(); fx.arc(sx, sy, r, 0, Math.PI * 2); fx.fill();
-  fx.globalCompositeOperation = 'source-over';
-
-  S.fogImg = new Image();
-  S.fogImg.src = fc.toDataURL('image/png');
-  S.fogImg.onload = () => redrawSub();
-}
-function subFogUndo() {
-  if (!S || S.undo.length < 2) return;
-  const cur = S.undo.pop();
-  S.redo.push(cur);
-  const prev = S.undo[S.undo.length - 1];
-  S.fogImg = new Image();
-  S.fogImg.onload = () => redrawSub();
-  S.fogImg.src = prev;
-}
-function subFogRedo() {
-  if (!S || !S.redo.length) return;
-  const img = S.redo.pop();
-  S.undo.push(img);
-  S.fogImg = new Image();
-  S.fogImg.onload = () => redrawSub();
-  S.fogImg.src = img;
-}
-function exportFogPNG() {
-  const fc = document.createElement('canvas');
-  fc.width = subCanvas.width; fc.height = subCanvas.height;
-  const fx = fc.getContext('2d');
-  if (S.fogImg) fx.drawImage(S.fogImg, 0, 0, fc.width, fc.height);
-  return fc.toDataURL('image/png');
-}
-
-/* ===== Save / Reset for submap ===== */
-function saveActiveSubmap() {
-  if (!S) return;
-  const payload = {
-    image: S.baseImage,
-    tokens: deepClone(S.tokens),
-    templates: deepClone(S.templates),
-    fogPNG: exportFogPNG(),
-    offset: deepClone(S.offset),
-    scale: S.scale
-  };
-  saveSubmapState(S.id, payload);
-  alert('Submap saved.');
-}
-function resetToLastSave() {
-  if (!S) return;
-  const last = getSubmapState(S.id);
-  if (!last) {
-    S.tokens = []; S.templates = [];
-    clearFog(); S.offset = { x: 0, y: 0 }; S.scale = 1;
-    redrawSub();
-    return;
-  }
-  S.tokens = deepClone(last.tokens) || [];
-  S.templates = deepClone(last.templates) || [];
-  S.offset = deepClone(last.offset) || { x: 0, y: 0 };
-  S.scale = last.scale || 1;
-  if (last.fogPNG) {
-    const fogPic = new Image();
-    fogPic.onload = () => { S.fogImg = fogPic; redrawSub(); pushFogState(); };
-    fogPic.src = last.fogPNG;
-  } else {
-    clearFog();
-  }
-  redrawSub();
-}
-
-/* ===== Utilities ===== */
-function deepClone(v) { return v ? JSON.parse(JSON.stringify(v)) : v; }
-
-// END window.onload
-};
-</script>
+      /* ===== Utilities ===== */
+      function deepClone(v) { return v ? JSON.parse(JSON.stringify(v)) : v; }
+    };
+  </script>
+</body>
+</html>
