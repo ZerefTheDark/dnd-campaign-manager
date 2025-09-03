@@ -1,3 +1,4 @@
+<!-- PART 1/4 — HTML + CSS (Structure & Styling, with Omniverse Lab space) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,72 +9,134 @@
   <style>
     :root{
       --gold:#e6c57f;--accent:#b88c5c;--ink:#eee;--panel:#14131a;--mist:rgba(0,0,0,.55);--rune:rgba(230,197,127,.28);
+      --paper:#f4ecd7;--paperEdge:#c9b27a;
     }
     *{box-sizing:border-box}
-    body{margin:0;height:100vh;display:flex;flex-direction:column;background:#000;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;overflow:hidden}
+    body{
+      margin:0;height:100vh;display:flex;flex-direction:column;background:#000;color:var(--ink);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;overflow:hidden
+    }
 
     /* Header */
-    header{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;border-bottom:1px solid var(--accent);background:rgba(10,10,14,.9);backdrop-filter:blur(6px);position:relative;z-index:20}
+    header{
+      display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;
+      border-bottom:1px solid var(--accent);background:rgba(10,10,14,.9);backdrop-filter:blur(6px);
+      position:relative;z-index:20
+    }
     .brand{display:flex;flex-direction:column}
-    .brand .title{font-family:'Cinzel',serif;font-weight:900;letter-spacing:.06em;color:var(--gold);text-shadow:0 0 12px rgba(230,197,127,.35);font-size:1.4rem}
+    .brand .title{
+      font-family:'Cinzel',serif;font-weight:900;letter-spacing:.06em;color:var(--gold);
+      text-shadow:0 0 12px rgba(230,197,127,.35);font-size:1.4rem
+    }
     .brand .byline{font-family:'Great Vibes',cursive;font-size:1.5rem;line-height:1;color:var(--gold)}
     .actions{display:flex;gap:.5rem;align-items:center}
-    .btn{background:rgba(35,35,45,.85);border:1px solid var(--accent);color:var(--ink);padding:.35rem .6rem;border-radius:8px;cursor:pointer}
+    .btn{
+      background:rgba(35,35,45,.85);border:1px solid var(--accent);color:var(--ink);
+      padding:.35rem .6rem;border-radius:8px;cursor:pointer
+    }
     .btn:hover{background:var(--accent);color:#000;box-shadow:0 0 14px rgba(230,197,127,.35)}
     .btn.toggled{background:var(--accent);color:#000}
-    input,select{background:#1c1b24;border:1px solid var(--accent);color:var(--ink);padding:.35rem;border-radius:6px}
+    input,select{
+      background:#1c1b24;border:1px solid var(--accent);color:var(--ink);
+      padding:.35rem;border-radius:6px;width:100%
+    }
 
-    /* Layout */
+    /* Layout: Left (Forge+Initiative) | Center (Map) | Right (Tools, Submaps, Omniverse) */
     #stage{flex:1;display:grid;grid-template-columns:320px 1fr 360px;min-height:0}
-    #left-panel{background:var(--panel);border-right:1px solid var(--accent);overflow:auto}
-    #right-panel{background:var(--panel);border-left:1px solid var(--accent);overflow:auto}
+    #left-panel{
+      background:var(--panel);border-right:1px solid var(--accent);overflow:auto;display:flex;flex-direction:column
+    }
+    #right-panel{
+      background:var(--panel);border-left:1px solid var(--accent);overflow:auto
+    }
     #map-container{position:relative;overflow:hidden;background:#111}
 
     .section{padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}
-    .section h3{margin:.1rem 0 .6rem;font-family:'Cinzel',serif;color:var(--gold);font-size:1rem}
+    .section h3{
+      margin:.1rem 0 .6rem;font-family:'Cinzel',serif;color:var(--gold);font-size:1rem
+    }
     .row{display:flex;gap:.5rem;align-items:center;margin:.4rem 0}
+    .row.stacked{flex-direction:column;align-items:stretch}
 
     /* Map stack */
-    #map{position:absolute;inset:0;object-fit:contain;width:100%;height:100%;transform-origin:top left;cursor:grab;z-index:1}
+    #map{
+      position:absolute;inset:0;object-fit:contain;width:100%;height:100%;
+      transform-origin:top left;cursor:grab;z-index:1
+    }
     canvas{position:absolute;left:0;top:0;pointer-events:none}
     #grid-layer{z-index:2}
     #template-layer{z-index:3}
     #fog-layer{z-index:5}
 
-    .token{position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;display:flex;align-items:center;justify-content:center;user-select:none;cursor:grab;z-index:6;border:2px solid #fff;transform-origin:center;overflow:hidden}
+    /* Tokens & portals */
+    .token{
+      position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;
+      display:flex;align-items:center;justify-content:center;user-select:none;cursor:grab;
+      z-index:6;border:2px solid #fff;transform-origin:center;overflow:hidden
+    }
     .token span{pointer-events:none}
     .token.has-img{background-size:cover;background-position:center;color:#fff;text-shadow:0 1px 2px #000}
-
-    .portal{position:absolute;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #8df,#15a);border:2px solid #fff;box-shadow:0 0 10px #8df;z-index:7;cursor:pointer;transform-origin:center}
+    .portal{
+      position:absolute;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #8df,#15a);
+      border:2px solid #fff;box-shadow:0 0 10px #8df;z-index:7;cursor:pointer;transform-origin:center
+    }
 
     /* Context menu */
-    #ctx{position:absolute;z-index:50;background:#1b1a22;border:1px solid var(--accent);border-radius:8px;overflow:hidden;display:none;min-width:180px}
+    #ctx{
+      position:absolute;z-index:50;background:#1b1a22;border:1px solid var(--accent);
+      border-radius:8px;overflow:hidden;display:none;min-width:180px
+    }
     #ctx button{display:block;width:100%;text-align:left;padding:.5rem .7rem;background:transparent;color:var(--ink);border:none;cursor:pointer}
     #ctx button:hover{background:rgba(255,255,255,.08)}
 
     /* Submap overlay */
-    #submap-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:none;z-index:30}
-    .parchment{position:absolute;inset:6% 10%;background:#f4ecd7 url('https://i.imgur.com/2mJvRjF.png') center/cover no-repeat;box-shadow:0 20px 60px rgba(0,0,0,.6);border:2px solid #c9b27a;border-radius:14px;overflow:hidden}
-    .parchment .head{display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:linear-gradient(#f6eed9,#eadfbf);border-bottom:1px solid #c9b27a}
+    #submap-overlay{
+      position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:none;z-index:30
+    }
+    .parchment{
+      position:absolute;inset:6% 10%;background:var(--paper) url('https://i.imgur.com/2mJvRjF.png') center/cover no-repeat;
+      box-shadow:0 20px 60px rgba(0,0,0,.6);border:2px solid var(--paperEdge);border-radius:14px;overflow:hidden
+    }
+    .parchment .head{
+      display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;
+      background:linear-gradient(#f6eed9,#eadfbf);border-bottom:1px solid var(--paperEdge)
+    }
     .parchment .head .ttl{font-family:'Cinzel',serif;color:#5a4829}
-    .parchment .head .x{background:#7a1; color:#fff; border:none; padding:.3rem .55rem;border-radius:999px;cursor:pointer}
+    .parchment .head .x{background:#7a1;color:#fff;border:none;padding:.3rem .55rem;border-radius:999px;cursor:pointer}
     .parchment .body{position:absolute;inset:42px 8px 8px 8px;background:#d7ccb0}
+
     #submap-canvas{position:absolute;inset:0}
 
-    /* Token Forge */
-    #token-forge .desc{font-size:.9rem;opacity:.85;line-height:1.35;margin:.4rem 0 .6rem}
-    #forge-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-    #saved-maps{max-height:160px;overflow:auto;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.35rem}
+    /* Token Forge (left) */
+    #token-forge{flex:1;overflow:auto}
+    #forge-grid{display:grid;grid-template-columns:1fr;gap:.6rem}
+    #saved-maps{
+      max-height:160px;overflow:auto;border:1px solid rgba(255,255,255,.12);
+      border-radius:8px;padding:.35rem
+    }
     .map-item{display:flex;align-items:center;gap:.5rem;margin:.3rem 0}
     .thumb{width:42px;height:42px;background:#222;border:1px solid rgba(255,255,255,.12);background-size:cover;background-position:center;border-radius:6px}
+    #initiative{margin-top:auto}
 
-    /* Template selection visuals */
+    /* Handles for AoE selection (drawn on template layer in JS; class kept for reference) */
     .handle{position:absolute;width:10px;height:10px;border:2px solid #00c8ff;background:#00131a;border-radius:2px;z-index:9;pointer-events:auto}
 
-    @media (max-width:1180px){#stage{grid-template-columns:0 1fr 360px}#left-panel{display:none}}
+    /* Omniverse Lab styling */
+    .ov-box{border:1px solid var(--paperEdge);border-radius:10px;background:rgba(235,220,185,.07);padding:.6rem}
+    .ov-row{display:grid;grid-template-columns:100px 1fr;gap:.5rem;align-items:center;margin:.35rem 0}
+    #ov-console{
+      min-height:70px;max-height:160px;overflow:auto;background:#0e0d12;border:1px dashed var(--accent);
+      padding:.5rem;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Consolas,Menlo,monospace;font-size:.85rem
+    }
+
+    @media (max-width:1180px){
+      #stage{grid-template-columns:0 1fr 360px}
+      #left-panel{display:none}
+    }
   </style>
 </head>
 <body>
+  <!-- Header -->
   <header>
     <div class="brand">
       <div class="title">The War Vault</div>
@@ -87,26 +150,43 @@
     </div>
   </header>
 
+  <!-- Stage -->
   <div id="stage">
-    <!-- Left: Character Sheet -->
+    <!-- LEFT: Token Forge + Initiative -->
     <aside id="left-panel">
-      <div class="section">
-        <h3>Character Sheet</h3>
-        <div id="char-sheet">Click a token to view.</div>
-        <div class="row"><button id="btn-load-characters" class="btn" style="width:100%">📥 Load from Echo Vault</button></div>
+      <div class="section" id="token-forge">
+        <h3>Token Forge</h3>
+        <div id="forge-grid">
+          <div>
+            <div class="row"><input id="tf-name" placeholder="Name" /></div>
+            <div class="row"><label>Color</label><input id="tf-color" type="color" value="#ff4444" /></div>
+            <div class="row"><label>Size (px)</label><input id="tf-size" type="number" min="24" max="120" value="42" /></div>
+            <div class="row"><input id="tf-photo" type="file" accept="image/*" /></div>
+            <div class="row"><button id="btn-create-token" class="btn" style="width:100%">➕ Create Token</button></div>
+          </div>
+          <div>
+            <div style="margin-bottom:.3rem;color:#cbb27d">Saved Maps</div>
+            <div id="saved-maps"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="section">
-        <h3>Templates (Selected)</h3>
-        <div class="row"><input id="tpl-label" placeholder="Label (e.g., Fireball 20 ft)"></div>
+      <div class="section" id="initiative">
+        <h3>Initiative</h3>
         <div class="row">
-          <button id="btn-tpl-apply" class="btn" style="flex:1">Apply Label</button>
-          <button id="btn-tpl-delete" class="btn" style="flex:1">Delete</button>
+          <input id="init-name" placeholder="Name">
+          <input id="init-roll" type="number" placeholder="Roll" style="max-width:90px">
         </div>
+        <div class="row"><button id="btn-init-add" class="btn" style="width:100%">Add</button></div>
+        <div class="row" style="gap:.5rem">
+          <button id="btn-init-next" class="btn" style="flex:1">Next</button>
+          <button id="btn-init-reset" class="btn" style="flex:1">Reset</button>
+        </div>
+        <div id="init-list" style="margin-top:.5rem"></div>
       </div>
     </aside>
 
-    <!-- Center: Map -->
+    <!-- CENTER: Map -->
     <main id="map-container">
       <img id="map" src="https://i.imgur.com/8V7V3sP.jpg" alt="Map" />
       <canvas id="grid-layer"></canvas>
@@ -124,15 +204,42 @@
       <!-- Submap Overlay (parchment) -->
       <div id="submap-overlay">
         <div class="parchment">
-          <div class="head"><div class="ttl" id="submap-title">Submap</div><button class="x" id="close-submap">✕</button></div>
+          <div class="head">
+            <div class="ttl" id="submap-title">Submap</div>
+            <button class="x" id="close-submap">✕</button>
+          </div>
           <div class="body">
+            <!-- Submap tool tray (wired in Part 2) -->
+            <div class="row" style="gap:.4rem;flex-wrap:wrap;padding:6px 4px">
+              <button class="btn subtool" data-subtool="pan">🖐️ Pan</button>
+              <button class="btn subtool" data-subtool="select">🖱️ Select</button>
+              <button class="btn subtool" data-subtool="ruler">📏</button>
+              <button class="btn subtool" data-subtool="circle">⭕</button>
+              <button class="btn subtool" data-subtool="rect">▭</button>
+              <button class="btn subtool" data-subtool="cone">🔺</button>
+              <button class="btn subtool" data-subtool="token">🎯 Token</button>
+              <select id="sub-fog-mode" style="max-width:140px">
+                <option value="none">Fog: off</option>
+                <option value="reveal">Reveal</option>
+                <option value="hide">Hide</option>
+              </select>
+              <select id="sub-brush" style="max-width:120px">
+                <option value="20">Brush 20</option>
+                <option value="40" selected>Brush 40</option>
+                <option value="80">Brush 80</option>
+              </select>
+              <button id="sub-clear-templates" class="btn">Clear</button>
+              <button id="sub-save" class="btn">💾 Save</button>
+              <button id="sub-reset" class="btn">↺ Reset</button>
+            </div>
+            <!-- Submap drawing surface -->
             <canvas id="submap-canvas"></canvas>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Right: Tools / Token Forge / Submap Manager / Initiative -->
+    <!-- RIGHT: Tools, Submap Manager, Omniverse Lab -->
     <aside id="right-panel">
       <div class="section">
         <h3>Tools</h3>
@@ -168,402 +275,1810 @@
         </div>
       </div>
 
-      <div class="section" id="token-forge">
-        <h3>Token Forge</h3>
-        <div class="desc">Create customizable tokens: set <em>Name</em>, <em>Color</em>, <em>Size</em>, and an optional <em>Photo</em>. Click “Create Token” to place it at the center of the map. Drag to move; right‑click for options. Tokens scale with zoom.</div>
-        <div id="forge-grid">
-          <div>
-            <div class="row"><input id="tf-name" placeholder="Name (e.g., Kael)" /></div>
-            <div class="row"><label>Color</label><input id="tf-color" type="color" value="#ff4444" /></div>
-            <div class="row"><label>Size (px)</label><input id="tf-size" type="number" min="24" max="120" value="42" /></div>
-            <div class="row"><input id="tf-photo" type="file" accept="image/*" /></div>
-            <div class="row"><button id="btn-create-token" class="btn" style="width:100%">➕ Create Token</button></div>
-          </div>
-          <div>
-            <div style="margin-bottom:.3rem;color:#cbb27d">Saved Maps</div>
-            <div id="saved-maps"></div>
-          </div>
-        </div>
-      </div>
-
       <div class="section" id="submap-manager">
         <h3>Submap Manager</h3>
         <div class="row"><input type="file" id="submap-file" accept="image/*"></div>
-        <div class="row"><input type="text" id="submap-name" placeholder="Name (e.g., Kael's House)"></div>
+        <div class="row"><input type="text" id="submap-name" placeholder="Name"></div>
         <div class="row"><button id="btn-add-submap" class="btn" style="width:100%">➕ Add Submap</button></div>
         <div id="submap-list"></div>
       </div>
 
-      <div class="section">
-        <h3>Initiative</h3>
-        <div class="row">
-          <input id="init-name" placeholder="Name">
-          <input id="init-roll" type="number" placeholder="Roll" style="max-width:90px">
+      <!-- Omniverse Lab (Beta) — wired in Part 3/4) -->
+      <div class="section" id="omniverse-lab">
+        <h3>Omniverse Lab (beta)</h3>
+        <div class="ov-box">
+          <div class="ov-row">
+            <label for="ov-url">Nucleus URL</label>
+            <input id="ov-url" placeholder="omniverse://server/Projects/WarVault" />
+          </div>
+          <div class="ov-row">
+            <label for="ov-usd">USD Path</label>
+            <input id="ov-usd" placeholder="/Scenes/Dungeon.usd" />
+          </div>
+          <div class="ov-row">
+            <label for="ov-res">Resolution</label>
+            <input id="ov-res" placeholder="4096x3072" />
+          </div>
+          <div class="ov-row">
+            <label for="ov-format">Format</label>
+            <select id="ov-format">
+              <option value="webp" selected>WebP</option>
+              <option value="png">PNG</option>
+            </select>
+          </div>
+          <div class="row" style="gap:.5rem;flex-wrap:wrap">
+            <button id="ov-connect" class="btn">🔗 Connect</button>
+            <button id="ov-generate" class="btn">✨ Generate Map</button>
+            <button id="ov-refresh" class="btn">↻ Refresh</button>
+            <button id="ov-open-library" class="btn">📂 Open Library</button>
+          </div>
+          <div id="ov-console" aria-live="polite">Omniverse console ready.</div>
         </div>
-        <div class="row"><button id="btn-init-add" class="btn" style="width:100%">Add</button></div>
-        <div class="row" style="gap:.5rem"><button id="btn-init-next" class="btn" style="flex:1">Next</button><button id="btn-init-reset" class="btn" style="flex:1">Reset</button></div>
-        <div id="init-list" style="margin-top:.5rem"></div>
       </div>
     </aside>
   </div>
+  <!-- PART 2/4 — Core JS (Main map, tools, fog, tokens, portals, saved maps, initiative) -->
+<script>
+/* ===== Element refs ===== */
+const wrap = document.getElementById('map-container');
+const mapEl = document.getElementById('map');
+const grid = document.getElementById('grid-layer');
+const tpl = document.getElementById('template-layer');
+const fog = document.getElementById('fog-layer');
+const gctx = grid.getContext('2d');
+const tctx = tpl.getContext('2d');
+const fctx = fog.getContext('2d');
 
-  <script>
-  // ===== Elements & Contexts
-  const wrap = document.getElementById('map-container');
-  const mapEl = document.getElementById('map');
-  const grid = document.getElementById('grid-layer');
-  const tpl = document.getElementById('template-layer');
-  const fog = document.getElementById('fog-layer');
-  const gctx = grid.getContext('2d');
-  const tctx = tpl.getContext('2d');
-  const fctx = fog.getContext('2d');
+const zoomInBtn = document.getElementById('btn-zoom-in');
+const zoomOutBtn = document.getElementById('btn-zoom-out');
+const mapUpload = document.getElementById('map-upload');
+const saveMapBtn = document.getElementById('btn-save-map');
 
-  const ctxMenu = document.getElementById('ctx');
-  const charSheet = document.getElementById('char-sheet');
+const toolButtons = Array.from(document.querySelectorAll('.tool'));
+const snapChk = document.getElementById('snap');
+const fogModeSel = document.getElementById('fog-mode');
+const brushSel = document.getElementById('brush');
+const clearTplBtn = document.getElementById('btn-clear-templates');
+const fogUndoBtn = document.getElementById('btn-fog-undo');
+const fogRedoBtn = document.getElementById('btn-fog-redo');
 
-  // Header controls
-  const zoomInBtn = document.getElementById('btn-zoom-in');
-  const zoomOutBtn = document.getElementById('btn-zoom-out');
-  const mapUpload = document.getElementById('map-upload');
-  const saveMapBtn = document.getElementById('btn-save-map');
+const ctxMenu = document.getElementById('ctx');
 
-  // Tools
-  const toolButtons = Array.from(document.querySelectorAll('.tool'));
-  const snapChk = document.getElementById('snap');
-  const fogModeSel = document.getElementById('fog-mode');
-  const brushSel = document.getElementById('brush');
-  const clearTplBtn = document.getElementById('btn-clear-templates');
-  const fogUndoBtn = document.getElementById('btn-fog-undo');
-  const fogRedoBtn = document.getElementById('btn-fog-redo');
+const tfName = document.getElementById('tf-name');
+const tfColor = document.getElementById('tf-color');
+const tfSize = document.getElementById('tf-size');
+const tfPhoto = document.getElementById('tf-photo');
+const createTokenBtn = document.getElementById('btn-create-token');
+const savedMapsDiv = document.getElementById('saved-maps');
 
-  // Template controls (left panel)
-  const tplLabel = document.getElementById('tpl-label');
-  const tplApply = document.getElementById('btn-tpl-apply');
-  const tplDelete = document.getElementById('btn-tpl-delete');
+const subFile = document.getElementById('submap-file');
+const subName = document.getElementById('submap-name');
+const subAddBtn = document.getElementById('btn-add-submap');
+const subList = document.getElementById('submap-list');
 
-  // Token forge
-  const tfName = document.getElementById('tf-name');
-  const tfColor = document.getElementById('tf-color');
-  const tfSize = document.getElementById('tf-size');
-  const tfPhoto = document.getElementById('tf-photo');
-  const createTokenBtn = document.getElementById('btn-create-token');
-  const savedMapsDiv = document.getElementById('saved-maps');
+const initName = document.getElementById('init-name');
+const initRoll = document.getElementById('init-roll');
+const initAdd = document.getElementById('btn-init-add');
+const initNext = document.getElementById('btn-init-next');
+const initReset = document.getElementById('btn-init-reset');
+const initList = document.getElementById('init-list');
 
-  // Submap overlay & manager
-  const subOverlay = document.getElementById('submap-overlay');
-  const subTitle = document.getElementById('submap-title');
-  const subCanvas = document.getElementById('submap-canvas');
-  const sctx = subCanvas.getContext('2d');
-  document.getElementById('close-submap').addEventListener('click', ()=> subOverlay.style.display='none');
-  const subFile = document.getElementById('submap-file');
-  const subName = document.getElementById('submap-name');
-  const subAddBtn = document.getElementById('btn-add-submap');
-  const subList = document.getElementById('submap-list');
+/* ===== Global state ===== */
+let scale = 1;
+let offset = { x: 0, y: 0 };
+const cell = 50; // 5 ft = 50px at scale 1
 
-  // Initiative
-  const initName = document.getElementById('init-name');
-  const initRoll = document.getElementById('init-roll');
-  const initAdd = document.getElementById('btn-init-add');
-  const initNext = document.getElementById('btn-init-next');
-  const initReset = document.getElementById('btn-init-reset');
-  const initList = document.getElementById('init-list');
+let tokens = [];    // {el,x,y,size,color,img?,name,char?,submapId?}
+let portals = [];   // {el,x,y,submapId}
+let templates = []; // AoE templates (persistent)
+let selectedTemplate = null;
 
-  // Characters
-  document.getElementById('btn-load-characters').addEventListener('click', ()=>{
-    const vault = JSON.parse(localStorage.getItem('echo-vault')||'[]');
-    if(!vault.length){ alert('No characters in Echo Vault'); return; }
-    const pick = vault[vault.length-1];
-    spawnToken({ name: pick.name, char: pick, color: '#ff4444', size: 48 });
+let submaps = JSON.parse(localStorage.getItem('warvault-submaps') || '[]');
+let savedMaps = JSON.parse(localStorage.getItem('warvault-maps') || '[]');
+
+let currentTool = 'pan';
+let drawing = null;          // {type,start:{x,y},cur:{x,y}}
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+let selectedToken = null;
+
+const FOG_LIMIT = 15;
+let fogUndoStack = [];
+let fogRedoStack = [];
+let paintingFog = false;
+let beganStroke = false;
+
+/* Initiative */
+let initiative = [];
+let initIdx = -1;
+
+/* ===== Canvas sizing & initial draw ===== */
+function fitCanvases() {
+  const r = wrap.getBoundingClientRect();
+  [grid, tpl, fog].forEach((cv) => {
+    cv.width = r.width;
+    cv.height = r.height;
   });
-
-  // ===== Map/World state
-  let scale = 1;            // zoom
-  let offset = {x:0,y:0};   // pan (screen px)
-  const cell = 50;          // 5ft == 50px at scale 1
-
-  let tokens = [];          // {el,x,y,size,color,img?,name,char?,submapId?}
-  let portals = [];         // {el,x,y,submapId}
-  let templates = [];       // persistent AoE templates
-  let selectedTemplate = null; // reference to template object
-
-  let submaps = JSON.parse(localStorage.getItem('warvault-submaps')||'[]');
-  let savedMaps = JSON.parse(localStorage.getItem('warvault-maps')||'[]');
-
-  let currentTool = 'pan';
-  let drawing = null;       // {type,start:{x,y},cur:{x,y}}
-  let isPanning = false; let panStart={x:0,y:0};
-  let selectedToken = null;
-  let activeFog = false; let paintedThisStroke=false;
-
-  // Fog history (undo/redo)
-  const FOG_LIMIT = 15;
-  let fogUndoStack = []; // ImageData
-  let fogRedoStack = [];
-
-  // Initiative
-  let initiative=[]; let initIdx=-1;
-
-  function fitCanvases(){
-    const r = wrap.getBoundingClientRect();
-    [grid,tpl,fog].forEach(cv=>{cv.width=r.width; cv.height=r.height});
-    drawGrid(); redrawTemplates(); drawFogFull();
-    repositionAll();
+  drawGrid();
+  redrawTemplates();
+  if (!fogUndoStack.length) {
+    // Initialize fog as fully transparent (no fog) by default
+    fctx.clearRect(0, 0, fog.width, fog.height);
+    pushFogState();
   }
-  window.addEventListener('resize', fitCanvases);
-  window.addEventListener('load', fitCanvases);
+  repositionAll();
+}
+window.addEventListener('resize', fitCanvases);
+window.addEventListener('load', fitCanvases);
 
-  // ===== Coordinate helpers
-  function screenToWorld(sx,sy){ return { x:(sx - offset.x)/scale, y:(sy - offset.y)/scale }; }
-  function worldToScreen(wx,wy){ return { x:offset.x + wx*scale, y:offset.y + wy*scale }; }
-  function snap(v){ return snapChk.checked ? Math.round(v/cell)*cell : v; }
+/* ===== Coordinates & helpers ===== */
+function screenToWorld(sx, sy) {
+  return { x: (sx - offset.x) / scale, y: (sy - offset.y) / scale };
+}
+function worldToScreen(wx, wy) {
+  return { x: offset.x + wx * scale, y: offset.y + wy * scale };
+}
+function snap(v) {
+  return snapChk && snapChk.checked ? Math.round(v / cell) * cell : v;
+}
 
-  // ===== Grid/Fog/Template rendering
-  function drawGrid(){
-    const step = cell*scale;
-    gctx.clearRect(0,0,grid.width,grid.height);
-    gctx.strokeStyle= getComputedStyle(document.documentElement).getPropertyValue('--rune');
-    gctx.lineWidth=1;
-    for(let x=(offset.x%step+step)%step; x<grid.width; x+=step){ gctx.beginPath(); gctx.moveTo(x,0); gctx.lineTo(x,grid.height); gctx.stroke(); }
-    for(let y=(offset.y%step+step)%step; y<grid.height; y+=step){ gctx.beginPath(); gctx.moveTo(0,y); gctx.lineTo(grid.width,y); gctx.stroke(); }
+/* ===== Grid ===== */
+function drawGrid() {
+  const step = cell * scale;
+  gctx.clearRect(0, 0, grid.width, grid.height);
+  gctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rune');
+  gctx.lineWidth = 1;
+
+  // verticals
+  for (let x = (offset.x % step + step) % step; x < grid.width; x += step) {
+    gctx.beginPath();
+    gctx.moveTo(x, 0);
+    gctx.lineTo(x, grid.height);
+    gctx.stroke();
   }
-  function drawFogFull(){ fctx.clearRect(0,0,fog.width,fog.height); fctx.fillStyle= getComputedStyle(document.documentElement).getPropertyValue('--mist'); fctx.fillRect(0,0,fog.width,fog.height); pushFogState(); }
-
-  function redrawTemplates(){
-    tctx.clearRect(0,0,tpl.width,tpl.height);
-    tctx.lineWidth = 2; tctx.strokeStyle = 'rgba(0,200,255,0.9)'; tctx.fillStyle='rgba(0,200,255,0.25)';
-    templates.forEach(tp=>{
-      const s = worldToScreen(tp.x, tp.y);
-      tctx.save();
-      if(tp.type==='circle'){
-        tctx.beginPath(); tctx.arc(s.x, s.y, tp.r*scale, 0, Math.PI*2); tctx.fill(); tctx.stroke();
-        if(tp.label) drawLabel(tp.label, s.x, s.y - tp.r*scale - 8);
-      } else if(tp.type==='rect'){
-        const w=tp.w*scale, h=tp.h*scale; tctx.beginPath(); tctx.rect(s.x, s.y, w, h); tctx.fill(); tctx.stroke();
-        if(tp.label) drawLabel(tp.label, s.x + w/2, s.y - 8);
-      } else if(tp.type==='cone'){
-        const len = tp.len*scale; tctx.beginPath(); tctx.moveTo(s.x, s.y);
-        tctx.lineTo(s.x + Math.cos(tp.ang - tp.spread/2)*len, s.y + Math.sin(tp.ang - tp.spread/2)*len);
-        tctx.arc(s.x, s.y, len, tp.ang - tp.spread/2, tp.ang + tp.spread/2);
-        tctx.closePath(); tctx.fill(); tctx.stroke();
-        if(tp.label) drawLabel(tp.label, s.x + Math.cos(tp.ang)*len, s.y + Math.sin(tp.ang)*len);
-      }
-      // selection handles
-      if(selectedTemplate===tp){ drawHandles(tp); }
-      tctx.restore();
-    });
+  // horizontals
+  for (let y = (offset.y % step + step) % step; y < grid.height; y += step) {
+    gctx.beginPath();
+    gctx.moveTo(0, y);
+    gctx.lineTo(grid.width, y);
+    gctx.stroke();
   }
-  function drawLabel(text, x, y){ tctx.fillStyle='rgba(0,0,0,.7)'; const pad=4; const w=tctx.measureText(text).width+pad*2; tctx.fillRect(x-w/2, y-14, w, 16); tctx.fillStyle='#fff'; tctx.font='12px system-ui'; tctx.textAlign='center'; tctx.fillText(text,x,y); tctx.fillStyle='rgba(0,200,255,0.25)'; }
+}
 
-  function drawHandles(tp){
-    const hs = 8;
-    if(tp.type==='circle'){
-      const c = worldToScreen(tp.x,tp.y); const r = tp.r*scale; drawHandle(c.x + r, c.y, 'edge'); drawHandle(c.x - r, c.y, 'edge'); drawHandle(c.x, c.y - r, 'edge'); drawHandle(c.x, c.y + r, 'edge');
-    } else if(tp.type==='rect'){
-      const s=worldToScreen(tp.x,tp.y); const w=tp.w*scale, h=tp.h*scale; drawHandle(s.x, s.y, 'corner'); drawHandle(s.x+w, s.y, 'corner'); drawHandle(s.x, s.y+h, 'corner'); drawHandle(s.x+w, s.y+h, 'corner');
-    } else if(tp.type==='cone'){
-      const s=worldToScreen(tp.x,tp.y); const len=tp.len*scale; drawHandle(s.x + Math.cos(tp.ang)*len, s.y + Math.sin(tp.ang)*len, 'tip');
-    }
-    function drawHandle(x,y){ tctx.save(); tctx.fillStyle='#00c8ff'; tctx.strokeStyle='#00131a'; tctx.lineWidth=2; tctx.beginPath(); tctx.rect(x-hs/2,y-hs/2,hs,hs); tctx.fill(); tctx.stroke(); tctx.restore(); }
-  }
-
-  // ===== Map upload
-  mapUpload.addEventListener('change', e=>{
-    const file=e.target.files[0]; if(!file) return; const r=new FileReader();
-    r.onload=ev=>{ mapEl.src=ev.target.result; }; r.readAsDataURL(file);
+/* ===== Reposition map & overlays ===== */
+function repositionAll() {
+  mapEl.style.transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
+  drawGrid();
+  // Tokens & portals
+  tokens.forEach(positionToken);
+  portals.forEach((p) => {
+    const s = worldToScreen(p.x, p.y);
+    p.el.style.transform = `translate(${s.x - 13}px, ${s.y - 13}px) scale(${scale})`;
   });
+  redrawTemplates();
+}
 
-  // ===== Zoom/Pan
-  function repositionAll(){
-    mapEl.style.transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
-    tokens.forEach(t=>{ t.el.style.width=t.size+'px'; t.el.style.height=t.size+'px'; const p=worldToScreen(t.x,t.y); t.el.style.transform=`translate=${''}`; t.el.style.transform=`translate(${p.x}px, ${p.y}px) scale(${scale})`; });
-    portals.forEach(p=>{ const s=worldToScreen(p.x,p.y); p.el.style.transform=`translate(${s.x-13}px, ${s.y-13}px) scale(${scale})`; });
-    drawGrid(); redrawTemplates();
-  }
-  function setScale(newScale, anchorX, anchorY){
-    const old = scale; scale = Math.max(.2, Math.min(6, newScale));
-    const ax = anchorX??(grid.width/2), ay = anchorY??(grid.height/2);
-    const wx = (ax - offset.x)/old, wy=(ay - offset.y)/old;
-    offset.x = ax - wx*scale; offset.y = ay - wy*scale;
+/* ===== Zoom / Pan ===== */
+function setScale(newScale, anchorX, anchorY) {
+  const old = scale;
+  scale = Math.max(0.2, Math.min(6, newScale));
+  const ax = anchorX ?? grid.width / 2;
+  const ay = anchorY ?? grid.height / 2;
+  const wx = (ax - offset.x) / old;
+  const wy = (ay - offset.y) / old;
+  offset.x = ax - wx * scale;
+  offset.y = ay - wy * scale;
+  repositionAll();
+}
+zoomInBtn.addEventListener('click', () => setScale(scale * 1.2));
+zoomOutBtn.addEventListener('click', () => setScale(scale / 1.2));
+wrap.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault();
+    setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), e.offsetX, e.offsetY);
+  },
+  { passive: false }
+);
+
+/* ===== Map upload ===== */
+mapUpload.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = (ev) => {
+    mapEl.src = ev.target.result;
+    // keep pan/zoom; just redraw grid to account for new natural size
     repositionAll();
+  };
+  r.readAsDataURL(file);
+});
+
+/* ===== Tools ===== */
+function setTool(t) {
+  currentTool = t;
+  toolButtons.forEach((b) => b.classList.toggle('toggled', b.dataset.tool === t));
+  fog.style.pointerEvents = fogModeSel.value !== 'none' ? 'auto' : 'none';
+}
+toolButtons.forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));
+setTool('pan');
+
+/* ===== Drawing (AoE templates & measure) + Fog painting ===== */
+wrap.addEventListener('mousedown', (e) => {
+  // Identify map-area clicks only
+  const onMap = e.target === wrap || e.target === mapEl || e.target === grid || e.target === tpl || e.target === fog;
+  if (!onMap) return;
+
+  const fogMode = fogModeSel.value;
+  const w = screenToWorld(e.offsetX, e.offsetY);
+
+  // Fog paint
+  if (fogMode !== 'none') {
+    beginFogStroke();
+    paintFog(e.offsetX, e.offsetY, fogMode === 'reveal');
+    return;
   }
-  document.getElementById('btn-zoom-in').addEventListener('click',()=> setScale(scale*1.2));
-  document.getElementById('btn-zoom-out').addEventListener('click',()=> setScale(scale/1.2));
-  wrap.addEventListener('wheel', e=>{ e.preventDefault(); setScale(scale*(e.deltaY<0?1.15:.87), e.offsetX, e.offsetY); }, {passive:false});
 
-  wrap.addEventListener('mousedown', e=>{
-    const fogMode=fogModeSel.value; const tool=currentTool;
-    const onMap = e.target===wrap || e.target===mapEl || e.target===grid || e.target===tpl || e.target===fog;
-    if(!onMap) return;
-    const w = screenToWorld(e.offsetX, e.offsetY);
+  // Panning
+  if (currentTool === 'pan') {
+    isPanning = true;
+    panStart = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+    return;
+  }
 
-    // Fog painting
-    if(fogMode!=='none'){
-      startFogStroke(); paintFog(e.offsetX, e.offsetY, fogMode==='reveal'); return;
-    }
+  // Start drawing shapes / measurement
+  if (['ruler', 'los', 'circle', 'rect', 'cone'].includes(currentTool)) {
+    const sx = snap(w.x);
+    const sy = snap(w.y);
+    drawing = { type: currentTool === 'ruler' ? 'ruler' : currentTool, start: { x: sx, y: sy }, cur: { x: sx, y: sy } };
+    drawTemplatePreview();
+    return;
+  }
 
-    if(tool==='pan'){ isPanning=true; panStart={x:e.clientX-offset.x, y:e.clientY-offset.y}; return; }
+  // Place portal
+  if (currentTool === 'portal') {
+    const p = createPortal(snap(w.x), snap(w.y));
+    const s = worldToScreen(p.x, p.y);
+    p.el.style.transform = `translate(${s.x - 13}px, ${s.y - 13}px) scale(${scale})`;
+    return;
+  }
 
-    if(['ruler','los','circle','rect','cone'].includes(tool)){
-      drawing = { type: tool==='ruler'?'ruler':tool, start:{x:snap(w.x), y:snap(w.y)}, cur:{x:snap(w.x), y:snap(w.y)} };
-      drawTemplatePreview(); return;
-    }
-
-    if(tool==='portal'){
-      const portal = document.createElement('div'); portal.className='portal'; wrap.appendChild(portal);
-      const p = { el: portal, x: snap(w.x), y: snap(w.y), submapId: null };
-      portals.push(p); const s=worldToScreen(p.x,p.y); portal.style.transform=`translate(${s.x-13}px, ${s.y-13}px) scale(${scale})`;
-      portal.addEventListener('click', ()=>{ if(p.submapId) openSubmapById(p.submapId); else assignSubmapToPortal(p); });
-      portal.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); assignSubmapToPortal(p); });
-      return;
-    }
-
-    if(tool==='select'){
-      // try to select a template from topmost
-      selectedTemplate = hitTestTemplates(w.x, w.y);
-      if(selectedTemplate){ tplLabel.value = selectedTemplate.label||''; dragTemplateStart(w.x,w.y); }
+  // Select templates to drag
+  if (currentTool === 'select') {
+    selectedTemplate = hitTestTemplates(w.x, w.y);
+    if (selectedTemplate) {
+      startDragTemplate(w.x, w.y);
       redrawTemplates();
-      return;
+    }
+    return;
+  }
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (isPanning) {
+    offset.x = e.clientX - panStart.x;
+    offset.y = e.clientY - panStart.y;
+    repositionAll();
+    return;
+  }
+  if (paintingFog) {
+    paintFog(e.offsetX, e.offsetY, fogModeSel.value === 'reveal');
+    return;
+  }
+  if (drawing) {
+    const w = screenToWorld(e.offsetX, e.offsetY);
+    drawing.cur = { x: snap(w.x), y: snap(w.y) };
+    drawTemplatePreview();
+  }
+  if (draggingTemplate) {
+    const w = screenToWorld(e.offsetX, e.offsetY);
+    moveTemplateTo(w.x, w.y);
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  if (isPanning) isPanning = false;
+  if (paintingFog) endFogStroke();
+  if (drawing) {
+    finalizeTemplate();
+    drawing = null;
+  }
+  if (draggingTemplate) draggingTemplate = null;
+});
+
+/* ===== Fog paint + undo/redo ===== */
+function pushFogState() {
+  try {
+    const img = fctx.getImageData(0, 0, fog.width, fog.height);
+    fogUndoStack.push(img);
+    if (fogUndoStack.length > FOG_LIMIT) fogUndoStack.shift();
+    fogRedoStack.length = 0;
+  } catch (e) {
+    // likely memory or security — ignore
+  }
+}
+function beginFogStroke() {
+  paintingFog = true;
+  beganStroke = false;
+}
+function endFogStroke() {
+  paintingFog = false;
+  try {
+    const img = fctx.getImageData(0, 0, fog.width, fog.height);
+    fogUndoStack.push(img);
+    if (fogUndoStack.length > FOG_LIMIT) fogUndoStack.shift();
+    fogRedoStack.length = 0;
+  } catch (e) {}
+}
+function paintFog(sx, sy, reveal) {
+  if (!beganStroke) {
+    pushFogState();
+    beganStroke = true;
+  }
+  fctx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
+  if (!reveal) {
+    // paint mist color
+    fctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
+  }
+  const r = parseInt(brushSel.value, 10);
+  fctx.beginPath();
+  fctx.arc(sx, sy, r, 0, Math.PI * 2);
+  fctx.fill();
+  fctx.globalCompositeOperation = 'source-over';
+}
+fogUndoBtn.addEventListener('click', () => {
+  if (fogUndoStack.length < 2) return;
+  const cur = fogUndoStack.pop();
+  fogRedoStack.push(cur);
+  const prev = fogUndoStack[fogUndoStack.length - 1];
+  fctx.putImageData(prev, 0, 0);
+});
+fogRedoBtn.addEventListener('click', () => {
+  if (!fogRedoStack.length) return;
+  const img = fogRedoStack.pop();
+  fogUndoStack.push(img);
+  fctx.putImageData(img, 0, 0);
+});
+
+/* ===== Templates (draw/preview/persist/select/drag) ===== */
+function drawTemplatePreview() {
+  tctx.clearRect(0, 0, tpl.width, tpl.height);
+  redrawTemplates(); // draw existing first
+  if (!drawing) return;
+
+  const s = worldToScreen(drawing.start.x, drawing.start.y);
+  const c = worldToScreen(drawing.cur.x, drawing.cur.y);
+  tctx.lineWidth = 2;
+  tctx.strokeStyle = 'rgba(0,200,255,0.9)';
+  tctx.fillStyle = 'rgba(0,200,255,0.25)';
+
+  if (drawing.type === 'ruler' || drawing.type === 'los') {
+    tctx.beginPath();
+    tctx.moveTo(s.x, s.y);
+    tctx.lineTo(c.x, c.y);
+    tctx.stroke();
+
+    const dx = drawing.cur.x - drawing.start.x;
+    const dy = drawing.cur.y - drawing.start.y;
+    const ft = Math.round((Math.hypot(dx, dy) / cell) * 5);
+    tctx.fillStyle = 'rgba(0,0,0,.7)';
+    tctx.fillRect((s.x + c.x) / 2 - 18, (s.y + c.y) / 2 - 10, 36, 18);
+    tctx.fillStyle = '#fff';
+    tctx.font = '12px system-ui';
+    tctx.textAlign = 'center';
+    tctx.fillText(ft + ' ft', (s.x + c.x) / 2, (s.y + c.y) / 2 + 4);
+    tctx.fillStyle = 'rgba(0,200,255,0.25)';
+    return;
+  }
+
+  if (drawing.type === 'circle') {
+    const r = Math.hypot(c.x - s.x, c.y - s.y);
+    tctx.beginPath();
+    tctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    tctx.fill();
+    tctx.stroke();
+  }
+  if (drawing.type === 'rect') {
+    tctx.beginPath();
+    tctx.rect(s.x, s.y, c.x - s.x, c.y - s.y);
+    tctx.fill();
+    tctx.stroke();
+  }
+  if (drawing.type === 'cone') {
+    const ang = Math.atan2(c.y - s.y, c.x - s.x);
+    const len = Math.hypot(c.x - s.x, c.y - s.y);
+    const spread = Math.PI / 3;
+    tctx.beginPath();
+    tctx.moveTo(s.x, s.y);
+    tctx.lineTo(s.x + Math.cos(ang - spread / 2) * len, s.y + Math.sin(ang - spread / 2) * len);
+    tctx.arc(s.x, s.y, len, ang - spread / 2, ang + spread / 2);
+    tctx.closePath();
+    tctx.fill();
+    tctx.stroke();
+  }
+}
+function finalizeTemplate() {
+  if (!drawing) return;
+  const tp = { id: Date.now().toString(36), type: drawing.type, x: drawing.start.x, y: drawing.start.y, label: '' };
+  if (drawing.type === 'circle') {
+    const r = Math.hypot(drawing.cur.x - drawing.start.x, drawing.cur.y - drawing.start.y);
+    tp.r = r;
+  }
+  if (drawing.type === 'rect') {
+    tp.w = drawing.cur.x - drawing.start.x;
+    tp.h = drawing.cur.y - drawing.start.y;
+  }
+  if (drawing.type === 'cone') {
+    tp.ang = Math.atan2(drawing.cur.y - drawing.start.y, drawing.cur.x - drawing.start.x);
+    tp.len = Math.hypot(drawing.cur.x - drawing.start.x, drawing.cur.y - drawing.start.y);
+    tp.spread = Math.PI / 3;
+  }
+  if (['ruler', 'los'].includes(drawing.type)) return; // measurement only
+  templates.push(tp);
+  selectedTemplate = tp;
+  redrawTemplates();
+}
+function redrawTemplates() {
+  tctx.clearRect(0, 0, tpl.width, tpl.height);
+  tctx.lineWidth = 2;
+  tctx.strokeStyle = 'rgba(0,200,255,0.9)';
+  tctx.fillStyle = 'rgba(0,200,255,0.25)';
+
+  templates.forEach((tp) => {
+    const s = worldToScreen(tp.x, tp.y);
+    if (tp.type === 'circle') {
+      tctx.beginPath();
+      tctx.arc(s.x, s.y, tp.r * scale, 0, Math.PI * 2);
+      tctx.fill();
+      tctx.stroke();
+      if (tp.label) drawTplLabel(tp.label, s.x, s.y - tp.r * scale - 8);
+    } else if (tp.type === 'rect') {
+      const w = tp.w * scale,
+        h = tp.h * scale;
+      tctx.beginPath();
+      tctx.rect(s.x, s.y, w, h);
+      tctx.fill();
+      tctx.stroke();
+      if (tp.label) drawTplLabel(tp.label, s.x + w / 2, s.y - 8);
+    } else if (tp.type === 'cone') {
+      const len = tp.len * scale;
+      tctx.beginPath();
+      tctx.moveTo(s.x, s.y);
+      tctx.lineTo(s.x + Math.cos(tp.ang - tp.spread / 2) * len, s.y + Math.sin(tp.ang - tp.spread / 2) * len);
+      tctx.arc(s.x, s.y, len, tp.ang - tp.spread / 2, tp.ang + tp.spread / 2);
+      tctx.closePath();
+      tctx.fill();
+      tctx.stroke();
+      if (tp.label) drawTplLabel(tp.label, s.x + Math.cos(tp.ang) * len, s.y + Math.sin(tp.ang) * len);
     }
   });
-  window.addEventListener('mousemove', e=>{
-    if(isPanning){ offset.x=e.clientX-panStart.x; offset.y=e.clientY-panStart.y; repositionAll(); return; }
-    if(activeFog){ paintFog(e.offsetX, e.offsetY, fogModeSel.value==='reveal'); return; }
-    if(drawing){ const w=screenToWorld(e.offsetX,e.offsetY); drawing.cur={x:snap(w.x), y:snap(w.y)}; drawTemplatePreview(); }
-    if(draggingTemplate){ const w=screenToWorld(e.offsetX,e.offsetY); moveTemplateTo(w.x,w.y); }
-  });
-  window.addEventListener('mouseup', ()=>{ if(isPanning) isPanning=false; if(activeFog){ endFogStroke(); } if(drawing){ finalizeTemplate(); drawing=null; } if(draggingTemplate){ draggingTemplate=null; } });
-
-  function drawTemplatePreview(){
-    tctx.clearRect(0,0,tpl.width,tpl.height);
-    // draw existing
-    redrawTemplates();
-    // preview new drawing
-    if(!drawing) return;
-    const s = worldToScreen(drawing.start.x, drawing.start.y);
-    const c = worldToScreen(drawing.cur.x, drawing.cur.y);
-    tctx.lineWidth = 2; tctx.strokeStyle = 'rgba(0,200,255,0.9)'; tctx.fillStyle='rgba(0,200,255,0.25)';
-    if(drawing.type==='ruler' || drawing.type==='los'){
-      tctx.beginPath(); tctx.moveTo(s.x,s.y); tctx.lineTo(c.x,c.y); tctx.stroke();
-      const dx=drawing.cur.x - drawing.start.x, dy=drawing.cur.y - drawing.start.y; const feet=Math.round(Math.hypot(dx,dy)/cell*5);
-      tctx.fillStyle='rgba(0,0,0,.7)'; tctx.fillRect((s.x+c.x)/2-18,(s.y+c.y)/2-10,36,18); tctx.fillStyle='#fff'; tctx.font='12px system-ui'; tctx.textAlign='center'; tctx.fillText(feet+' ft',(s.x+c.x)/2,(s.y+c.y)/2+4); tctx.fillStyle='rgba(0,200,255,0.25)';
+}
+function drawTplLabel(text, x, y) {
+  tctx.save();
+  tctx.fillStyle = 'rgba(0,0,0,.7)';
+  const w = tctx.measureText(text).width + 8;
+  tctx.fillRect(x - w / 2, y - 12, w, 16);
+  tctx.fillStyle = '#fff';
+  tctx.font = '12px system-ui';
+  tctx.textAlign = 'center';
+  tctx.fillText(text, x, y + 2);
+  tctx.restore();
+}
+// Select & drag template
+let draggingTemplate = null;
+let dragTemplateOffset = { x: 0, y: 0 };
+function hitTestTemplates(wx, wy) {
+  for (let i = templates.length - 1; i >= 0; i--) {
+    const tp = templates[i];
+    if (tp.type === 'circle') {
+      if (Math.hypot(wx - tp.x, wy - tp.y) <= tp.r) return tp;
+    } else if (tp.type === 'rect') {
+      if (wx >= tp.x && wx <= tp.x + tp.w && wy >= tp.y && wy <= tp.y + tp.h) return tp;
+    } else if (tp.type === 'cone') {
+      const ang = Math.atan2(wy - tp.y, wx - tp.x);
+      const d = Math.hypot(wx - tp.y, wy - tp.y);
+      const da = Math.abs((((ang - tp.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI));
+      if (da <= tp.spread / 2 && d <= tp.len) return tp;
     }
-    if(drawing.type==='circle'){ const r=Math.hypot(c.x-s.x,c.y-s.y); tctx.beginPath(); tctx.arc(s.x,s.y,r,0,Math.PI*2); tctx.fill(); tctx.stroke(); }
-    if(drawing.type==='rect'){ tctx.beginPath(); tctx.rect(s.x,s.y,c.x-s.x,c.y-s.y); tctx.fill(); tctx.stroke(); }
-    if(drawing.type==='cone'){ const ang=Math.atan2(c.y-s.y,c.x-s.x); const len=Math.hypot(c.x-s.x,c.y-s.y); const spread=Math.PI/3; tctx.beginPath(); tctx.moveTo(s.x,s.y); tctx.lineTo(s.x+Math.cos(ang-spread/2)*len, s.y+Math.sin(ang-spread/2)*len); tctx.arc(s.x,s.y,len, ang-spread/2, ang+spread/2); tctx.closePath(); tctx.fill(); tctx.stroke(); }
   }
+  return null;
+}
+function startDragTemplate(wx, wy) {
+  draggingTemplate = selectedTemplate;
+  if (!draggingTemplate) return;
+  dragTemplateOffset.x = wx - draggingTemplate.x;
+  dragTemplateOffset.y = wy - draggingTemplate.y;
+}
+function moveTemplateTo(wx, wy) {
+  if (!draggingTemplate) return;
+  draggingTemplate.x = snap(wx - dragTemplateOffset.x);
+  draggingTemplate.y = snap(wy - dragTemplateOffset.y);
+  redrawTemplates();
+}
+clearTplBtn.addEventListener('click', () => {
+  templates = [];
+  selectedTemplate = null;
+  redrawTemplates();
+});
 
-  function finalizeTemplate(){
-    if(!drawing) return;
-    const tp = { id: Date.now().toString(36), type: drawing.type, x: drawing.start.x, y: drawing.start.y, label:'' };
-    if(drawing.type==='circle'){ const r=Math.hypot(drawing.cur.x-drawing.start.x, drawing.cur.y-drawing.start.y); tp.r = r; }
-    if(drawing.type==='rect'){ tp.w = drawing.cur.x - drawing.start.x; tp.h = drawing.cur.y - drawing.start.y; }
-    if(drawing.type==='cone'){ const ang=Math.atan2(drawing.cur.y-drawing.start.y, drawing.cur.x-drawing.start.x); const len=Math.hypot(drawing.cur.x-drawing.start.x, drawing.cur.y-drawing.start.y); tp.ang=ang; tp.len=len; tp.spread=Math.PI/3; }
-    if(['ruler','los'].includes(drawing.type)){ return; } // measurement only, not persisted
-    templates.push(tp); selectedTemplate = tp; tplLabel.value=''; redrawTemplates();
+/* ===== Tokens ===== */
+function spawnToken({ name = 'Token', color = '#ff4444', size = 42, img = null, char = null, x = null, y = null, submapId = null }) {
+  const el = document.createElement('div');
+  el.className = 'token';
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+  el.style.backgroundColor = color;
+
+  const label = document.createElement('span');
+  label.textContent = name.slice(0, 3).toUpperCase();
+  el.appendChild(label);
+
+  if (img) {
+    el.classList.add('has-img');
+    el.style.backgroundImage = `url(${img})`;
   }
+  wrap.appendChild(el);
 
-  // ===== Template selection & dragging
-  let draggingTemplate=null; let dragTemplateOffset={x:0,y:0};
-  function hitTestTemplates(wx,wy){
-    for(let i=templates.length-1;i>=0;i--){ const tp=templates[i]; if(tp.type==='circle'){ const d=Math.hypot(wx-tp.x, wy-tp.y); if(d<=tp.r) return tp; } else if(tp.type==='rect'){ if(wx>=tp.x && wx<=tp.x+tp.w && wy>=tp.y && wy<=tp.y+tp.h) return tp; } else if(tp.type==='cone'){ const len=tp.len; const ang=Math.atan2(wy-tp.y, wx-tp.x); let da=Math.abs(((ang - tp.ang + Math.PI*3)%(Math.PI*2))-Math.PI); const d=Math.hypot(wx-tp.x, wy-tp.y); if(da<=tp.spread/2 && d<=len) return tp; } }
-    return null;
-  }
-  function dragTemplateStart(wx,wy){ draggingTemplate = selectedTemplate; if(!draggingTemplate) return; dragTemplateOffset.x = wx - draggingTemplate.x; dragTemplateOffset.y = wy - draggingTemplate.y; }
-  function moveTemplateTo(wx,wy){ if(!draggingTemplate) return; draggingTemplate.x = snap(wx - dragTemplateOffset.x); draggingTemplate.y = snap(wy - dragTemplateOffset.y); redrawTemplates(); }
+  const center = screenToWorld(grid.width / 2, grid.height / 2);
+  const t = {
+    el,
+    x: x ?? snap(center.x),
+    y: y ?? snap(center.y),
+    size,
+    color,
+    img,
+    name,
+    char,
+    submapId: submapId || null
+  };
+  tokens.push(t);
+  positionToken(t);
 
-  // Apply label / delete
-  tplApply.addEventListener('click', ()=>{ if(!selectedTemplate) return; selectedTemplate.label = tplLabel.value.trim(); redrawTemplates(); });
-  tplDelete.addEventListener('click', ()=>{ if(!selectedTemplate) return; templates = templates.filter(t=>t!==selectedTemplate); selectedTemplate=null; tplLabel.value=''; redrawTemplates(); });
-
-  // ===== Fog painting with undo/redo
-  function pushFogState(){ try{ const img=fctx.getImageData(0,0,fog.width,fog.height); fogUndoStack.push(img); if(fogUndoStack.length>FOG_LIMIT) fogUndoStack.shift(); fogRedoStack.length=0; }catch(e){ /* cross-origin or memory */ } }
-  function startFogStroke(){ if(!paintedThisStroke){ pushFogState(); paintedThisStroke=true; } fog.style.pointerEvents='auto'; }
-  function endFogStroke(){ paintedThisStroke=false; try{ const img=fctx.getImageData(0,0,fog.width,fog.height); fogUndoStack.push(img); if(fogUndoStack.length>FOG_LIMIT) fogUndoStack.shift(); fogRedoStack.length=0; }catch(e){} }
-  function paintFog(sx,sy,reveal){ fctx.globalCompositeOperation = reveal ? 'destination-out':'source-over'; if(!reveal){ fctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist'); } const r = parseInt(brushSel.value,10); fctx.beginPath(); fctx.arc(sx,sy,r,0,Math.PI*2); fctx.fill(); fctx.globalCompositeOperation = 'source-over'; }
-  fogUndoBtn.addEventListener('click', ()=>{ if(fogUndoStack.length<2) return; const cur=fogUndoStack.pop(); fogRedoStack.push(cur); const prev=fogUndoStack[fogUndoStack.length-1]; fctx.putImageData(prev,0,0); });
-  fogRedoBtn.addEventListener('click', ()=>{ if(!fogRedoStack.length) return; const img=fogRedoStack.pop(); fogUndoStack.push(img); fctx.putImageData(img,0,0); });
-
-  // ===== Tools toggle
-  function setTool(t){ currentTool=t; toolButtons.forEach(b=> b.classList.toggle('toggled', b.dataset.tool===t)); fog.style.pointerEvents = (fogModeSel.value!=='none')?'auto':'none'; }
-  toolButtons.forEach(b=> b.addEventListener('click', ()=> setTool(b.dataset.tool)));
-  setTool('pan');
-
-  // ===== Tokens
-  function spawnToken({name='Token', color='#ff4444', size=42, img=null, char=null}){
-    const el=document.createElement('div'); el.className='token';
-    el.style.width=size+'px'; el.style.height=size+'px'; el.style.backgroundColor=color;
-    const label=document.createElement('span'); label.textContent=name.slice(0,3).toUpperCase(); el.appendChild(label);
-    if(img){ el.classList.add('has-img'); el.style.backgroundImage=`url(${img})`; }
-    wrap.appendChild(el);
-
-    const centerW = screenToWorld(grid.width/2, grid.height/2);
-    const t={el, x:snap(centerW.x), y:snap(centerW.y), size, color, img, name, char, submapId:null};
-    tokens.push(t); positionToken(t);
-
-    // click & context
-    el.addEventListener('click', (e)=>{ if(t.submapId && (e.metaKey||e.ctrlKey)) openSubmapById(t.submapId); else openSheet(t); });
-    el.addEventListener('contextmenu', (e)=>{ e.preventDefault(); selectedToken=t; openCtx(e.clientX,e.clientY); });
-
-    // drag
-    let dragging=false, dOff={x:0,y:0};
-    el.addEventListener('mousedown', e=>{ if(e.button!==0) return; dragging=true; const s=worldToScreen(t.x,t.y); dOff.x = s.x - e.clientX; dOff.y = s.y - e.clientY; document.body.style.userSelect='none'; });
-    window.addEventListener('mousemove', e=>{ if(!dragging) return; const wx = (e.clientX + dOff.x - offset.x)/scale; const wy=(e.clientY + dOff.y - offset.y)/scale; t.x=snap(wx); t.y=snap(wy); positionToken(t); });
-    window.addEventListener('mouseup', ()=>{ dragging=false; document.body.style.userSelect=''; });
-  }
-  function positionToken(t){ const s=worldToScreen(t.x,t.y); t.el.style.transform=`translate(${s.x}px, ${s.y}px) scale(${scale})`; }
-
-  // Character sheet (quick)
-  function openSheet(t){ const c = t.char||{}; charSheet.innerHTML = `<div style="font-weight:700">${c.name||t.name}</div><div style="opacity:.8">${(c.class||'') + ' ' + (c.race||'')}</div><div class=\"row\"><label>Initiative</label><input id=\"init-input\" type=\"number\" value=\"${c.initiative||0}\"></div><div class=\"row\"><button class=\"btn\" id=\"init-add-btn\">Add to Initiative</button></div>`; document.getElementById('init-add-btn').onclick = ()=>{ const val=parseInt(document.getElementById('init-input').value||'0',10); addInitiative((c.name||t.name), val); }; }
-
-  // Context menu for tokens
-  function openCtx(x,y){ ctxMenu.style.display='block'; ctxMenu.style.left=x+'px'; ctxMenu.style.top=y+'px'; }
-  window.addEventListener('click', (e)=>{ if(e.target.closest('#ctx')==null) ctxMenu.style.display='none'; });
-  ctxMenu.addEventListener('click', (e)=>{
-    const act=e.target.dataset.act; if(!act||!selectedToken) return;
-    if(act==='sheet') openSheet(selectedToken);
-    if(act==='assign-submap') assignSubmapToToken(selectedToken);
-    if(act==='open-submap'){ if(selectedToken.submapId) openSubmapById(selectedToken.submapId); else alert('No submap assigned'); }
-    if(act==='delete'){ selectedToken.el.remove(); tokens = tokens.filter(t=>t!==selectedToken); }
-    ctxMenu.style.display='none';
+  // click opens simple sheet placeholder (can be replaced later)
+  el.addEventListener('click', (e) => {
+    if (t.submapId && (e.metaKey || e.ctrlKey)) {
+      openSubmapById(t.submapId);
+    } else {
+      openQuickSheet(t);
+    }
   });
 
-  // ===== Submaps
-  function renderSubmapList(){ subList.innerHTML=''; submaps.forEach(sm=>{ const card=document.createElement('div'); card.className='map-item'; const th=document.createElement('div'); th.className='thumb'; th.style.backgroundImage=`url(${sm.image||sm.dataURL})`; const name=document.createElement('div'); name.textContent=sm.name; name.style.flex='1'; name.style.color='#d8c797'; const btn=document.createElement('button'); btn.className='btn'; btn.textContent='Open'; btn.onclick=()=>openSubmapById(sm.id); card.append(th,name,btn); subList.appendChild(card); }); }
+  // right-click menu
+  el.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    selectedToken = t;
+    openCtx(e.clientX, e.clientY);
+  });
+
+  // drag
+  let dragging = false;
+  let dOff = { x: 0, y: 0 };
+  el.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    dragging = true;
+    const s = worldToScreen(t.x, t.y);
+    dOff.x = s.x - e.clientX;
+    dOff.y = s.y - e.clientY;
+    document.body.style.userSelect = 'none';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const wx = (e.clientX + dOff.x - offset.x) / scale;
+    const wy = (e.clientY + dOff.y - offset.y) / scale;
+    t.x = snap(wx);
+    t.y = snap(wy);
+    positionToken(t);
+  });
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+    document.body.style.userSelect = '';
+  });
+
+  return t;
+}
+function positionToken(t) {
+  const s = worldToScreen(t.x, t.y);
+  t.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
+}
+function openQuickSheet(t) {
+  alert(`${t.name}\n\n(Placeholder: Character sheet panel can render here)`);
+}
+
+/* ===== Context menu for tokens ===== */
+function openCtx(x, y) {
+  ctxMenu.style.display = 'block';
+  ctxMenu.style.left = x + 'px';
+  ctxMenu.style.top = y + 'px';
+}
+window.addEventListener('click', (e) => {
+  if (e.target.closest('#ctx') == null) ctxMenu.style.display = 'none';
+});
+ctxMenu.addEventListener('click', (e) => {
+  const act = e.target.dataset.act;
+  if (!act || !selectedToken) return;
+  if (act === 'sheet') openQuickSheet(selectedToken);
+  if (act === 'assign-submap') assignSubmapToToken(selectedToken);
+  if (act === 'open-submap') {
+    if (selectedToken.submapId) openSubmapById(selectedToken.submapId);
+    else alert('No submap assigned.');
+  }
+  if (act === 'delete') {
+    selectedToken.el.remove();
+    tokens = tokens.filter((t) => t !== selectedToken);
+  }
+  ctxMenu.style.display = 'none';
+});
+
+/* ===== Portals (submap entry points) ===== */
+function createPortal(x, y) {
+  const el = document.createElement('div');
+  el.className = 'portal';
+  wrap.appendChild(el);
+  const p = { el, x, y, submapId: null };
+  portals.push(p);
+
+  el.addEventListener('click', () => {
+    if (p.submapId) openSubmapById(p.submapId);
+    else assignSubmapToPortal(p);
+  });
+  el.addEventListener('contextmenu', (ev) => {
+    ev.preventDefault();
+    assignSubmapToPortal(p);
+  });
+  return p;
+}
+function assignSubmapToToken(t) {
+  if (!submaps.length) return alert('Add submaps in Submap Manager.');
+  const name = prompt('Type submap name to assign:\n' + submaps.map((s) => '- ' + s.name).join('\n'));
+  const f = submaps.find((s) => s.name.toLowerCase() === String(name || '').toLowerCase());
+  if (f) {
+    t.submapId = f.id;
+    alert('Assigned ' + f.name);
+  }
+}
+function assignSubmapToPortal(p) {
+  if (!submaps.length) return alert('Add submaps in Submap Manager.');
+  const name = prompt('Type submap name to assign:\n' + submaps.map((s) => '- ' + s.name).join('\n'));
+  const f = submaps.find((s) => s.name.toLowerCase() === String(name || '').toLowerCase());
+  if (f) {
+    p.submapId = f.id;
+    alert('Assigned ' + f.name);
+  }
+}
+
+/* ===== Submap Manager (list & add) ===== */
+function renderSubmapList() {
+  subList.innerHTML = '';
+  submaps.forEach((sm) => {
+    const row = document.createElement('div');
+    row.className = 'map-item';
+    const th = document.createElement('div');
+    th.className = 'thumb';
+    th.style.backgroundImage = `url(${sm.image || sm.dataURL})`;
+    const nm = document.createElement('div');
+    nm.textContent = sm.name;
+    nm.style.flex = '1';
+    const open = document.createElement('button');
+    open.className = 'btn';
+    open.textContent = 'Open';
+    open.onclick = () => openSubmapById(sm.id);
+    row.append(th, nm, open);
+    subList.appendChild(row);
+  });
+}
+renderSubmapList();
+
+subAddBtn.addEventListener('click', () => {
+  const file = subFile.files?.[0];
+  const name = (subName.value || '').trim() || 'Submap';
+  if (!file) {
+    alert('Choose an image');
+    return;
+  }
+  const r = new FileReader();
+  r.onload = (e) => {
+    const item = { id: Date.now().toString(36), name, dataURL: e.target.result };
+    submaps.push(item);
+    localStorage.setItem('warvault-submaps', JSON.stringify(submaps));
+    subFile.value = '';
+    subName.value = '';
+    renderSubmapList();
+  };
+  r.readAsDataURL(file);
+});
+
+/* ===== Saved Maps (save/load) ===== */
+function renderSavedMaps() {
+  savedMapsDiv.innerHTML = '';
+  savedMaps.forEach((m, idx) => {
+    const row = document.createElement('div');
+    row.className = 'map-item';
+    const th = document.createElement('div');
+    th.className = 'thumb';
+    th.style.backgroundImage = `url(${m.thumbnail || m.image})`;
+    const nm = document.createElement('div');
+    nm.textContent = m.name;
+    nm.style.flex = '1';
+    const load = document.createElement('button');
+    load.className = 'btn';
+    load.textContent = 'Load';
+    load.onclick = () => loadMap(idx);
+    const del = document.createElement('button');
+    del.className = 'btn';
+    del.textContent = '✕';
+    del.onclick = () => {
+      savedMaps.splice(idx, 1);
+      localStorage.setItem('warvault-maps', JSON.stringify(savedMaps));
+      renderSavedMaps();
+    };
+    row.append(th, nm, load, del);
+    savedMapsDiv.appendChild(row);
+  });
+}
+renderSavedMaps();
+
+function saveCurrentMap() {
+  const thumb = document.createElement('canvas');
+  thumb.width = 220;
+  thumb.height = 140;
+  const cx = thumb.getContext('2d');
+
+  function finalize() {
+    const name = prompt('Name this map:', 'My Battle') || 'Untitled';
+    const data = {
+      name,
+      image: mapEl.src,
+      tokens: tokens.map((t) => ({
+        x: t.x,
+        y: t.y,
+        size: t.size,
+        color: t.color,
+        img: t.img,
+        name: t.name,
+        submapId: t.submapId,
+        char: t.char
+      })),
+      portals: portals.map((p) => ({ x: p.x, y: p.y, submapId: p.submapId })),
+      templates,
+      submaps,
+      offset,
+      scale,
+      fog: fog.toDataURL('image/png') // store fog bitmap
+    };
+    const thumbnail = thumb.toDataURL('image/png');
+    savedMaps.unshift({ ...data, thumbnail });
+    if (savedMaps.length > 30) savedMaps.pop();
+    localStorage.setItem('warvault-maps', JSON.stringify(savedMaps));
+    renderSavedMaps();
+    alert('Map saved.');
+  }
+
+  try {
+    const img = new Image();
+    img.onload = () => {
+      const ar = Math.min(thumb.width / img.width, thumb.height / img.height);
+      const dw = img.width * ar;
+      const dh = img.height * ar;
+      const dx = (thumb.width - dw) / 2;
+      const dy = (thumb.height - dh) / 2;
+      cx.fillStyle = '#111';
+      cx.fillRect(0, 0, thumb.width, thumb.height);
+      cx.drawImage(img, dx, dy, dw, dh);
+      finalize();
+    };
+    img.src = mapEl.src;
+  } catch (e) {
+    finalize();
+  }
+}
+saveMapBtn.addEventListener('click', saveCurrentMap);
+
+function loadMap(idx) {
+  const m = savedMaps[idx];
+  if (!m) return;
+  // map image
+  mapEl.src = m.image;
+  // state
+  offset = m.offset || { x: 0, y: 0 };
+  scale = m.scale || 1;
+
+  // clear
+  tokens.forEach((t) => t.el.remove());
+  tokens = [];
+  portals.forEach((p) => p.el.remove());
+  portals = [];
+  templates = m.templates || [];
+
+  // restore tokens
+  (m.tokens || []).forEach((tt) => spawnToken(tt));
+  // restore portals
+  (m.portals || []).forEach((pp) => {
+    const p = createPortal(pp.x, pp.y);
+    p.submapId = pp.submapId || null;
+  });
+  // restore submaps (merge new with existing)
+  submaps = m.submaps || submaps;
+  localStorage.setItem('warvault-submaps', JSON.stringify(submaps));
   renderSubmapList();
 
-  function assignSubmapToToken(t){ if(!submaps.length) return alert('Add submaps in Submap Manager.'); const name=prompt('Type submap name to assign:\n'+submaps.map(s=>'- '+s.name).join('\n')); const f=submaps.find(s=>s.name.toLowerCase()===String(name||'').toLowerCase()); if(f){ t.submapId=f.id; alert('Assigned '+f.name); } }
-  function assignSubmapToPortal(p){ if(!submaps.length) return alert('Add submaps in Submap Manager.'); const name=prompt('Type submap name to assign:\n'+submaps.map(s=>'- '+s.name).join('\n')); const f=submaps.find(s=>s.name.toLowerCase()===String(name||'').toLowerCase()); if(f){ p.submapId=f.id; alert('Assigned '+f.name); } }
+  // restore fog
+  fctx.clearRect(0, 0, fog.width, fog.height);
+  if (m.fog) {
+    const fogImg = new Image();
+    fogImg.onload = () => {
+      fctx.drawImage(fogImg, 0, 0, fog.width, fog.height);
+      pushFogState();
+    };
+    fogImg.src = m.fog;
+  } else {
+    pushFogState();
+  }
 
-  function openSubmapById(id){ const sm=submaps.find(s=>s.id===id); if(!sm) return alert('Submap missing'); subTitle.textContent=sm.name; const img=new Image(); img.onload=()=>{ const box=subCanvas.getBoundingClientRect(); subCanvas.width=box.width; subCanvas.height=box.height; const ar=Math.min(box.width/img.width, box.height/img.height); const dw=img.width*ar, dh=img.height*ar; const dx=(box.width-dw)/2, dy=(box.height-dh)/2; sctx.clearRect(0,0,subCanvas.width,subCanvas.height); sctx.fillStyle='#d7ccb0'; sctx.fillRect(0,0,subCanvas.width,subCanvas.height); sctx.drawImage(img,dx,dy,dw,dh); subOverlay.style.display='block'; }; img.src=sm.dataURL||sm.image; }
+  repositionAll();
+  alert('Map loaded.');
+}
 
-  subAddBtn.addEventListener('click', ()=>{ const file=subFile.files?.[0]; const name=subName.value.trim()||'Submap'; if(!file){ alert('Choose an image'); return; } const r=new FileReader(); r.onload=e=>{ const item={id:Date.now().toString(36), name, dataURL:e.target.result}; submaps.push(item); localStorage.setItem('warvault-submaps', JSON.stringify(submaps)); subFile.value=''; subName.value=''; renderSubmapList(); }; r.readAsDataURL(file); });
+/* ===== Token Forge actions ===== */
+createTokenBtn.addEventListener('click', () => {
+  const name = (tfName.value || '').trim() || 'Token';
+  const color = tfColor.value || '#ff4444';
+  const size = Math.max(24, Math.min(120, parseInt(tfSize.value || '42', 10)));
+  const file = tfPhoto.files?.[0];
 
-  // ===== Token Forge
-  createTokenBtn.addEventListener('click', ()=>{ const name=tfName.value.trim()||'Token'; const color=tfColor.value; const size=Math.max(24,Math.min(120, parseInt(tfSize.value||'42',10))); const file=tfPhoto.files?.[0]; if(file){ const r=new FileReader(); r.onload=e=> spawnToken({name,color,size,img:e.target.result}); r.readAsDataURL(file); } else { spawnToken({name,color,size}); } });
+  if (file) {
+    const r = new FileReader();
+    r.onload = (e) => spawnToken({ name, color, size, img: e.target.result });
+    r.readAsDataURL(file);
+  } else {
+    spawnToken({ name, color, size });
+  }
+});
 
-  // ===== Save/Load Maps
-  function renderSavedMaps(){ savedMapsDiv.innerHTML=''; savedMaps.forEach((m,idx)=>{ const row=document.createElement('div'); row.className='map-item'; const th=document.createElement('div'); th.className='thumb'; th.style.backgroundImage=`url(${m.thumbnail||m.image})`; const nm=document.createElement('div'); nm.textContent=m.name; nm.style.flex='1'; const load=document.createElement('button'); load.className='btn'; load.textContent='Load'; load.onclick=()=>loadMap(idx); const del=document.createElement('button'); del.className='btn'; del.textContent='✕'; del.onclick=()=>{ savedMaps.splice(idx,1); localStorage.setItem('warvault-maps', JSON.stringify(savedMaps)); renderSavedMaps(); }; row.append(th,nm,load,del); savedMapsDiv.appendChild(row); }); }
-  renderSavedMaps();
+/* ===== Initiative ===== */
+function addInitiative(name, roll) {
+  initiative.push({ name, roll });
+  initiative.sort((a, b) => b.roll - a.roll);
+  if (initIdx < 0 && initiative.length) initIdx = 0;
+  renderInitiative();
+}
+function renderInitiative() {
+  initList.innerHTML = '';
+  initiative.forEach((it, i) => {
+    const d = document.createElement('div');
+    d.textContent = `${i === initIdx ? '▶ ' : ''}${it.name} — ${it.roll}`;
+    initList.appendChild(d);
+  });
+}
+initAdd.addEventListener('click', () => {
+  const n = (initName.value || '').trim();
+  const r = parseInt(initRoll.value || '', 10);
+  if (!n || isNaN(r)) return;
+  addInitiative(n, r);
+  initName.value = '';
+  initRoll.value = '';
+});
+initNext.addEventListener('click', () => {
+  if (!initiative.length) return;
+  initIdx = (initIdx + 1) % initiative.length;
+  renderInitiative();
+});
+initReset.addEventListener('click', () => {
+  initiative = [];
+  initIdx = -1;
+  renderInitiative();
+});
 
-  function saveCurrentMap(){ const cv=document.createElement('canvas'); const r=wrap.getBoundingClientRect(); cv.width=220; cv.height=140; const cx=cv.getContext('2d'); try{ const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ const ar=Math.min(cv.width/img.width, cv.height/img.height); const dw=img.width*ar, dh=img.height*ar; const dx=(cv.width-dw)/2, dy=(cv.height-dh)/2; cx.fillStyle='#111'; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(img,dx,dy,dw,dh); finalize(); }; img.src=mapEl.src; } catch{ finalize(); } function finalize(){ const name = prompt('Name this map:', 'My Battle') || 'Untitled'; const data = { name, image: mapEl.src, tokens: tokens.map(t=>({x:t.x,y:t.y,size:t.size,color:t.color,img:t.img,name:t.name,submapId:t.submapId,char:t.char})), portals: portals.map(p=>({x:p.x,y:p.y,submapId:p.submapId})), templates, submaps, offset, scale }; const thumbnail = cv.toDataURL('image/png'); savedMaps.unshift({...data, thumbnail}); if(savedMaps.length>20) savedMaps.pop(); localStorage.setItem('warvault-maps', JSON.stringify(savedMaps)); renderSavedMaps(); alert('Map saved.'); } }
-  saveMapBtn.addEventListener('click', saveCurrentMap);
+/* ===== Context helpers ===== */
+function openSubmapById(id) {
+  // Part 3/4 wires full submap editing (tools, tokens, fog) and save/reset workflow.
+  const overlay = document.getElementById('submap-overlay');
+  const title = document.getElementById('submap-title');
+  const canvas = document.getElementById('submap-canvas');
+  const sctx = canvas.getContext('2d');
 
-  function loadMap(idx){ const m=savedMaps[idx]; if(!m) return; mapEl.src=m.image; offset=m.offset||{x:0,y:0}; scale=m.scale||1; tokens.forEach(t=>t.el.remove()); tokens=[]; portals.forEach(p=>p.el.remove()); portals=[]; (m.tokens||[]).forEach(tt=> spawnToken(tt)); (m.portals||[]).forEach(pp=>{ const portal=document.createElement('div'); portal.className='portal'; wrap.appendChild(portal); const p={el:portal,x:pp.x,y:pp.y,submapId:pp.submapId}; portals.push(p); const s=worldToScreen(p.x,p.y); portal.style.transform=`translate(${s.x-13}px, ${s.y-13}px) scale(${scale})`; portal.addEventListener('click', ()=>{ if(p.submapId) openSubmapById(p.submapId); else assignSubmapToPortal(p); }); portal.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); assignSubmapToPortal(p); }); }); templates = m.templates || []; redrawTemplates(); submaps = m.submaps || submaps; localStorage.setItem('warvault-submaps', JSON.stringify(submaps)); renderSubmapList(); repositionAll(); }
+  const sm = submaps.find((s) => s.id === id);
+  if (!sm) return alert('Submap missing.');
+  title.textContent = sm.name;
 
-  // ===== Initiative
-  function addInitiative(name, roll){ initiative.push({name, roll}); initiative.sort((a,b)=>b.roll-a.roll); if(initIdx<0 && initiative.length) initIdx=0; renderInitiative(); }
-  function renderInitiative(){ initList.innerHTML=''; initiative.forEach((it,i)=>{ const d=document.createElement('div'); d.textContent=`${i===initIdx?'▶ ':''}${it.name} — ${it.roll}`; initList.appendChild(d); }); }
-  initAdd.addEventListener('click', ()=>{ const n=initName.value.trim(); const r=parseInt(initRoll.value||''); if(!n||isNaN(r)) return; addInitiative(n,r); initName.value=''; initRoll.value=''; });
-  initNext.addEventListener('click', ()=>{ if(!initiative.length) return; initIdx=(initIdx+1)%initiative.length; renderInitiative(); });
-  initReset.addEventListener('click', ()=>{ initiative=[]; initIdx=-1; renderInitiative(); });
+  const box = canvas.getBoundingClientRect();
+  canvas.width = box.width;
+  canvas.height = box.height;
 
-  // ===== Helpers
-  function setTool(t){ currentTool=t; toolButtons.forEach(b=> b.classList.toggle('toggled', b.dataset.tool===t)); fog.style.pointerEvents = (fogModeSel.value!=='none')?'auto':'none'; }
-  toolButtons.forEach(b=> b.addEventListener('click', ()=> setTool(b.dataset.tool)));
+  const img = new Image();
+  img.onload = () => {
+    const ar = Math.min(canvas.width / img.width, canvas.height / img.height);
+    const dw = img.width * ar;
+    const dh = img.height * ar;
+    const dx = (canvas.width - dw) / 2;
+    const dy = (canvas.height - dh) / 2;
+    sctx.clearRect(0, 0, canvas.width, canvas.height);
+    sctx.fillStyle = '#d7ccb0';
+    sctx.fillRect(0, 0, canvas.width, canvas.height);
+    sctx.drawImage(img, dx, dy, dw, dh);
+  };
+  img.src = sm.dataURL || sm.image;
 
-  // Start
-  setTool('pan');
+  overlay.style.display = 'block';
+  document.getElementById('close-submap').onclick = () => (overlay.style.display = 'none');
+}
+function openCtx(x, y) {
+  ctxMenu.style.display = 'block';
+  ctxMenu.style.left = x + 'px';
+  ctxMenu.style.top = y + 'px';
+}
 
-  </script>
+<script>
+const submapSaves = JSON.parse(localStorage.getItem('warvault-submap-saves') || '{}');
+function saveSubmapState(id, payload){
+  submapSaves[id] = payload;
+  localStorage.setItem('warvault-submap-saves', JSON.stringify(submapSaves));
+}
+</script>
+  function getSubmapState(id){ return submapSaves[id] || null; }
+
+/* ========= Submap Editor Engine ========= */
+const subOverlay = document.getElementById('submap-overlay');
+const subCanvas  = document.getElementById('submap-canvas');
+const subTitleEl = document.getElementById('submap-title');
+const closeSub   = document.getElementById('close-submap');
+const sctx       = subCanvas.getContext('2d');
+
+let S = null; // active submap session (engine state)
+
+function openSubmapById(id){
+  const sm = submaps.find(s => s.id === id);
+  if(!sm) return alert('Submap missing.');
+
+  // Build toolbar once (idempotent)
+  ensureSubToolbar();
+
+  // Size canvas to parchment body
+  const body = subCanvas.parentElement;
+  const box = body.getBoundingClientRect();
+  subCanvas.width = box.width;
+  subCanvas.height = box.height;
+
+  // Prepare session
+  const last = getSubmapState(id);
+  S = {
+    id,
+    name: sm.name,
+    baseImage: sm.dataURL || sm.image,         // immutable
+    scale: last?.scale ?? 1,
+    offset: last?.offset ?? {x:0,y:0},
+    cell: 50,                                  // 5 ft at scale 1
+    tool: 'pan',                               // active tool
+    snap: true,
+    // content
+    tokens:deepClone(last?.tokens) || [],
+    templates:deepClone(last?.templates) || [],
+    // fog bitmap (drawn as image, edited with brush)
+    fogImg: null,
+    // interaction
+    isPanning: false, panStart:{x:0,y:0},
+    drawing:null, draggingTemplate:null, dragOff:{x:0,y:0},
+    paintingFog:false, beganStroke:false,
+    // stacks
+    undo:[], redo:[], // fog only
+  };
+
+  subTitleEl.textContent = S.name;
+
+  // Load base image
+  const base = new Image();
+  base.onload = () => {
+    S.base = base;
+    // Load fog from last save (if any)
+    if(last?.fogPNG){
+      const fogPic = new Image();
+      fogPic.onload = ()=>{ S.fogImg = fogPic; redrawSub(); pushFogState(); };
+      fogPic.src = last.fogPNG;
+    } else {
+      // start transparent fog
+      S.fogImg = null;
+      clearFog(); // creates empty transparent fog
+    }
+    redrawSub();
+  };
+  base.src = S.baseImage;
+
+  // Show overlay and wire close (discard to last save)
+  subOverlay.style.display = 'block';
+  closeSub.onclick = () => {
+    // discard unsaved changes by simply closing; next open reloads last save
+    subOverlay.style.display = 'none';
+    S = null;
+  };
+}
+
+/* ====== Toolbar (created dynamically so HTML stays unchanged) ====== */
+function ensureSubToolbar(){
+  if(document.getElementById('sub-toolbar')) return;
+  const tray = document.createElement('div');
+  tray.id = 'sub-toolbar';
+  tray.style.cssText = 'position:absolute;left:10px;top:52px;display:flex;flex-wrap:wrap;gap:6px;background:rgba(233,223,195,.9);border:1px solid #c9b27a;border-radius:8px;padding:6px;z-index:40';
+
+  tray.innerHTML = `
+    <button class="btn" data-sbtool="pan">🖐️</button>
+    <button class="btn" data-sbtool="select">🖱️</button>
+    <button class="btn" data-sbtool="ruler">📏</button>
+    <button class="btn" data-sbtool="circle">⭕</button>
+    <button class="btn" data-sbtool="rect">▭</button>
+    <button class="btn" data-sbtool="cone">🔺</button>
+    <button class="btn" data-sbtool="token">🎯</button>
+    <label style="display:flex;align-items:center;gap:4px;background:#eadfbf;padding:2px 6px;border-radius:6px;border:1px solid #c9b27a;">
+      <span>Fog</span>
+      <select id="sb-fog-mode" style="max-width:110px">
+        <option value="none">Off</option>
+        <option value="reveal">Reveal</option>
+        <option value="hide">Hide</option>
+      </select>
+      <select id="sb-brush" style="max-width:90px">
+        <option value="20">20</option>
+        <option value="40" selected>40</option>
+        <option value="80">80</option>
+      </select>
+    </label>
+    <button id="sb-fog-undo" class="btn">⟲</button>
+    <button id="sb-fog-redo" class="btn">⟳</button>
+    <button id="sb-clear" class="btn">Clear</button>
+    <button id="sb-save" class="btn">💾 Save</button>
+    <button id="sb-reset" class="btn">↺ Reset</button>
+  `;
+  subCanvas.parentElement.appendChild(tray);
+
+  // Wire buttons
+  tray.querySelectorAll('[data-sbtool]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const t = btn.getAttribute('data-sbtool');
+      S && setSubTool(t);
+      tray.querySelectorAll('[data-sbtool]').forEach(b=>b.classList.toggle('toggled', b===btn));
+    });
+  });
+  document.getElementById('sb-clear').onclick = ()=>{ if(!S) return; S.templates=[]; redrawSub(); };
+  document.getElementById('sb-save').onclick  = ()=>{ if(!S) return; saveActiveSubmap(); };
+  document.getElementById('sb-reset').onclick = ()=>{ if(!S) return; resetToLastSave(); };
+  document.getElementById('sb-fog-undo').onclick = ()=> subFogUndo();
+  document.getElementById('sb-fog-redo').onclick = ()=> subFogRedo();
+
+  setSubTool('pan'); // default
+}
+function setSubTool(t){ S.tool = t; }
+
+/* ====== Submap draw pipeline ====== */
+function redrawSub(){
+  if(!S || !S.base) return;
+  // clear
+  sctx.clearRect(0,0,subCanvas.width,subCanvas.height);
+
+  // draw parchment background
+  sctx.fillStyle = '#d7ccb0';
+  sctx.fillRect(0,0,subCanvas.width,subCanvas.height);
+
+  // base image with pan/zoom
+  sctx.save();
+  sctx.translate(S.offset.x, S.offset.y);
+  sctx.scale(S.scale, S.scale);
+  sctx.drawImage(S.base, 0, 0);
+
+  // grid (optional): same look as main
+  const rune = getComputedStyle(document.documentElement).getPropertyValue('--rune');
+  sctx.strokeStyle = rune; sctx.lineWidth = 1;
+  const step = S.cell * S.scale;
+  // verticals
+  for(let x = (S.offset.x % step + step) % step; x < subCanvas.width; x+=step){
+    sctx.beginPath(); sctx.moveTo((x - S.offset.x)/S.scale, 0); sctx.lineTo((x - S.offset.x)/S.scale, subCanvas.height / S.scale); sctx.stroke();
+  }
+  // horizontals
+  for(let y = (S.offset.y % step + step) % step; y < subCanvas.height; y+=step){
+    sctx.beginPath(); sctx.moveTo(0, (y - S.offset.y)/S.scale); sctx.lineTo(subCanvas.width / S.scale, (y - S.offset.y)/S.scale); sctx.stroke();
+  }
+
+  // templates
+  sctx.globalAlpha = 1;
+  S.templates.forEach(tp=>{
+    sctx.save();
+    sctx.lineWidth = 2 / S.scale;
+    sctx.strokeStyle = 'rgba(0,200,255,0.9)';
+    sctx.fillStyle   = 'rgba(0,200,255,0.25)';
+    if(tp.type==='circle'){
+      sctx.beginPath(); sctx.arc(tp.x, tp.y, tp.r, 0, Math.PI*2); sctx.fill(); sctx.stroke();
+    } else if(tp.type==='rect'){
+      sctx.beginPath(); sctx.rect(tp.x, tp.y, tp.w, tp.h); sctx.fill(); sctx.stroke();
+    } else if(tp.type==='cone'){
+      sctx.beginPath();
+      sctx.moveTo(tp.x, tp.y);
+      sctx.lineTo(tp.x + Math.cos(tp.ang - tp.spread/2)*tp.len, tp.y + Math.sin(tp.ang - tp.spread/2)*tp.len);
+      sctx.arc(tp.x, tp.y, tp.len, tp.ang - tp.spread/2, tp.ang + tp.spread/2);
+      sctx.closePath(); sctx.fill(); sctx.stroke();
+    }
+    sctx.restore();
+  });
+
+  // tokens
+  S.tokens.forEach(tk=>{
+    sctx.save();
+    sctx.lineWidth = 2 / S.scale;
+    if(tk.imgData){
+      const img = new Image(); img.src = tk.imgData;
+      const r = tk.size/2;
+      // draw circular token
+      sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI*2); sctx.closePath(); sctx.save();
+      sctx.clip();
+      sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size);
+      sctx.restore();
+      sctx.strokeStyle = '#fff'; sctx.stroke();
+    } else {
+      sctx.fillStyle = tk.color || '#ff4444';
+      sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size/2, 0, Math.PI*2); sctx.fill();
+      sctx.strokeStyle = '#fff'; sctx.stroke();
+      // initials
+      sctx.fillStyle = '#000'; sctx.font = `${Math.max(10, tk.size/3)}px system-ui`; sctx.textAlign='center'; sctx.textBaseline='middle';
+      sctx.fillText((tk.name||'TK').slice(0,3).toUpperCase(), tk.x, tk.y);
+    }
+    sctx.restore();
+  });
+
+  sctx.restore(); // end pan/zoom transform
+
+  // fog overlay (already premultiplied to canvas size)
+  if(S.fogImg){ sctx.drawImage(S.fogImg, 0, 0, subCanvas.width, subCanvas.height); }
+
+  // preview while drawing
+  if(S.drawing){ drawSubPreview(); }
+}
+
+function drawSubPreview(){
+  const d = S.drawing; if(!d) return;
+  sctx.save();
+  sctx.translate(S.offset.x, S.offset.y); sctx.scale(S.scale, S.scale);
+  sctx.lineWidth = 2 / S.scale;
+  sctx.strokeStyle = 'rgba(0,200,255,0.9)'; sctx.fillStyle = 'rgba(0,200,255,0.25)';
+
+  if(d.type==='ruler'){
+    sctx.beginPath(); sctx.moveTo(d.start.x, d.start.y); sctx.lineTo(d.cur.x, d.cur.y); sctx.stroke();
+    const ft = Math.round((Math.hypot(d.cur.x-d.start.x, d.cur.y-d.start.y)/S.cell)*5);
+    // small label in screen space for clarity
+    sctx.restore();
+    sctx.save();
+    sctx.fillStyle='rgba(0,0,0,.7)'; sctx.fillRect((d.scrS.x+d.scrC.x)/2-18,(d.scrS.y+d.scrC.y)/2-10,36,18);
+    sctx.fillStyle='#fff'; sctx.font='12px system-ui'; sctx.textAlign='center'; sctx.fillText(ft+' ft',(d.scrS.x+d.scrC.x)/2,(d.scrS.y+d.scrC.y)/2+4);
+    sctx.restore();
+    return;
+  }
+  if(d.type==='circle'){ const r=Math.hypot(d.cur.x-d.start.x, d.cur.y-d.start.y); sctx.beginPath(); sctx.arc(d.start.x,d.start.y,r,0,Math.PI*2); sctx.fill(); sctx.stroke(); }
+  if(d.type==='rect'){ sctx.beginPath(); sctx.rect(d.start.x,d.start.y,d.cur.x-d.start.x,d.cur.y-d.start.y); sctx.fill(); sctx.stroke(); }
+  if(d.type==='cone'){
+    const ang=Math.atan2(d.cur.y-d.start.y, d.cur.x-d.start.x); const len=Math.hypot(d.cur.x-d.start.x,d.cur.y-d.start.y); const spread=Math.PI/3;
+    sctx.beginPath(); sctx.moveTo(d.start.x,d.start.y);
+    sctx.lineTo(d.start.x+Math.cos(ang-spread/2)*len, d.start.y+Math.sin(ang-spread/2)*len);
+    sctx.arc(d.start.x,d.start.y,len, ang-spread/2, ang+spread/2); sctx.closePath(); sctx.fill(); sctx.stroke();
+  }
+  sctx.restore();
+}
+
+/* ====== Submap pointer helpers ====== */
+function scr2world(sx,sy){ return { x:(sx - S.offset.x)/S.scale, y:(sy - S.offset.y)/S.scale }; }
+function snapW(v){ return S.snap ? Math.round(v / S.cell) * S.cell : v; }
+
+/* ====== Submap mouse events ====== */
+subCanvas.addEventListener('wheel', (e)=>{
+  if(!S) return;
+  e.preventDefault();
+  const old = S.scale;
+  const ns = Math.max(.2, Math.min(6, S.scale * (e.deltaY < 0 ? 1.15 : 0.87)));
+  const ax = e.offsetX, ay = e.offsetY;
+  const wx = (ax - S.offset.x)/old, wy = (ay - S.offset.y)/old;
+  S.scale = ns;
+  S.offset.x = ax - wx*ns; S.offset.y = ay - wy*ns;
+  redrawSub();
+}, {passive:false});
+
+subCanvas.addEventListener('mousedown',(e)=>{
+  if(!S) return;
+  const fogMode = (document.getElementById('sb-fog-mode')||{}).value || 'none';
+  const world = scr2world(e.offsetX, e.offsetY);
+
+  if(fogMode!=='none'){
+    beginSubFogStroke();
+    paintSubFog(e.offsetX, e.offsetY, fogMode==='reveal');
+    return;
+  }
+
+  if(S.tool==='pan'){ S.isPanning=true; S.panStart={x:e.clientX - S.offset.x, y:e.clientY - S.offset.y}; return; }
+
+  if(['ruler','circle','rect','cone'].includes(S.tool)){
+    const sx = snapW(world.x), sy = snapW(world.y);
+    S.drawing = { type:S.tool==='ruler'?'ruler':S.tool, start:{x:sx,y:sy}, cur:{x:sx,y:sy}, scrS:{x:e.offsetX,y:e.offsetY}, scrC:{x:e.offsetX,y:e.offsetY} };
+    redrawSub();
+    return;
+  }
+
+  if(S.tool==='token'){
+    // place a token at center by default size
+    const name = prompt('Token name?','Token');
+    if(name===null) return;
+    const size = parseInt(prompt('Size (px)?','42')||'42',10);
+    const color = prompt('Color (hex)?','#ff4444')||'#ff4444';
+    const tk = { name, size: Math.max(24,Math.min(120,size)), color, x:snapW(world.x), y:snapW(world.y), imgData:null };
+    S.tokens.push(tk);
+    redrawSub();
+    return;
+  }
+
+  if(S.tool==='select'){
+    const hit = subHitTemplate(world.x, world.y);
+    if(hit){ S.draggingTemplate = hit; S.dragOff.x = world.x - hit.x; S.dragOff.y = world.y - hit.y; }
+  }
+});
+
+window.addEventListener('mousemove',(e)=>{
+  if(!S) return;
+  if(S.isPanning){ S.offset.x = e.clientX - S.panStart.x; S.offset.y = e.clientY - S.panStart.y; redrawSub(); return; }
+  const fogMode = (document.getElementById('sb-fog-mode')||{}).value || 'none';
+  if(S.paintingFog){ paintSubFog(e.offsetX, e.offsetY, fogMode==='reveal'); return; }
+  if(S.drawing){
+    const w = scr2world(e.offsetX, e.offsetY);
+    S.drawing.cur = {x:snapW(w.x), y:snapW(w.y)};
+    S.drawing.scrC = {x:e.offsetX, y:e.offsetY};
+    redrawSub();
+  }
+  if(S.draggingTemplate){
+    const w = scr2world(e.offsetX, e.offsetY);
+    S.draggingTemplate.x = snapW(w.x - S.dragOff.x);
+    S.draggingTemplate.y = snapW(w.y - S.dragOff.y);
+    redrawSub();
+  }
+});
+
+window.addEventListener('mouseup', ()=>{
+  if(!S) return;
+  if(S.isPanning) S.isPanning=false;
+  if(S.paintingFog) endSubFogStroke();
+  if(S.drawing){ finalizeSubTemplate(); S.drawing=null; }
+  if(S.draggingTemplate) S.draggingTemplate=null;
+});
+
+/* ====== Submap templates ====== */
+function finalizeSubTemplate(){
+  const d = S.drawing; if(!d) return;
+  const tp = { type:d.type, x:d.start.x, y:d.start.y };
+  if(d.type==='circle'){ tp.r = Math.hypot(d.cur.x-d.start.x, d.cur.y-d.start.y); }
+  if(d.type==='rect'){ tp.w = d.cur.x-d.start.x; tp.h = d.cur.y-d.start.y; }
+  if(d.type==='cone'){
+    tp.ang = Math.atan2(d.cur.y-d.start.y, d.cur.x-d.start.x);
+    tp.len = Math.hypot(d.cur.x-d.start.x, d.cur.y-d.start.y);
+    tp.spread = Math.PI/3;
+  }
+  if(d.type==='ruler') return; // transient
+  S.templates.push(tp);
+  redrawSub();
+}
+function subHitTemplate(wx,wy){
+  for(let i=S.templates.length-1;i>=0;i--){
+    const tp=S.templates[i];
+    if(tp.type==='circle'){ if(Math.hypot(wx-tp.x, wy-tp.y)<=tp.r) return tp; }
+    else if(tp.type==='rect'){ if(wx>=tp.x && wx<=tp.x+tp.w && wy>=tp.y && wy<=tp.y+tp.h) return tp; }
+    else if(tp.type==='cone'){
+      const ang=Math.atan2(wy-tp.y, wx-tp.x);
+      const d=Math.hypot(wx-tp.y, wy-tp.y);
+      const da=Math.abs((((ang - tp.ang + Math.PI*3)%(Math.PI*2))-Math.PI));
+      if(da<=tp.spread/2 && d<=tp.len) return tp;
+    }
+  }
+  return null;
+}
+
+/* ====== Submap fog paint + undo/redo ====== */
+function clearFog(){
+  // transparent fog canvas as image
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  // nothing drawn => fully transparent
+  S.fogImg = new Image(); S.fogImg.src = fc.toDataURL('image/png');
+  pushFogState();
+}
+function pushFogState(){
+  try {
+    // capture current fog into stack
+    const snap = exportFogPNG();
+    S.undo.push(snap); if(S.undo.length>15) S.undo.shift();
+    S.redo.length=0;
+  } catch(e){}
+}
+function beginSubFogStroke(){ S.paintingFog=true; S.beganStroke=false; }
+function endSubFogStroke(){
+  S.paintingFog=false;
+  // push final
+  try{ const snap = exportFogPNG(); S.undo.push(snap); if(S.undo.length>15) S.undo.shift(); S.redo.length=0; }catch(e){}
+}
+function paintSubFog(sx,sy,reveal){
+  if(!S.beganStroke){ pushFogState(); S.beganStroke=true; }
+  // draw into temp canvas and update S.fogImg
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  const fx = fc.getContext('2d');
+  if(S.fogImg) fx.drawImage(S.fogImg,0,0,fc.width,fc.height);
+
+  fx.globalCompositeOperation = reveal ? 'destination-out':'source-over';
+  if(!reveal){
+    fx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
+  }
+  const r = parseInt((document.getElementById('sb-brush')||{}).value || '40',10);
+  fx.beginPath(); fx.arc(sx,sy,r,0,Math.PI*2); fx.fill();
+  fx.globalCompositeOperation = 'source-over';
+
+  S.fogImg = new Image();
+  S.fogImg.src = fc.toDataURL('image/png');
+  S.fogImg.onload = ()=> redrawSub();
+}
+function subFogUndo(){
+  if(!S || S.undo.length<2) return;
+  const cur = S.undo.pop();
+  S.redo.push(cur);
+  const prev = S.undo[S.undo.length-1];
+  S.fogImg = new Image();
+  S.fogImg.onload = ()=> redrawSub();
+  S.fogImg.src = prev;
+}
+function subFogRedo(){
+  if(!S || !S.redo.length) return;
+  const img = S.redo.pop();
+  S.undo.push(img);
+  S.fogImg = new Image();
+  S.fogImg.onload = ()=> redrawSub();
+  S.fogImg.src = img;
+}
+function exportFogPNG(){
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  const fx = fc.getContext('2d');
+  if(S.fogImg) fx.drawImage(S.fogImg,0,0,fc.width,fc.height);
+  return fc.toDataURL('image/png');
+}
+
+/* ====== Save / Reset for submap ====== */
+function saveActiveSubmap(){
+  if(!S) return;
+  const payload = {
+    image: S.baseImage,
+    tokens:deepClone(S.tokens),
+    templates:deepClone(S.templates),
+    fogPNG: exportFogPNG(),
+    offset:deepClone(S.offset),
+    scale: S.scale
+  };
+  saveSubmapState(S.id, payload);
+  alert('Submap saved.');
+}
+function resetToLastSave(){
+  if(!S) return;
+  const last = getSubmapState(S.id);
+  if(!last){ // nothing saved yet
+    S.tokens = []; S.templates = [];
+    clearFog(); S.offset={x:0,y:0}; S.scale=1;
+    redrawSub(); return;
+  }
+  S.tokens =deepClone(last.tokens)||[];
+  S.templates =deepClone(last.templates)||[];
+  S.offset =deepClone(last.offset)||{x:0,y:0};
+  S.scale = last.scale||1;
+  if(last.fogPNG){
+    const fogPic = new Image();
+    fogPic.onload = ()=>{ S.fogImg = fogPic; redrawSub(); pushFogState(); };
+    fogPic.src = last.fogPNG;
+  } else { clearFog(); }
+  redrawSub();
+}
+
+/* ====== Utilities ====== */
+function deepClone(v){ return v ? JSON.parse(JSON.stringify(v)) : v; }
+
+</script>
+const submapSaves = JSON.parse(localStorage.getItem('warvault-submap-saves') || '{}');
+function saveSubmapState(id, payload){
+  submapSaves[id] = payload;
+  localStorage.setItem('warvault-submap-saves', JSON.stringify(submapSaves));
+}
+function getSubmapState(id){ return submapSaves[id] || null; }
+
+/* ========= Submap Editor Engine ========= */
+const subOverlay = document.getElementById('submap-overlay');
+const subCanvas  = document.getElementById('submap-canvas');
+const subTitleEl = document.getElementById('submap-title');
+const closeSub   = document.getElementById('close-submap');
+
+let S = null; // active submap session
+
+function openSubmapById(id){
+  const sm = submaps.find(s => s.id === id);
+  if(!sm) return alert('Submap missing.');
+
+  ensureSubToolbar();
+
+  // size canvas to parchment body
+  const body = subCanvas.parentElement;
+  const box = body.getBoundingClientRect();
+  subCanvas.width = box.width;
+  subCanvas.height = box.height;
+
+  const last = getSubmapState(id);
+  S = {
+    id,
+    name: sm.name,
+    baseImage: sm.dataURL || sm.image,
+    scale: last?.scale ?? 1,
+    offset: last?.offset ?? {x:0,y:0},
+    cell: 50,
+    tool: 'pan',
+    snap: true,
+    tokens: deepClone(last?.tokens) || [],
+    templates: deepClone(last?.templates) || [],
+    fogImg: null,
+    isPanning:false, panStart:{x:0,y:0},
+    drawing:null, draggingTemplate:null, dragOff:{x:0,y:0},
+    paintingFog:false, beganStroke:false,
+    undo:[], redo:[]
+  };
+
+  subTitleEl.textContent = S.name;
+
+  const base = new Image();
+  base.onload = () => {
+    S.base = base;
+    if(last?.fogPNG){
+      const fogPic = new Image();
+      fogPic.onload = ()=>{ S.fogImg = fogPic; redrawSub(); pushFogState(); };
+      fogPic.src = last.fogPNG;
+    } else {
+      S.fogImg = null; clearFog(); // starts with transparent fog
+    }
+    redrawSub();
+  };
+  base.src = S.baseImage;
+
+  subOverlay.style.display = 'block';
+  closeSub.onclick = () => { subOverlay.style.display = 'none'; S = null; };
+}
+
+/* ===== Submap toolbar (created once) ===== */
+function ensureSubToolbar(){
+  if(document.getElementById('sub-toolbar')) return;
+  const tray = document.createElement('div');
+  tray.id = 'sub-toolbar';
+  tray.style.cssText = 'position:absolute;left:10px;top:52px;display:flex;flex-wrap:wrap;gap:6px;background:rgba(233,223,195,.9);border:1px solid #c9b27a;border-radius:8px;padding:6px;z-index:40';
+  tray.innerHTML = `
+    <button class="btn" data-sbtool="pan">🖐️</button>
+    <button class="btn" data-sbtool="select">🖱️</button>
+    <button class="btn" data-sbtool="ruler">📏</button>
+    <button class="btn" data-sbtool="circle">⭕</button>
+    <button class="btn" data-sbtool="rect">▭</button>
+    <button class="btn" data-sbtool="cone">🔺</button>
+    <button class="btn" data-sbtool="token">🎯</button>
+    <label style="display:flex;align-items:center;gap:4px;background:#eadfbf;padding:2px 6px;border-radius:6px;border:1px solid #c9b27a;">
+      <span>Fog</span>
+      <select id="sb-fog-mode" style="max-width:110px">
+        <option value="none">Off</option>
+        <option value="reveal">Reveal</option>
+        <option value="hide">Hide</option>
+      </select>
+      <select id="sb-brush" style="max-width:90px">
+        <option value="20">20</option>
+        <option value="40" selected>40</option>
+        <option value="80">80</option>
+      </select>
+    </label>
+    <button id="sb-fog-undo" class="btn">⟲</button>
+    <button id="sb-fog-redo" class="btn">⟳</button>
+    <button id="sb-clear" class="btn">Clear</button>
+    <button id="sb-save" class="btn">💾 Save</button>
+    <button id="sb-reset" class="btn">↺ Reset</button>
+  `;
+  subCanvas.parentElement.appendChild(tray);
+
+  tray.querySelectorAll('[data-sbtool]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const t = btn.getAttribute('data-sbtool');
+      if (!S) return;
+      S.tool = t;
+      tray.querySelectorAll('[data-sbtool]').forEach(b=>b.classList.toggle('toggled', b===btn));
+    });
+  });
+  document.getElementById('sb-clear').onclick = ()=>{ if(!S) return; S.templates=[]; redrawSub(); };
+  document.getElementById('sb-save').onclick  = ()=>{ if(!S) return; saveActiveSubmap(); };
+  document.getElementById('sb-reset').onclick = ()=>{ if(!S) return; resetToLastSave(); };
+  document.getElementById('sb-fog-undo').onclick = ()=> subFogUndo();
+  document.getElementById('sb-fog-redo').onclick = ()=> subFogRedo();
+}
+
+/* ===== Draw pipeline ===== */
+function redrawSub(){
+  if(!S || !S.base) return;
+  sctx.clearRect(0,0,subCanvas.width,subCanvas.height);
+
+  // parchment fill
+  sctx.fillStyle = '#d7ccb0';
+  sctx.fillRect(0,0,subCanvas.width,subCanvas.height);
+
+  // base image with pan/zoom
+  sctx.save();
+  sctx.translate(S.offset.x, S.offset.y);
+  sctx.scale(S.scale, S.scale);
+  sctx.drawImage(S.base, 0, 0);
+
+  // grid
+  const rune = getComputedStyle(document.documentElement).getPropertyValue('--rune');
+  sctx.strokeStyle = rune; sctx.lineWidth = 1 / S.scale;
+  const step = S.cell;
+  // verticals
+  for(let x=0;x<=S.base.width;x+=step){ sctx.beginPath(); sctx.moveTo(x,0); sctx.lineTo(x,S.base.height); sctx.stroke(); }
+  // horizontals
+  for(let y=0;y<=S.base.height;y+=step){ sctx.beginPath(); sctx.moveTo(0,y); sctx.lineTo(S.base.width,y); sctx.stroke(); }
+
+  // AoE templates
+  S.templates.forEach(tp=>{
+    sctx.save();
+    sctx.lineWidth = 2 / S.scale;
+    sctx.strokeStyle = 'rgba(0,200,255,0.9)';
+    sctx.fillStyle   = 'rgba(0,200,255,0.25)';
+    if(tp.type==='circle'){
+      sctx.beginPath(); sctx.arc(tp.x, tp.y, tp.r, 0, Math.PI*2); sctx.fill(); sctx.stroke();
+    } else if(tp.type==='rect'){
+      sctx.beginPath(); sctx.rect(tp.x, tp.y, tp.w, tp.h); sctx.fill(); sctx.stroke();
+    } else if(tp.type==='cone'){
+      sctx.beginPath();
+      sctx.moveTo(tp.x, tp.y);
+      sctx.lineTo(tp.x + Math.cos(tp.ang - tp.spread/2)*tp.len, tp.y + Math.sin(tp.ang - tp.spread/2)*tp.len);
+      sctx.arc(tp.x, tp.y, tp.len, tp.ang - tp.spread/2, tp.ang + tp.spread/2);
+      sctx.closePath(); sctx.fill(); sctx.stroke();
+    }
+    sctx.restore();
+  });
+
+  // tokens (drawn on canvas for submap)
+  S.tokens.forEach(tk=>{
+    sctx.save();
+    sctx.lineWidth = 2 / S.scale;
+    if(tk.imgData){
+      const img = new Image(); img.src = tk.imgData;
+      const r = tk.size/2;
+      sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI*2); sctx.closePath(); sctx.save();
+      sctx.clip();
+      sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size);
+      sctx.restore();
+      sctx.strokeStyle = '#fff'; sctx.stroke();
+    } else {
+      sctx.fillStyle = tk.color || '#ff4444';
+      sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size/2, 0, Math.PI*2); sctx.fill();
+      sctx.strokeStyle = '#fff'; sctx.stroke();
+      sctx.fillStyle = '#000'; sctx.font = `${Math.max(10, tk.size/3)}px system-ui`; sctx.textAlign='center'; sctx.textBaseline='middle';
+      sctx.fillText((tk.name||'TK').slice(0,3).toUpperCase(), tk.x, tk.y);
+    }
+    sctx.restore();
+  });
+
+  sctx.restore(); // end transform
+
+  // fog overlay (bitmap same size as subCanvas)
+  if(S.fogImg){ sctx.drawImage(S.fogImg, 0, 0, subCanvas.width, subCanvas.height); }
+
+  if(S.drawing){ drawSubPreview(); }
+}
+
+function drawSubPreview(){
+  const d = S.drawing; if(!d) return;
+  sctx.save();
+  sctx.translate(S.offset.x, S.offset.y); sctx.scale(S.scale, S.scale);
+  sctx.lineWidth = 2 / S.scale;
+  sctx.strokeStyle = 'rgba(0,200,255,0.9)'; sctx.fillStyle = 'rgba(0,200,255,0.25)';
+
+  if(d.type==='ruler'){
+    sctx.beginPath(); sctx.moveTo(d.start.x, d.start.y); sctx.lineTo(d.cur.x, d.cur.y); sctx.stroke();
+    const ft = Math.round((Math.hypot(d.cur.x-d.start.x, d.cur.y-d.start.y)/S.cell)*5);
+    sctx.restore();
+    sctx.save();
+    sctx.fillStyle='rgba(0,0,0,.7)'; sctx.fillRect((d.scrS.x+d.scrC.x)/2-18,(d.scrS.y+d.scrC.y)/2-10,36,18);
+    sctx.fillStyle='#fff'; sctx.font='12px system-ui'; sctx.textAlign='center'; sctx.fillText(ft+' ft',(d.scrS.x+d.scrC.x)/2,(d.scrS.y+d.scrC.y)/2+4);
+    sctx.restore();
+    return;
+  }
+  if(d.type==='circle'){ const r=Math.hypot(d.cur.x-d.start.x, d.cur.y-d.start.y); sctx.beginPath(); sctx.arc(d.start.x,d.start.y,r,0,Math.PI*2); sctx.fill(); sctx.stroke(); }
+  if(d.type==='rect'){ sctx.beginPath(); sctx.rect(d.start.x,d.start.y,d.cur.x-d.start.x,d.cur.y-d.start.y); sctx.fill(); sctx.stroke(); }
+  if(d.type==='cone'){
+    const ang=Math.atan2(d.cur.y-d.start.y, d.cur.x-d.start.x);
+    const len=Math.hypot(d.cur.x-d.start.x,d.cur.y-d.start.y);
+    const spread=Math.PI/3;
+    sctx.beginPath(); sctx.moveTo(d.start.x,d.start.y);
+    sctx.lineTo(d.start.x+Math.cos(ang-spread/2)*len, d.start.y+Math.sin(ang-spread/2)*len);
+    sctx.arc(d.start.x,d.start.y,len, ang-spread/2, ang+spread/2); sctx.closePath(); sctx.fill(); sctx.stroke();
+  }
+  sctx.restore();
+}
+
+/* ===== Pointer helpers ===== */
+function scr2world(sx,sy){ return { x:(sx - S.offset.x)/S.scale, y:(sy - S.offset.y)/S.scale }; }
+function snapW(v){ return S.snap ? Math.round(v / S.cell) * S.cell : v; }
+
+/* ===== Mouse / wheel ===== */
+subCanvas.addEventListener('wheel', (e)=>{
+  if(!S) return; e.preventDefault();
+  const old = S.scale;
+  const ns = Math.max(.2, Math.min(6, S.scale * (e.deltaY < 0 ? 1.15 : 0.87)));
+  const ax = e.offsetX, ay = e.offsetY;
+  const wx = (ax - S.offset.x)/old, wy = (ay - S.offset.y)/old;
+  S.scale = ns;
+  S.offset.x = ax - wx*ns; S.offset.y = ay - wy*ns;
+  redrawSub();
+}, {passive:false});
+
+subCanvas.addEventListener('mousedown',(e)=>{
+  if(!S) return;
+  const fogMode = (document.getElementById('sb-fog-mode')||{}).value || 'none';
+  const world = scr2world(e.offsetX, e.offsetY);
+
+  if(fogMode!=='none'){ beginSubFogStroke(); paintSubFog(e.offsetX, e.offsetY, fogMode==='reveal'); return; }
+
+  if(S.tool==='pan'){ S.isPanning=true; S.panStart={x:e.clientX - S.offset.x, y:e.clientY - S.offset.y}; return; }
+
+  if(['ruler','circle','rect','cone'].includes(S.tool)){
+    const sx = snapW(world.x), sy = snapW(world.y);
+    S.drawing = { type:S.tool==='ruler'?'ruler':S.tool, start:{x:sx,y:sy}, cur:{x:sx,y:sy}, scrS:{x:e.offsetX,y:e.offsetY}, scrC:{x:e.offsetX,y:e.offsetY} };
+    redrawSub();
+    return;
+  }
+
+  if(S.tool==='token'){
+    const name = prompt('Token name?','Token'); if(name===null) return;
+    const size = parseInt(prompt('Size (px)?','42')||'42',10);
+    const color = prompt('Color (hex)?','#ff4444')||'#ff4444';
+    const tk = { name, size: Math.max(24,Math.min(120,size)), color, x:snapW(world.x), y:snapW(world.y), imgData:null };
+    S.tokens.push(tk); redrawSub(); return;
+  }
+
+  if(S.tool==='select'){
+    const hit = subHitTemplate(world.x, world.y);
+    if(hit){ S.draggingTemplate = hit; S.dragOff.x = world.x - hit.x; S.dragOff.y = world.y - hit.y; }
+  }
+});
+
+window.addEventListener('mousemove',(e)=>{
+  if(!S) return;
+  if(S.isPanning){ S.offset.x = e.clientX - S.panStart.x; S.offset.y = e.clientY - S.panStart.y; redrawSub(); return; }
+  const fogMode = (document.getElementById('sb-fog-mode')||{}).value || 'none';
+  if(S.paintingFog){ paintSubFog(e.offsetX, e.offsetY, fogMode==='reveal'); return; }
+  if(S.drawing){
+    const w = scr2world(e.offsetX, e.offsetY);
+    S.drawing.cur = {x:snapW(w.x), y:snapW(w.y)};
+    S.drawing.scrC = {x:e.offsetX, y:e.offsetY};
+    redrawSub();
+  }
+  if(S.draggingTemplate){
+    const w = scr2world(e.offsetX, e.offsetY);
+    S.draggingTemplate.x = snapW(w.x - S.dragOff.x);
+    S.draggingTemplate.y = snapW(w.y - S.dragOff.y);
+    redrawSub();
+  }
+});
+
+window.addEventListener('mouseup', ()=>{
+  if(!S) return;
+  if(S.isPanning) S.isPanning=false;
+  if(S.paintingFog) endSubFogStroke();
+  if(S.drawing){ finalizeSubTemplate(); S.drawing=null; }
+  if(S.draggingTemplate) S.draggingTemplate=null;
+});
+
+/* ===== Templates ===== */
+function finalizeSubTemplate(){
+  const d = S.drawing; if(!d) return;
+  const tp = { type:d.type, x:d.start.x, y:d.start.y };
+  if(d.type==='circle'){ tp.r = Math.hypot(d.cur.x-d.start.x, d.cur.y-d.start.y); }
+  if(d.type==='rect'){ tp.w = d.cur.x-d.start.x; tp.h = d.cur.y-d.start.y; }
+  if(d.type==='cone'){
+    tp.ang = Math.atan2(d.cur.y-d.start.y, d.cur.x-d.start.x);
+    tp.len = Math.hypot(d.cur.x-d.start.x, d.cur.y-d.start.y);
+    tp.spread = Math.PI/3;
+  }
+  if(d.type==='ruler') return; // transient
+  S.templates.push(tp); redrawSub();
+}
+function subHitTemplate(wx,wy){
+  for(let i=S.templates.length-1;i>=0;i--){
+    const tp=S.templates[i];
+    if(tp.type==='circle'){ if(Math.hypot(wx-tp.x, wy-tp.y)<=tp.r) return tp; }
+    else if(tp.type==='rect'){ if(wx>=tp.x && wx<=tp.x+tp.w && wy>=tp.y && wy<=tp.y+tp.h) return tp; }
+    else if(tp.type==='cone'){
+      const ang=Math.atan2(wy-tp.y, wx-tp.x);
+      const d=Math.hypot(wx-tp.x, wy-tp.y); // ✅ fixed: used tp.x, not tp.y
+      const da=Math.abs((((ang - tp.ang + Math.PI*3)%(Math.PI*2))-Math.PI));
+      if(da<=tp.spread/2 && d<=tp.len) return tp;
+    }
+  }
+  return null;
+}
+
+/* ===== Fog (bitmap) + undo/redo ===== */
+function clearFog(){
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  S.fogImg = new Image(); S.fogImg.src = fc.toDataURL('image/png');
+  pushFogState();
+}
+function pushFogState(){
+  try { const snap = exportFogPNG(); S.undo.push(snap); if(S.undo.length>15) S.undo.shift(); S.redo.length=0; } catch(e){}
+}
+function beginSubFogStroke(){ S.paintingFog=true; S.beganStroke=false; }
+function endSubFogStroke(){
+  S.paintingFog=false;
+  try{ const snap = exportFogPNG(); S.undo.push(snap); if(S.undo.length>15) S.undo.shift(); S.redo.length=0; }catch(e){}
+}
+function paintSubFog(sx,sy,reveal){
+  if(!S.beganStroke){ pushFogState(); S.beganStroke=true; }
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  const fx = fc.getContext('2d');
+  if(S.fogImg) fx.drawImage(S.fogImg,0,0,fc.width,fc.height);
+  fx.globalCompositeOperation = reveal ? 'destination-out':'source-over';
+  if(!reveal){ fx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist'); }
+  const r = parseInt((document.getElementById('sb-brush')||{}).value || '40',10);
+  fx.beginPath(); fx.arc(sx,sy,r,0,Math.PI*2); fx.fill();
+  fx.globalCompositeOperation = 'source-over';
+  S.fogImg = new Image(); S.fogImg.src = fc.toDataURL('image/png'); S.fogImg.onload = ()=> redrawSub();
+}
+function subFogUndo(){
+  if(!S || S.undo.length<2) return;
+  const cur = S.undo.pop(); S.redo.push(cur);
+  const prev = S.undo[S.undo.length-1];
+  S.fogImg = new Image(); S.fogImg.onload = ()=> redrawSub();
+  S.fogImg.src = prev;
+}
+function subFogRedo(){
+  if(!S || !S.redo.length) return;
+  const img = S.redo.pop(); S.undo.push(img);
+  S.fogImg = new Image(); S.fogImg.onload = ()=> redrawSub();
+  S.fogImg.src = img;
+}
+function exportFogPNG(){
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  const fx = fc.getContext('2d');
+  if(S.fogImg) fx.drawImage(S.fogImg,0,0,fc.width,fc.height);
+  return fc.toDataURL('image/png');
+}
+
+/* ===== Save / Reset ===== */
+function saveActiveSubmap(){
+  if(!S) return;
+  const payload = {
+    image: S.baseImage,
+    tokens: deepClone(S.tokens),
+    templates: deepClone(S.templates),
+    fogPNG: exportFogPNG(),
+    offset: deepClone(S.offset),
+    scale: S.scale
+  };
+  saveSubmapState(S.id, payload);
+  alert('Submap saved.');
+}
+function resetToLastSave(){
+  if(!S) return;
+  const last = getSubmapState(S.id);
+  if(!last){ S.tokens=[]; S.templates=[]; clearFog(); S.offset={x:0,y:0}; S.scale=1; redrawSub(); return; }
+  S.tokens = deepClone(last.tokens)||[];
+  S.templates = deepClone(last.templates)||[];
+  S.offset = deepClone(last.offset)||{x:0,y:0};
+  S.scale = last.scale||1;
+  if(last.fogPNG){
+    const fogPic = new Image();
+    fogPic.onload = ()=>{ S.fogImg = fogPic; redrawSub(); pushFogState(); };
+    fogPic.src = last.fogPNG;
+  } else { clearFog(); }
+  redrawSub();
+}
+
+/* ===== Utils ===== */
+function deepClone(v){ return v ? JSON.parse(JSON.stringify(v)) : v; }
+</script>
+
 </body>
 </html>
