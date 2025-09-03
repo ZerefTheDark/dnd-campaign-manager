@@ -1,593 +1,789 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The War Vault | Battle Map</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The War Vault | Battle Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --primary:#e6c57f;--accent:#b88c5c;--dark:#000;
+    --grid:rgba(255,255,255,.15);--los:rgba(255,255,0,.45);
+    --panel:rgba(10,10,15,.95)
+  }
+  body{font-family:'Rajdhani',sans-serif;background:#000;color:var(--primary);height:100vh;overflow:hidden}
 
-        :root {
-            --primary: #e6c57f;
-            --accent: #b88c5c;
-            --dark: #000;
-            --grid: rgba(255, 255, 255, 0.15);
-            --los: rgba(255, 255, 0, 0.4);
-        }
+  header{position:fixed;inset:0 0 auto 0;background:rgba(10,10,15,.95);border-bottom:1px solid var(--accent);
+    padding:.6rem .8rem;z-index:100;display:flex;align-items:center;gap:.8rem}
+  .logo{font-family:'Cinzel',serif;font-size:1.3rem;margin-right:.4rem}
+  .controls, .tools-right{display:flex;gap:.4rem;flex-wrap:wrap}
+  .spacer{flex:1}
+  button, .btnlike, input[type="file"]{background:rgba(30,30,40,.85);color:var(--primary);border:1px solid var(--accent);
+    padding:.35rem .6rem;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:.9rem}
+  button:hover{background:var(--accent);color:#000;box-shadow:0 0 10px rgba(230,197,127,.4)}
 
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            background: #000;
-            color: var(--primary);
-            overflow: hidden;
-            height: 100vh;
-        }
+  /* Layout */
+  #stage{position:absolute;inset:55px 0 0 0;display:grid;grid-template-columns:300px 1fr 320px}
+  #left-panel{border-right:1px solid var(--accent);background:var(--panel);overflow:auto}
+  #right-panel{border-left:1px solid var(--accent);background:var(--panel);overflow:auto}
+  #map-wrap{position:relative;background:#000;overflow:hidden}
 
-        header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            background: rgba(10, 10, 15, 0.95);
-            padding: 0.8rem 1rem;
-            z-index: 10;
-            border-bottom: 1px solid var(--accent);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+  /* Map layers */
+  canvas{image-rendering:auto}
+  #map-canvas{position:absolute;inset:0;z-index:1;cursor:grab}
+  #grid-layer{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.65;
+    background-image:linear-gradient(var(--grid) 1px, transparent 1px),linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:50px 50px; /* dynamically updated */
+    background-position:0 0;
+  }
+  #template-canvas{position:absolute;inset:0;z-index:3;pointer-events:none}
+  #fog-canvas{position:absolute;inset:0;z-index:4;pointer-events:none}
 
-        .logo {
-            font-family: 'Cinzel', serif;
-            font-size: 1.6rem;
-            color: var(--primary);
-        }
+  /* Initiative, saved maps, chat/video reused */
+  .panel-section{padding:.8rem;border-bottom:1px solid rgba(255,255,255,.1)}
+  h3{font-family:'Cinzel',serif;font-size:1.05rem;margin-bottom:.45rem}
+  .initiative-item{margin:.35rem 0;padding:.3rem;background:rgba(255,255,255,.08);border-left:3px solid var(--primary);border-radius:4px}
+  .active-turn{outline:2px solid #fff}
 
-        .controls {
-            display: flex;
-            gap: 0.8rem;
-            font-size: 0.9rem;
-        }
+  #saved-maps-list .saved-map-item{display:flex;align-items:center;gap:.5rem;margin:.45rem 0;font-size:.85rem}
+  .saved-map-thumb{width:40px;height:40px;background:#333;border:1px solid var(--accent);background-size:cover;background-position:center}
 
-        button, input[type="file"] {
-            background: rgba(30, 30, 40, 0.8);
-            color: var(--primary);
-            border: 1px solid var(--accent);
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 0.9rem;
-        }
+  /* Character panel */
+  #character-panel{padding:.8rem}
+  .char-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+  .stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.35rem}
+  .stat{background:rgba(255,255,255,.06);padding:.35rem;border-radius:6px;text-align:center}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:.25rem .5rem;margin:.5rem 0}
+  .pill{display:inline-block;border:1px solid var(--accent);padding:.15rem .4rem;border-radius:999px;margin:.15rem .15rem 0 0}
 
-        button:hover {
-            background: var(--accent);
-            box-shadow: 0 0 10px rgba(230, 197, 127, 0.5);
-        }
+  /* Right tools */
+  .tool-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem}
+  .tool-toggle.active{background:var(--accent);color:#000}
+  .hint{font-size:.85rem;color:#c9c9c9}
 
-        #map-container {
-            position: absolute;
-            top: 5rem; left: 0; right: 0; bottom: 60px;
-            background: #000;
-            overflow: hidden;
-        }
-
-        #map-canvas {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            cursor: grab;
-        }
-
-        #grid-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            background-image: linear-gradient(var(--grid) 1px, transparent 1px),
-                              linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-            background-size: 50px 50px;
-            opacity: 0.6;
-            z-index: 2;
-        }
-
-        .token {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #00ff88;
-            color: black;
-            font-weight: bold;
-            font-size: 12px;
-            text-align: center;
-            line-height: 40px;
-            transform: translate(-50%, -50%);
-            z-index: 5;
-            cursor: move;
-            border: 2px solid white;
-        }
-
-        .los-line {
-            position: absolute;
-            background: var(--los);
-            height: 3px;
-            z-index: 4;
-            transform-origin: 0 0;
-        }
-
-        #initiative-panel {
-            position: fixed;
-            right: 1rem;
-            top: 5.5rem;
-            background: rgba(10, 10, 15, 0.9);
-            border: 1px solid var(--accent);
-            border-radius: 10px;
-            padding: 1rem;
-            color: var(--primary);
-            font-size: 0.95rem;
-            z-index: 20;
-            max-width: 200px;
-        }
-
-        .initiative-item {
-            margin: 0.5rem 0;
-            padding: 0.4rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-left: 3px solid var(--primary);
-            border-radius: 4px;
-        }
-
-        #saved-maps-panel {
-            position: fixed;
-            left: 1rem;
-            bottom: 1rem;
-            background: rgba(10, 10, 15, 0.9);
-            border: 1px solid var(--accent);
-            border-radius: 10px;
-            padding: 1rem;
-            z-index: 20;
-            max-width: 300px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .saved-map-item {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            margin-bottom: 0.6rem;
-            font-size: 0.85rem;
-        }
-
-        .saved-map-thumb {
-            width: 40px;
-            height: 40px;
-            background: #333;
-            border: 1px solid var(--accent);
-            background-size: cover;
-            background-position: center;
-        }
-
-        .saved-map-actions button {
-            font-size: 0.75rem;
-            padding: 0.2rem 0.4rem;
-        }
-
-        /* Chat & Video */
-        #comms-panel {
-            position: absolute;
-            right: 1rem;
-            bottom: 1rem;
-            width: 280px;
-            background: rgba(10, 10, 15, 0.95);
-            border: 1px solid var(--accent);
-            border-radius: 10px;
-            z-index: 20;
-            overflow: hidden;
-        }
-
-        #video-box {
-            width: 100%;
-            height: 120px;
-            background: #000;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .video-placeholder {
-            width: 100%;
-            height: 100%;
-            background: #1a1a2e;
-            color: #666;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .player-tag {
-            position: absolute;
-            bottom: 4px;
-            left: 4px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
-
-        #chat-box {
-            height: 120px;
-            background: rgba(20, 20, 30, 0.8);
-            overflow-y: auto;
-            padding: 0.6rem;
-            font-size: 0.9rem;
-            color: #ccc;
-        }
-
-        #chat-input {
-            display: flex;
-        }
-
-        #message-input {
-            flex: 1;
-            background: #1a1a2e;
-            color: var(--primary);
-            border: none;
-            padding: 0.6rem;
-            font-family: 'Rajdhani', sans-serif;
-        }
-
-        #send-btn {
-            background: var(--accent);
-            color: #000;
-            border: none;
-            padding: 0 0.8rem;
-            cursor: pointer;
-        }
-    </style>
+  /* Comms (bottom-right floating) */
+  #comms-panel{position:absolute;right:10px;bottom:10px;width:280px;background:var(--panel);
+    border:1px solid var(--accent);border-radius:10px;z-index:20;overflow:hidden}
+  #video-box{height:110px;background:#000;position:relative}
+  .video-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#666;background:#1a1a2e}
+  .player-tag{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:4px;font-size:.8rem;color:#fff}
+  #chat-box{height:120px;background:rgba(20,20,30,.8);overflow-y:auto;padding:.6rem;font-size:.9rem;color:#ccc}
+  #chat-input{display:flex}
+  #message-input{flex:1;background:#1a1a2e;color:var(--primary);border:none;padding:.6rem}
+  #send-btn{background:var(--accent);color:#000;border:none;padding:0 .8rem;cursor:pointer}
+  @media (max-width: 1100px){
+    #stage{grid-template-columns:0 1fr 320px}
+    #left-panel{display:none}
+  }
+</style>
 </head>
 <body>
 
-    <header>
-        <div class="logo">The War Vault</div>
-        <div class="controls">
-            <button id="grid-btn">Grid: ON</button>
-            <button id="los-btn">🎯 LOS Tool</button>
-            <input type="file" id="map-upload" accept=".png,.jpg,.jpeg" />
-            <button id="save-btn">💾 Save Map</button>
-        </div>
-    </header>
+<header>
+  <div class="logo">The War Vault</div>
 
-    <div id="map-container">
-        <canvas id="map-canvas"></canvas>
-        <div id="grid-layer"></div>
+  <div class="controls">
+    <button id="grid-btn">Grid: ON</button>
+    <button id="zoom-in">＋</button>
+    <button id="zoom-out">－</button>
+    <input type="file" id="map-upload" accept=".png,.jpg,.jpeg" />
+    <button id="save-btn">💾 Save Map</button>
+    <button id="clear-btn">🗑 Clear</button>
+    <button id="export-btn">📤 Export PNG</button>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="tools-right">
+    <input type="file" id="characters-upload" accept=".json" />
+    <button id="spawn-token">➕ Spawn Token</button>
+  </div>
+</header>
+
+<div id="stage">
+  <!-- Left: Character Sheet -->
+  <aside id="left-panel">
+    <div id="character-panel">
+      <h3>Character Sheet</h3>
+      <div class="hint">Click a token to view its sheet. Load characters (JSON) to spawn linked tokens.</div>
     </div>
+  </aside>
 
-    <div id="initiative-panel">
-        <h3 style="color:var(--primary); margin-bottom:0.8rem;">Initiative</h3>
-        <div id="init-list"></div>
-    </div>
-
-    <div id="saved-maps-panel">
-        <h3 style="color:var(--primary); margin-bottom:0.6rem;">Saved Maps</h3>
-        <div id="saved-maps-list"></div>
-    </div>
-
-    <!-- Chat & Video -->
+  <!-- Center: Map -->
+  <main id="map-wrap">
+    <canvas id="map-canvas"></canvas>
+    <div id="grid-layer"></div>
+    <canvas id="template-canvas"></canvas> <!-- LOS / AOE templates -->
+    <canvas id="fog-canvas"></canvas>      <!-- Fog of War -->
+    <!-- Comms floating -->
     <div id="comms-panel">
-        <div id="video-box">
-            <div class="video-placeholder">
-                🎥 Video Feed (Future: WebRTC)
-                <div class="player-tag">You</div>
-            </div>
-        </div>
-        <div id="chat-box"></div>
-        <div id="chat-input">
-            <input type="text" id="message-input" placeholder="Say something..." />
-            <button id="send-btn">Send</button>
-        </div>
+      <div id="video-box">
+        <div class="video-placeholder">🎥 Video Feed (Future: WebRTC)</div>
+        <div class="player-tag">You</div>
+      </div>
+      <div id="chat-box"></div>
+      <div id="chat-input">
+        <input type="text" id="message-input" placeholder="Say something..." />
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right: Tools + Initiative + Saved -->
+  <aside id="right-panel">
+    <div class="panel-section">
+      <h3>Battle Tools</h3>
+      <div class="tool-row">
+        <button class="tool-toggle" data-tool="move" id="tool-move">🖱️ Move</button>
+        <button class="tool-toggle" data-tool="los" id="tool-los">🎯 LOS</button>
+        <button class="tool-toggle" data-tool="cone" id="tool-cone">🔺 Cone</button>
+        <button class="tool-toggle" data-tool="circle" id="tool-circle">⭕ Circle</button>
+        <button class="tool-toggle" data-tool="rect" id="tool-rect">▭ Rect</button>
+      </div>
+      <div class="tool-row">
+        <button class="tool-toggle" data-tool="fog-reveal" id="tool-fog-reveal">🌤 Reveal</button>
+        <button class="tool-toggle" data-tool="fog-hide" id="tool-fog-hide">🌫 Hide</button>
+        <select id="template-size">
+          <option value="10">10 ft</option>
+          <option value="15" selected>15 ft</option>
+          <option value="20">20 ft</option>
+          <option value="30">30 ft</option>
+          <option value="60">60 ft</option>
+        </select>
+        <select id="grid-size">
+          <option value="50" selected>5ft cell = 50px</option>
+          <option value="40">5ft cell = 40px</option>
+          <option value="60">5ft cell = 60px</option>
+        </select>
+      </div>
+      <div class="hint">Tip: mouse wheel to zoom, drag background to pan, drag token to move.</div>
     </div>
 
-    <script>
-window.onload = function() {
-    const canvas = document.getElementById('map-canvas');
-    const ctx = canvas.getContext('2d');
-    const gridBtn = document.getElementById('grid-btn');
-    const losBtn = document.getElementById('los-btn');
-    const upload = document.getElementById('map-upload');
-    const saveBtn = document.getElementById('save-btn');
-    const initList = document.getElementById('init-list');
-    const savedList = document.getElementById('saved-maps-list');
-    const chatBox = document.getElementById('chat-box');
-    const msgInput = document.getElementById('message-input');
-    const sendBtn = document.getElementById('send-btn');
+    <div class="panel-section">
+      <h3>Initiative</h3>
+      <form id="init-form" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem">
+        <input id="init-name" placeholder="Name" class="btnlike" style="flex:1"/>
+        <input id="init-roll" type="number" placeholder="Roll" class="btnlike" style="width:90px"/>
+        <button type="submit">Add</button>
+      </form>
+      <div style="display:flex;gap:.4rem;margin-bottom:.5rem">
+        <button id="init-next">Next Turn</button>
+        <button id="init-restart">Restart</button>
+        <button id="init-clear">Clear</button>
+      </div>
+      <div id="init-list"></div>
+    </div>
 
-    // --- NEW BUTTONS ---
-    const clearBtn = document.createElement('button');
-    clearBtn.textContent = "🗑 Clear Map";
-    document.querySelector('.controls').appendChild(clearBtn);
+    <div class="panel-section">
+      <h3>Saved Maps</h3>
+      <div id="saved-maps-list"></div>
+    </div>
+  </aside>
+</div>
 
-    const addTokenBtn = document.createElement('button');
-    addTokenBtn.textContent = "➕ Token";
-    document.querySelector('.controls').appendChild(addTokenBtn);
+<script>
+(() => {
+  // ===== Shortcuts to elements
+  const canvas = document.getElementById('map-canvas');
+  const ctx = canvas.getContext('2d');
+  const templateCanvas = document.getElementById('template-canvas');
+  const tctx = templateCanvas.getContext('2d');
+  const fogCanvas = document.getElementById('fog-canvas');
+  const fctx = fogCanvas.getContext('2d');
 
-    const exportBtn = document.createElement('button');
-    exportBtn.textContent = "📤 Export PNG";
-    document.querySelector('.controls').appendChild(exportBtn);
+  const gridLayer = document.getElementById('grid-layer');
 
-    // State
-    let grid = true;
-    let losMode = false;
-    let tokens = [];
-    let selectedToken = null;
-    let drag = false;
-    let mapImg = null;
-    let mapWidth = 0, mapHeight = 0;
-    let offsetX = 0, offsetY = 0;
-    let savedMaps = JSON.parse(localStorage.getItem('war-vault-saved-maps') || '[]');
-    let losLine = null;
-    let losElement = null;
+  const gridBtn = document.getElementById('grid-btn');
+  const zoomInBtn = document.getElementById('zoom-in');
+  const zoomOutBtn = document.getElementById('zoom-out');
+  const upload = document.getElementById('map-upload');
+  const saveBtn = document.getElementById('save-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  const exportBtn = document.getElementById('export-btn');
 
-    // Resize
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight - 70 - 60;
-        if (mapImg) drawMap();
+  const charactersUpload = document.getElementById('characters-upload');
+  const spawnTokenBtn = document.getElementById('spawn-token');
+  const characterPanel = document.getElementById('character-panel');
+
+  const toolButtons = Array.from(document.querySelectorAll('.tool-toggle'));
+  const templateSizeSel = document.getElementById('template-size');
+  const gridSizeSel = document.getElementById('grid-size');
+
+  const initForm = document.getElementById('init-form');
+  const initName = document.getElementById('init-name');
+  const initRoll = document.getElementById('init-roll');
+  const initList = document.getElementById('init-list');
+  const initNext = document.getElementById('init-next');
+  const initRestart = document.getElementById('init-restart');
+  const initClear = document.getElementById('init-clear');
+
+  const chatBox = document.getElementById('chat-box');
+  const msgInput = document.getElementById('message-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  // ===== App State
+  let mapImg = null;
+  let baseMapW = 0, baseMapH = 0;      // actual image size
+  let scale = 1;                        // zoom scale
+  let offsetX = 0, offsetY = 0;         // pan offset (screen pixels)
+  let isPanning = false;
+  let panStart = {x:0,y:0};
+  let mouseDown = false;
+
+  let gridVisible = true;
+  let gridCellPx = 50; // 5ft per cell at 50px default
+  let characters = []; // loaded from JSON
+  let tokens = [];     // { id, name, x(0..1), y(0..1), color, char?:object }
+  let selectedToken = null;
+  let draggingToken = false;
+
+  let currentTool = 'move'; // move, los, cone, circle, rect, fog-reveal, fog-hide
+  let templateDrag = null;  // {x,y} start in screen coords
+
+  // Initiative
+  let initiative = []; // [{name, roll}]
+  let initIndex = -1;
+
+  // Saved maps
+  let savedMaps = JSON.parse(localStorage.getItem('war-vault-saved-maps') || '[]');
+
+  // ===== Utilities
+  const wrap = document.getElementById('map-wrap');
+  const fitToWrap = () => {
+    const rect = wrap.getBoundingClientRect();
+    [canvas, templateCanvas, fogCanvas].forEach(cv => { cv.width = rect.width; cv.height = rect.height; });
+    updateGridVisual();
+    redrawAll();
+  };
+  window.addEventListener('resize', fitToWrap);
+  fitToWrap();
+
+  function worldToScreen(wx, wy){
+    // world coords are image pixels; screen coords map with offset+scale
+    return { x: offsetX + wx * scale, y: offsetY + wy * scale };
+  }
+  function screenToWorld(sx, sy){
+    return { x: (sx - offsetX) / scale, y: (sy - offsetY) / scale };
+  }
+
+  function tokenToScreen(t){
+    // tokens store normalized coords relative to image (0..1)
+    const wx = t.x * baseMapW, wy = t.y * baseMapH;
+    return worldToScreen(wx, wy);
+  }
+
+  function redrawAll(){
+    // Map
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (mapImg){
+      const sw = baseMapW * scale, sh = baseMapH * scale;
+      ctx.drawImage(mapImg, offsetX, offsetY, sw, sh);
     }
-    window.addEventListener('resize', resize);
-    resize();
-
-    // Upload map
-    upload.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            mapImg = new Image();
-            mapImg.onload = function() {
-                mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
-                mapHeight = (mapImg.height * mapWidth) / mapImg.width;
-                offsetX = (canvas.width - mapWidth) / 2;
-                offsetY = (canvas.height - mapHeight) / 2;
-                tokens = [];
-                loadSoul();
-                drawMap();
-            };
-            mapImg.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-
-    // Draw map + tokens
-    function drawMap() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (mapImg) {
-            ctx.drawImage(mapImg, offsetX, offsetY, mapWidth, mapHeight);
-        }
-        drawTokens();
+    // Tokens
+    drawTokens();
+    // Templates
+    tctx.clearRect(0,0,templateCanvas.width,templateCanvas.height);
+    if (templateDrag && currentTool !== 'move'){
+      drawActiveTemplate();
     }
+    // Fog is its own bitmap; no redraw unless brush used
+  }
 
-    function drawTokens() {
-        tokens.forEach(token => {
-            const x = offsetX + (token.x * mapWidth);
-            const y = offsetY + (token.y * mapHeight);
-            token.screenX = x;
-            token.screenY = y;
+  function drawTokens(){
+    tokens.forEach(t => {
+      const p = tokenToScreen(t);
+      // token circle
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 18, 0, Math.PI*2);
+      ctx.fillStyle = t.color || '#00ff88';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+      // name inside
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 13px Rajdhani';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(t.name, p.x, p.y);
+    });
+  }
 
-            ctx.fillStyle = token.color || '#00ff88';
-            ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fillStyle = '#000';
-            ctx.font = 'bold 14px Rajdhani';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(token.name, x, y);
-        });
+  // ===== Grid overlay (CSS background) aligned to map
+  function updateGridVisual(){
+    const cell = gridCellPx * scale;
+    gridLayer.style.backgroundSize = `${cell}px ${cell}px`;
+    // Align to map top-left so lines follow the image even when panned
+    const gx = (offsetX % cell + cell) % cell;
+    const gy = (offsetY % cell + cell) % cell;
+    gridLayer.style.backgroundPosition = `${gx}px ${gy}px`;
+    gridLayer.style.opacity = gridVisible ? .65 : 0;
+  }
 
-        // LOS persistent line
-        if (losLine && losElement) {
-            const { x, y, x2, y2 } = losLine;
-            const angle = Math.atan2(y2 - y, x2 - x);
-            const length = Math.sqrt((x2 - x) ** 2 + (y2 - y) ** 2);
-            losElement.style.width = length + 'px';
-            losElement.style.left = x + 'px';
-            losElement.style.top = y + 'px';
-            losElement.style.transform = `rotate(${angle}rad)`;
-        }
+  // ===== Fog of War
+  function initFog(){
+    fctx.clearRect(0,0,fogCanvas.width,fogCanvas.height);
+    fctx.fillStyle = 'rgba(0,0,0,0.9)';
+    fctx.fillRect(0,0,fogCanvas.width,fogCanvas.height);
+  }
+  function fogBrush(sx, sy, reveal=true, radius=40){
+    fctx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
+    if (!reveal){ fctx.fillStyle = 'rgba(0,0,0,0.9)'; }
+    fctx.beginPath();
+    fctx.arc(sx, sy, radius, 0, Math.PI*2);
+    if (reveal) fctx.fill();
+    else fctx.fill();
+    fctx.globalCompositeOperation = 'source-over';
+  }
+
+  // ===== Templates (LOS & AOE)
+  function drawLine(a,b){
+    tctx.strokeStyle = 'yellow';
+    tctx.lineWidth = 3;
+    tctx.beginPath();
+    tctx.moveTo(a.x,a.y);
+    tctx.lineTo(b.x,b.y);
+    tctx.stroke();
+  }
+  function drawCircle(center, ftRadius){
+    const pxPer5ft = gridCellPx * scale;
+    const r = (ftRadius/5) * pxPer5ft;
+    tctx.fillStyle = 'rgba(0,200,255,0.25)';
+    tctx.strokeStyle = 'rgba(0,200,255,0.9)';
+    tctx.lineWidth = 2;
+    tctx.beginPath();
+    tctx.arc(center.x, center.y, r, 0, Math.PI*2);
+    tctx.fill(); tctx.stroke();
+  }
+  function drawRect(start, end){
+    tctx.fillStyle = 'rgba(0,200,255,0.25)';
+    tctx.strokeStyle = 'rgba(0,200,255,0.9)';
+    tctx.lineWidth = 2;
+    const w=end.x-start.x, h=end.y-start.y;
+    tctx.fillRect(start.x, start.y, w, h);
+    tctx.strokeRect(start.x, start.y, w, h);
+  }
+  function drawCone(origin, current, ftLength){
+    const dx = current.x - origin.x, dy = current.y - origin.y;
+    const ang = Math.atan2(dy, dx);
+    const pxPer5ft = gridCellPx * scale;
+    const len = (ftLength/5) * pxPer5ft;
+    const spread = Math.PI/3; // 60° cone (typical), tweak if needed
+    const a1 = ang - spread/2, a2 = ang + spread/2;
+    const p1 = {x: origin.x + Math.cos(a1)*len, y: origin.y + Math.sin(a1)*len};
+    const p2 = {x: origin.x + Math.cos(a2)*len, y: origin.y + Math.sin(a2)*len};
+    tctx.fillStyle = 'rgba(255,120,0,0.25)';
+    tctx.strokeStyle = 'rgba(255,120,0,0.9)';
+    tctx.lineWidth = 2;
+    tctx.beginPath();
+    tctx.moveTo(origin.x, origin.y);
+    tctx.lineTo(p1.x, p1.y);
+    tctx.arc(origin.x, origin.y, len, a1, a2);
+    tctx.closePath();
+    tctx.fill(); tctx.stroke();
+  }
+
+  function drawActiveTemplate(){
+    const sizeFt = parseInt(templateSizeSel.value,10);
+    if (!templateDrag) return;
+    const start = templateDrag.start, cur = templateDrag.cur || start;
+
+    switch(currentTool){
+      case 'los': drawLine(start, cur); break;
+      case 'circle': drawCircle(start, sizeFt); break; // centered at start
+      case 'rect': drawRect(start, cur); break;
+      case 'cone': drawCone(start, cur, sizeFt); break;
     }
+  }
 
-    function addToken(name = "Token", color = '#00ff88') {
-        const token = { name, x: 0.5, y: 0.5, color };
-        tokens.push(token);
-        drawMap();
-        saveState();
-    }
-
-    function loadSoul() {
-        const soul = JSON.parse(localStorage.getItem('dnd-soul'));
-        if (soul && !tokens.some(t => t.name === soul.name)) {
-            const initRoll = Math.floor(Math.random() * 20) + 10;
-            const item = document.createElement('div');
-            item.className = 'initiative-item';
-            item.textContent = `${soul.name} — ${initRoll}`;
-            initList.appendChild(item);
-            addToken(soul.name);
-        }
-    }
-
-    // --- Mouse events ---
-    canvas.addEventListener('mousedown', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        for (let token of tokens) {
-            const dx = x - token.screenX;
-            const dy = y - token.screenY;
-            if (dx * dx + dy * dy < 400) {
-                selectedToken = token;
-                drag = true;
-                return;
-            }
-        }
-
-        if (losMode && selectedToken) {
-            losLine = { x: selectedToken.screenX, y: selectedToken.screenY, x2: x, y2: y };
-            if (!losElement) {
-                losElement = document.createElement('div');
-                losElement.className = 'los-line';
-                document.body.appendChild(losElement);
-            }
-            drawMap();
-        }
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-        if (drag && selectedToken) {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            selectedToken.x = (x - offsetX) / mapWidth;
-            selectedToken.y = (y - offsetY) / mapHeight;
-            selectedToken.x = Math.max(0.05, Math.min(0.95, selectedToken.x));
-            selectedToken.y = Math.max(0.05, Math.min(0.95, selectedToken.y));
-            drawMap();
-            saveState();
-        }
-    });
-
-    window.addEventListener('mouseup', () => {
-        drag = false;
-        selectedToken = null;
-    });
-
-    // --- Controls ---
-    gridBtn.addEventListener('click', () => {
-        grid = !grid;
-        document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
-        gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
-        saveState();
-    });
-
-    losBtn.addEventListener('click', () => {
-        losMode = !losMode;
-        losBtn.textContent = losMode ? '🎯 LOS: ON' : '🎯 LOS Tool';
-        if (!losMode && losElement) {
-            losElement.remove();
-            losElement = null;
-            losLine = null;
-        }
-    });
-
-    saveBtn.addEventListener('click', () => {
-        const name = prompt("Name this map:", "My Battle");
-        if (!name || !mapImg) return;
-        const mapData = { name, image: mapImg.src, tokens: [...tokens], grid, timestamp: Date.now() };
-        savedMaps.unshift(mapData);
-        if (savedMaps.length > 10) savedMaps.pop();
-        localStorage.setItem('war-vault-saved-maps', JSON.stringify(savedMaps));
-        renderSavedMaps();
-    });
-
-    clearBtn.addEventListener('click', () => {
-        tokens = [];
-        losLine = null;
-        if (losElement) { losElement.remove(); losElement = null; }
-        drawMap();
-        saveState();
-    });
-
-    addTokenBtn.addEventListener('click', () => {
-        const name = prompt("Token name?", "New Token");
-        if (name) addToken(name);
-    });
-
-    exportBtn.addEventListener('click', () => {
-        const link = document.createElement('a');
-        link.download = 'battlemap.png';
-        link.href = canvas.toDataURL();
-        link.click();
-    });
-
-    // --- Saved Maps ---
-    function renderSavedMaps() {
-        savedList.innerHTML = '';
-        savedMaps.forEach((map, i) => {
-            const item = document.createElement('div');
-            item.className = 'saved-map-item';
-            const thumb = document.createElement('div');
-            thumb.className = 'saved-map-thumb';
-            thumb.style.backgroundImage = `url(${map.image})`;
-            const actions = document.createElement('div');
-            actions.className = 'saved-map-actions';
-            actions.innerHTML = `<div>${map.name}</div><button onclick="loadSavedMap(${i})">Load</button>`;
-            item.appendChild(thumb);
-            item.appendChild(actions);
-            savedList.appendChild(item);
-        });
-    }
-
-    window.loadSavedMap = function(i) {
-        const map = savedMaps[i];
-        mapImg = new Image();
-        mapImg.onload = () => {
-            mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
-            mapHeight = (mapImg.height * mapWidth) / mapImg.width;
-            offsetX = (canvas.width - mapWidth) / 2;
-            offsetY = (canvas.height - mapHeight) / 2;
-            tokens = [...map.tokens];
-            grid = map.grid;
-            document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
-            gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
-            drawMap();
-        };
-        mapImg.src = map.image;
+  // ===== Characters & Tokens
+  charactersUpload.addEventListener('change', e=>{
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try{
+        const data = JSON.parse(ev.target.result);
+        if(Array.isArray(data)){ characters = data; alert(`Loaded ${characters.length} character(s).`);}
+        else { alert('JSON must be an array of characters'); }
+      }catch(err){ alert('Invalid JSON'); }
     };
+    reader.readAsText(file);
+  });
 
-    function saveState() {
-        if (mapImg) {
-            localStorage.setItem('war-vault-current', JSON.stringify({ image: mapImg.src, tokens, grid }));
-        }
+  spawnTokenBtn.addEventListener('click', ()=>{
+    if (!characters.length){
+      const name = prompt('Token name?', 'New Token');
+      if (name) addToken({name, color:'#00ff88'});
+      return;
+    }
+    const choice = prompt(`Type character id or name to spawn:\n${characters.map(c=>`- ${c.id || ''} ${c.name}`).join('\n')}`);
+    if (!choice) return;
+    const found = characters.find(c => (c.id && c.id.toLowerCase()===choice.toLowerCase()) || c.name.toLowerCase()===choice.toLowerCase());
+    if (found) addToken({name:found.name, color:found.color||'#00ff88', char:found});
+    else alert('Not found.');
+  });
+
+  function addToken({name, color='#00ff88', char=null, x=.5, y=.5}){
+    tokens.push({id: Date.now()+Math.random(), name, color, x, y, char});
+    redrawAll(); saveState();
+  }
+
+  function openCharacterSheet(charOrToken){
+    const data = charOrToken.char || charOrToken;
+    if (!data){
+      characterPanel.innerHTML = `<h3>Character Sheet</h3><div class="hint">No sheet linked for this token.</div>`;
+      return;
+    }
+    characterPanel.innerHTML = `
+      <div class="char-header">
+        <h3>${data.name} <span style="font-weight:400">(${data.class||'—'} ${data.level? 'Lv '+data.level:''})</span></h3>
+        <span class="pill">AC ${data.ac ?? '—'}</span>
+      </div>
+      <div class="kv">
+        <div>HP</div><div>${data.hp ? (data.hp.current ?? data.hp) + (data.hp.max? ' / '+data.hp.max:'') : '—'}</div>
+        <div>Speed</div><div>${data.speed ?? '—'} ft</div>
+      </div>
+      <div class="stat-grid">
+        ${['STR','DEX','CON','INT','WIS','CHA'].map(k=>{
+          const v = data.stats?.[k] ?? '—';
+          return `<div class="stat"><div style="opacity:.8">${k}</div><div style="font-size:1.1rem;font-weight:700">${v}</div></div>`;
+        }).join('')}
+      </div>
+      <div style="margin:.6rem 0">
+        <div style="opacity:.85;margin-bottom:.25rem">Spells / Abilities</div>
+        <div>${(data.spells||[]).map(s=>`<span class="pill">${s}</span>`).join('') || '<span class="hint">None listed</span>'}</div>
+      </div>
+      <div style="margin:.6rem 0">
+        <div style="opacity:.85;margin-bottom:.25rem">Notes</div>
+        <div style="white-space:pre-wrap">${data.notes || '—'}</div>
+      </div>
+    `;
+  }
+
+  // ===== Map Upload
+  upload.addEventListener('change', e=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      mapImg = new Image();
+      mapImg.onload = ()=>{
+        baseMapW = mapImg.width; baseMapH = mapImg.height;
+        // Fit to view
+        const sw = canvas.width / baseMapW, sh = canvas.height / baseMapH;
+        scale = Math.min(sw, sh) * 0.95;
+        offsetX = (canvas.width - baseMapW*scale)/2;
+        offsetY = (canvas.height - baseMapH*scale)/2;
+        tokens = [];
+        initFog();
+        updateGridVisual();
+        redrawAll();
+      };
+      mapImg.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ===== Zoom & Pan
+  function zoomAt(factor, sx, sy){
+    const before = screenToWorld(sx, sy);
+    scale *= factor;
+    // clamp scale
+    scale = Math.max(0.2, Math.min(6, scale));
+    const after = screenToWorld(sx, sy);
+    // keep point under cursor
+    offsetX += (after.x - before.x) * scale;
+    offsetY += (after.y - before.y) * scale;
+    updateGridVisual();
+    redrawAll();
+  }
+  zoomInBtn.addEventListener('click', ()=> zoomAt(1.2, canvas.width/2, canvas.height/2));
+  zoomOutBtn.addEventListener('click', ()=> zoomAt(1/1.2, canvas.width/2, canvas.height/2));
+  canvas.addEventListener('wheel', (e)=>{
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.15 : 1/1.15;
+    zoomAt(factor, sx, sy);
+  }, {passive:false});
+
+  // Pan if dragging background (not token) with left mouse
+  canvas.addEventListener('mousedown', e=>{
+    mouseDown = true;
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+
+    const hit = pickToken(sx, sy);
+    if (currentTool === 'move' && hit){
+      selectedToken = hit;
+      draggingToken = true;
+      openCharacterSheet(hit);
+      redrawAll();
+      return;
     }
 
-    // --- Chat ---
-    function sendMsg() {
-        const text = msgInput.value.trim();
-        if (!text) return;
-        const div = document.createElement('div');
-        div.innerHTML = `<b>You:</b> ${text}`;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        msgInput.value = '';
+    if (currentTool === 'move'){
+      isPanning = true;
+      panStart = {x: sx - offsetX, y: sy - offsetY};
+      return;
     }
-    sendBtn.addEventListener('click', sendMsg);
-    msgInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMsg(); });
 
-    // --- Initial Load ---
+    // Templates / Fog start
+    if (currentTool.startsWith('fog')){
+      templateDrag = { start:{x:sx,y:sy}, cur:{x:sx,y:sy} };
+      fogBrush(sx, sy, currentTool==='fog-reveal');
+      return;
+    } else {
+      templateDrag = { start:{x:sx,y:sy}, cur:{x:sx,y:sy} };
+      redrawAll();
+    }
+  });
+
+  canvas.addEventListener('mousemove', e=>{
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+
+    if (draggingToken && selectedToken){
+      // move token in world coords then normalize to 0..1
+      const w = screenToWorld(sx, sy);
+      selectedToken.x = Math.max(0, Math.min(1, w.x / baseMapW));
+      selectedToken.y = Math.max(0, Math.min(1, w.y / baseMapH));
+      redrawAll(); saveState();
+      return;
+    }
+
+    if (isPanning && mouseDown){
+      offsetX = sx - panStart.x;
+      offsetY = sy - panStart.y;
+      updateGridVisual();
+      redrawAll();
+      return;
+    }
+
+    if (templateDrag){
+      templateDrag.cur = {x:sx,y:sy};
+      if (currentTool.startsWith('fog')){
+        fogBrush(sx, sy, currentTool==='fog-reveal');
+      } else {
+        redrawAll();
+      }
+    }
+  });
+
+  window.addEventListener('mouseup', ()=>{
+    mouseDown = false;
+    draggingToken = false;
+    isPanning = false;
+    if (currentTool !== 'move') {
+      // keep last template drawn until tool changes or new drag begins
+      // (i.e., templates are visual aids on templateCanvas; not persisted)
+    }
+    saveState();
+  });
+
+  function pickToken(sx, sy){
+    for (let i=tokens.length-1;i>=0;i--){
+      const p = tokenToScreen(tokens[i]);
+      const dx = sx - p.x, dy = sy - p.y;
+      if (dx*dx + dy*dy <= 18*18) return tokens[i];
+    }
+    return null;
+  }
+
+  // ===== Tool toggles
+  function setTool(tool){
+    currentTool = tool;
+    toolButtons.forEach(b=> b.classList.toggle('active', b.dataset.tool===tool));
+    // When leaving template mode, clear template canvas
+    if (tool === 'move'){ tctx.clearRect(0,0,templateCanvas.width,templateCanvas.height); }
+  }
+  toolButtons.forEach(b=> b.addEventListener('click', ()=> setTool(b.dataset.tool)));
+  setTool('move');
+
+  gridBtn.addEventListener('click', ()=>{
+    gridVisible = !gridVisible;
+    gridBtn.textContent = `Grid: ${gridVisible ? 'ON' : 'OFF'}`;
+    updateGridVisual(); saveState();
+  });
+  gridSizeSel.addEventListener('change', ()=>{
+    gridCellPx = parseInt(gridSizeSel.value,10);
+    updateGridVisual(); redrawAll(); saveState();
+  });
+
+  clearBtn.addEventListener('click', ()=>{
+    tokens = [];
+    tctx.clearRect(0,0,templateCanvas.width,templateCanvas.height);
+    initFog();
+    redrawAll(); saveState();
+  });
+
+  exportBtn.addEventListener('click', ()=>{
+    // Compose map + templates + fog into one export (grid is visual only)
+    const exportCv = document.createElement('canvas');
+    exportCv.width = canvas.width; exportCv.height = canvas.height;
+    const ex = exportCv.getContext('2d');
+    ex.drawImage(canvas,0,0);
+    ex.drawImage(templateCanvas,0,0);
+    ex.drawImage(fogCanvas,0,0);
+    const a = document.createElement('a');
+    a.download = 'battlemap.png';
+    a.href = exportCv.toDataURL('image/png');
+    a.click();
+  });
+
+  // ===== Initiative
+  function renderInitiative(){
+    initList.innerHTML = '';
+    initiative.forEach((it, idx)=>{
+      const div = document.createElement('div');
+      div.className = 'initiative-item' + (idx===initIndex ? ' active-turn' : '');
+      div.textContent = `${it.name} — ${it.roll}`;
+      initList.appendChild(div);
+    });
+  }
+  initForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const name = initName.value.trim();
+    const roll = parseInt(initRoll.value,10);
+    if(!name || isNaN(roll)) return;
+    initiative.push({name, roll});
+    initiative.sort((a,b)=> b.roll - a.roll);
+    initIndex = (initiative.length && initIndex===-1) ? 0 : initIndex;
+    initName.value=''; initRoll.value='';
+    renderInitiative(); saveState();
+  });
+  initNext.addEventListener('click', ()=>{
+    if(!initiative.length) return;
+    initIndex = (initIndex + 1) % initiative.length;
+    renderInitiative(); saveState();
+  });
+  initRestart.addEventListener('click', ()=>{
+    initIndex = 0; renderInitiative(); saveState();
+  });
+  initClear.addEventListener('click', ()=>{
+    initiative = []; initIndex=-1; renderInitiative(); saveState();
+  });
+
+  // ===== Save / Load Maps
+  function renderSavedMaps(){
+    const savedList = document.getElementById('saved-maps-list');
+    savedList.innerHTML = '';
+    savedMaps.forEach((map, i) => {
+      const item = document.createElement('div');
+      item.className = 'saved-map-item';
+      const thumb = document.createElement('div');
+      thumb.className = 'saved-map-thumb';
+      thumb.style.backgroundImage = `url(${map.image})`;
+      const actions = document.createElement('div');
+      actions.className = 'saved-map-actions';
+      const btn = document.createElement('button');
+      btn.textContent = 'Load';
+      btn.onclick = ()=>loadSavedMap(i);
+      actions.append(map.name, document.createElement('br'), btn);
+      item.append(thumb, actions);
+      savedList.appendChild(item);
+    });
+  }
+  saveBtn.addEventListener('click', ()=>{
+    if (!mapImg) return alert('Load a map first.');
+    const name = prompt('Name this map:', 'My Battle');
+    if (!name) return;
+    const mapData = {
+      name,
+      image: mapImg.src,
+      tokens,
+      gridVisible,
+      gridCellPx,
+      baseMapW, baseMapH, scale, offsetX, offsetY,
+      initiative, initIndex,
+    };
+    savedMaps.unshift(mapData);
+    if (savedMaps.length > 12) savedMaps.pop();
+    localStorage.setItem('war-vault-saved-maps', JSON.stringify(savedMaps));
     renderSavedMaps();
-    loadSoul();
-    const last = JSON.parse(localStorage.getItem('war-vault-current'));
-    if (last) {
-        mapImg = new Image();
-        mapImg.onload = () => {
-            mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
-            mapHeight = (mapImg.height * mapWidth) / mapImg.width;
-            offsetX = (canvas.width - mapWidth) / 2;
-            offsetY = (canvas.height - mapHeight) / 2;
-            tokens = last.tokens || [];
-            grid = last.grid;
-            document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
-            gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
-            drawMap();
-        };
-        mapImg.src = last.image;
-    }
-};
+    alert('Saved.');
+  });
+
+  function loadSavedMap(i){
+    const map = savedMaps[i];
+    const img = new Image();
+    img.onload = ()=>{
+      mapImg = img;
+      baseMapW = map.baseMapW || img.width;
+      baseMapH = map.baseMapH || img.height;
+      scale = map.scale ?? 1;
+      offsetX = map.offsetX ?? 0;
+      offsetY = map.offsetY ?? 0;
+      tokens = map.tokens || [];
+      gridVisible = map.gridVisible ?? true;
+      gridCellPx = map.gridCellPx || 50;
+      initiative = map.initiative || [];
+      initIndex = map.initIndex ?? -1;
+
+      gridBtn.textContent = `Grid: ${gridVisible ? 'ON' : 'OFF'}`;
+      gridSizeSel.value = String(gridCellPx);
+      initFog();
+      updateGridVisual();
+      renderInitiative();
+      redrawAll();
+    };
+    img.src = map.image;
+  }
+
+  renderSavedMaps();
+
+  // ===== Chat
+  function sendMsg(){
+    const text = msgInput.value.trim(); if(!text) return;
+    const div = document.createElement('div');
+    div.innerHTML = `<b>You:</b> ${text}`;
+    chatBox.appendChild(div);
+    const atBottom = chatBox.scrollTop + chatBox.clientHeight >= chatBox.scrollHeight - 8;
+    if (atBottom) chatBox.scrollTop = chatBox.scrollHeight;
+    msgInput.value='';
+  }
+  sendBtn.addEventListener('click', sendMsg);
+  msgInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMsg(); });
+
+  // ===== Persistence (current session)
+  function saveState(){
+    if (!mapImg) return;
+    const state = {
+      image: mapImg.src,
+      tokens, gridVisible, gridCellPx,
+      baseMapW, baseMapH, scale, offsetX, offsetY,
+      initiative, initIndex
+    };
+    localStorage.setItem('war-vault-current', JSON.stringify(state));
+  }
+
+  // Initial fog & restore
+  initFog();
+  const last = JSON.parse(localStorage.getItem('war-vault-current') || 'null');
+  if (last && last.image){
+    const img = new Image();
+    img.onload = ()=>{
+      mapImg = img;
+      baseMapW = last.baseMapW || img.width;
+      baseMapH = last.baseMapH || img.height;
+      scale = last.scale ?? 1;
+      offsetX = last.offsetX ?? 0;
+      offsetY = last.offsetY ?? 0;
+      tokens = last.tokens || [];
+      gridVisible = last.gridVisible ?? true;
+      gridCellPx = last.gridCellPx || 50;
+      initiative = last.initiative || [];
+      initIndex = last.initIndex ?? -1;
+      gridBtn.textContent = `Grid: ${gridVisible ? 'ON' : 'OFF'}`;
+      gridSizeSel.value = String(gridCellPx);
+      updateGridVisual();
+      renderInitiative();
+      redrawAll();
+    };
+    img.src = last.image;
+  }
+
+})();
 </script>
+</body>
+</html>
