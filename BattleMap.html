@@ -60,12 +60,15 @@
     .parchment .body{position:absolute;inset:42px 8px 8px 8px;background:#d7ccb0}
     #submap-canvas{position:absolute;inset:0}
 
-    /* Token Forge (mid-screen in right panel) */
+    /* Token Forge */
     #token-forge .desc{font-size:.9rem;opacity:.85;line-height:1.35;margin:.4rem 0 .6rem}
     #forge-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
     #saved-maps{max-height:160px;overflow:auto;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.35rem}
     .map-item{display:flex;align-items:center;gap:.5rem;margin:.3rem 0}
     .thumb{width:42px;height:42px;background:#222;border:1px solid rgba(255,255,255,.12);background-size:cover;background-position:center;border-radius:6px}
+
+    /* Template selection visuals */
+    .handle{position:absolute;width:10px;height:10px;border:2px solid #00c8ff;background:#00131a;border-radius:2px;z-index:9;pointer-events:auto}
 
     @media (max-width:1180px){#stage{grid-template-columns:0 1fr 360px}#left-panel{display:none}}
   </style>
@@ -91,6 +94,15 @@
         <h3>Character Sheet</h3>
         <div id="char-sheet">Click a token to view.</div>
         <div class="row"><button id="btn-load-characters" class="btn" style="width:100%">📥 Load from Echo Vault</button></div>
+      </div>
+
+      <div class="section">
+        <h3>Templates (Selected)</h3>
+        <div class="row"><input id="tpl-label" placeholder="Label (e.g., Fireball 20 ft)"></div>
+        <div class="row">
+          <button id="btn-tpl-apply" class="btn" style="flex:1">Apply Label</button>
+          <button id="btn-tpl-delete" class="btn" style="flex:1">Delete</button>
+        </div>
       </div>
     </aside>
 
@@ -126,6 +138,7 @@
         <h3>Tools</h3>
         <div class="row" style="flex-wrap:wrap">
           <button class="btn tool" data-tool="pan">🖐️ Pan</button>
+          <button class="btn tool" data-tool="select">🖱️ Select</button>
           <button class="btn tool" data-tool="ruler">📏 Ruler</button>
           <button class="btn tool" data-tool="los">🎯 LOS</button>
           <button class="btn tool" data-tool="circle">⭕ Circle</button>
@@ -148,6 +161,10 @@
             <option value="40" selected>Brush 40</option>
             <option value="80">Brush 80</option>
           </select>
+        </div>
+        <div class="row" style="gap:.5rem">
+          <button id="btn-fog-undo" class="btn" style="flex:1">⟲ Fog Undo</button>
+          <button id="btn-fog-redo" class="btn" style="flex:1">⟳ Fog Redo</button>
         </div>
       </div>
 
@@ -216,6 +233,13 @@
   const fogModeSel = document.getElementById('fog-mode');
   const brushSel = document.getElementById('brush');
   const clearTplBtn = document.getElementById('btn-clear-templates');
+  const fogUndoBtn = document.getElementById('btn-fog-undo');
+  const fogRedoBtn = document.getElementById('btn-fog-redo');
+
+  // Template controls (left panel)
+  const tplLabel = document.getElementById('tpl-label');
+  const tplApply = document.getElementById('btn-tpl-apply');
+  const tplDelete = document.getElementById('btn-tpl-delete');
 
   // Token forge
   const tfName = document.getElementById('tf-name');
@@ -259,6 +283,9 @@
 
   let tokens = [];          // {el,x,y,size,color,img?,name,char?,submapId?}
   let portals = [];         // {el,x,y,submapId}
+  let templates = [];       // persistent AoE templates
+  let selectedTemplate = null; // reference to template object
+
   let submaps = JSON.parse(localStorage.getItem('warvault-submaps')||'[]');
   let savedMaps = JSON.parse(localStorage.getItem('warvault-maps')||'[]');
 
@@ -266,7 +293,12 @@
   let drawing = null;       // {type,start:{x,y},cur:{x,y}}
   let isPanning = false; let panStart={x:0,y:0};
   let selectedToken = null;
-  let activeFog = false;
+  let activeFog = false; let paintedThisStroke=false;
+
+  // Fog history (undo/redo)
+  const FOG_LIMIT = 15;
+  let fogUndoStack = []; // ImageData
+  let fogRedoStack = [];
 
   // Initiative
   let initiative=[]; let initIdx=-1;
@@ -274,7 +306,7 @@
   function fitCanvases(){
     const r = wrap.getBoundingClientRect();
     [grid,tpl,fog].forEach(cv=>{cv.width=r.width; cv.height=r.height});
-    drawGrid(); clearTemplates(); drawFogFull();
+    drawGrid(); redrawTemplates(); drawFogFull();
     repositionAll();
   }
   window.addEventListener('resize', fitCanvases);
@@ -294,36 +326,44 @@
     for(let x=(offset.x%step+step)%step; x<grid.width; x+=step){ gctx.beginPath(); gctx.moveTo(x,0); gctx.lineTo(x,grid.height); gctx.stroke(); }
     for(let y=(offset.y%step+step)%step; y<grid.height; y+=step){ gctx.beginPath(); gctx.moveTo(0,y); gctx.lineTo(grid.width,y); gctx.stroke(); }
   }
-  function clearTemplates(){ tctx.clearRect(0,0,tpl.width,tpl.height); }
-  function drawFogFull(){ fctx.clearRect(0,0,fog.width,fog.height); fctx.fillStyle= getComputedStyle(document.documentElement).getPropertyValue('--mist'); fctx.fillRect(0,0,fog.width,fog.height); }
+  function drawFogFull(){ fctx.clearRect(0,0,fog.width,fog.height); fctx.fillStyle= getComputedStyle(document.documentElement).getPropertyValue('--mist'); fctx.fillRect(0,0,fog.width,fog.height); pushFogState(); }
 
-  function drawTemplate(){
-    clearTemplates(); if(!drawing) return;
-    const s = worldToScreen(drawing.start.x, drawing.start.y);
-    const c = worldToScreen(drawing.cur.x, drawing.cur.y);
+  function redrawTemplates(){
+    tctx.clearRect(0,0,tpl.width,tpl.height);
     tctx.lineWidth = 2; tctx.strokeStyle = 'rgba(0,200,255,0.9)'; tctx.fillStyle='rgba(0,200,255,0.25)';
-    if(drawing.type==='ruler' || drawing.type==='los'){
-      tctx.beginPath(); tctx.moveTo(s.x,s.y); tctx.lineTo(c.x,c.y); tctx.stroke();
-      // distance label (feet)
-      const dx=drawing.cur.x - drawing.start.x, dy=drawing.cur.y - drawing.start.y;
-      const feet = Math.round(Math.hypot(dx,dy)/cell*5);
-      tctx.fillStyle='rgba(0,0,0,.7)'; tctx.fillRect((s.x+c.x)/2-18,(s.y+c.y)/2-10,36,18);
-      tctx.fillStyle='#fff'; tctx.font='12px system-ui'; tctx.textAlign='center'; tctx.fillText(feet+ ' ft', (s.x+c.x)/2, (s.y+c.y)/2+4);
+    templates.forEach(tp=>{
+      const s = worldToScreen(tp.x, tp.y);
+      tctx.save();
+      if(tp.type==='circle'){
+        tctx.beginPath(); tctx.arc(s.x, s.y, tp.r*scale, 0, Math.PI*2); tctx.fill(); tctx.stroke();
+        if(tp.label) drawLabel(tp.label, s.x, s.y - tp.r*scale - 8);
+      } else if(tp.type==='rect'){
+        const w=tp.w*scale, h=tp.h*scale; tctx.beginPath(); tctx.rect(s.x, s.y, w, h); tctx.fill(); tctx.stroke();
+        if(tp.label) drawLabel(tp.label, s.x + w/2, s.y - 8);
+      } else if(tp.type==='cone'){
+        const len = tp.len*scale; tctx.beginPath(); tctx.moveTo(s.x, s.y);
+        tctx.lineTo(s.x + Math.cos(tp.ang - tp.spread/2)*len, s.y + Math.sin(tp.ang - tp.spread/2)*len);
+        tctx.arc(s.x, s.y, len, tp.ang - tp.spread/2, tp.ang + tp.spread/2);
+        tctx.closePath(); tctx.fill(); tctx.stroke();
+        if(tp.label) drawLabel(tp.label, s.x + Math.cos(tp.ang)*len, s.y + Math.sin(tp.ang)*len);
+      }
+      // selection handles
+      if(selectedTemplate===tp){ drawHandles(tp); }
+      tctx.restore();
+    });
+  }
+  function drawLabel(text, x, y){ tctx.fillStyle='rgba(0,0,0,.7)'; const pad=4; const w=tctx.measureText(text).width+pad*2; tctx.fillRect(x-w/2, y-14, w, 16); tctx.fillStyle='#fff'; tctx.font='12px system-ui'; tctx.textAlign='center'; tctx.fillText(text,x,y); tctx.fillStyle='rgba(0,200,255,0.25)'; }
+
+  function drawHandles(tp){
+    const hs = 8;
+    if(tp.type==='circle'){
+      const c = worldToScreen(tp.x,tp.y); const r = tp.r*scale; drawHandle(c.x + r, c.y, 'edge'); drawHandle(c.x - r, c.y, 'edge'); drawHandle(c.x, c.y - r, 'edge'); drawHandle(c.x, c.y + r, 'edge');
+    } else if(tp.type==='rect'){
+      const s=worldToScreen(tp.x,tp.y); const w=tp.w*scale, h=tp.h*scale; drawHandle(s.x, s.y, 'corner'); drawHandle(s.x+w, s.y, 'corner'); drawHandle(s.x, s.y+h, 'corner'); drawHandle(s.x+w, s.y+h, 'corner');
+    } else if(tp.type==='cone'){
+      const s=worldToScreen(tp.x,tp.y); const len=tp.len*scale; drawHandle(s.x + Math.cos(tp.ang)*len, s.y + Math.sin(tp.ang)*len, 'tip');
     }
-    if(drawing.type==='circle'){
-      const r = Math.hypot(c.x-s.x, c.y-s.y);
-      tctx.beginPath(); tctx.arc(s.x,s.y,r,0,Math.PI*2); tctx.fill(); tctx.stroke();
-    }
-    if(drawing.type==='rect'){
-      tctx.beginPath(); tctx.rect(s.x,s.y,c.x-s.x,c.y-s.y); tctx.fill(); tctx.stroke();
-    }
-    if(drawing.type==='cone'){
-      const ang = Math.atan2(c.y-s.y, c.x-s.x); const len = Math.hypot(c.x-s.x, c.y-s.y); const spread=Math.PI/3;
-      tctx.beginPath(); tctx.moveTo(s.x,s.y);
-      tctx.lineTo(s.x + Math.cos(ang-spread/2)*len, s.y + Math.sin(ang-spread/2)*len);
-      tctx.arc(s.x,s.y,len, ang-spread/2, ang+spread/2);
-      tctx.closePath(); tctx.fill(); tctx.stroke();
-    }
+    function drawHandle(x,y){ tctx.save(); tctx.fillStyle='#00c8ff'; tctx.strokeStyle='#00131a'; tctx.lineWidth=2; tctx.beginPath(); tctx.rect(x-hs/2,y-hs/2,hs,hs); tctx.fill(); tctx.stroke(); tctx.restore(); }
   }
 
   // ===== Map upload
@@ -335,9 +375,9 @@
   // ===== Zoom/Pan
   function repositionAll(){
     mapEl.style.transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
-    tokens.forEach(t=>{ t.el.style.width=t.size+'px'; t.el.style.height=t.size+'px'; const p=worldToScreen(t.x,t.y); t.el.style.transform=`translate(${p.x}px, ${p.y}px) scale(${scale})`; });
+    tokens.forEach(t=>{ t.el.style.width=t.size+'px'; t.el.style.height=t.size+'px'; const p=worldToScreen(t.x,t.y); t.el.style.transform=`translate=${''}`; t.el.style.transform=`translate(${p.x}px, ${p.y}px) scale(${scale})`; });
     portals.forEach(p=>{ const s=worldToScreen(p.x,p.y); p.el.style.transform=`translate(${s.x-13}px, ${s.y-13}px) scale(${scale})`; });
-    drawGrid();
+    drawGrid(); redrawTemplates();
   }
   function setScale(newScale, anchorX, anchorY){
     const old = scale; scale = Math.max(.2, Math.min(6, newScale));
@@ -356,15 +396,16 @@
     if(!onMap) return;
     const w = screenToWorld(e.offsetX, e.offsetY);
 
+    // Fog painting
     if(fogMode!=='none'){
-      activeFog=true; paintFog(e.offsetX, e.offsetY, fogMode==='reveal'); return;
+      startFogStroke(); paintFog(e.offsetX, e.offsetY, fogMode==='reveal'); return;
     }
 
     if(tool==='pan'){ isPanning=true; panStart={x:e.clientX-offset.x, y:e.clientY-offset.y}; return; }
 
     if(['ruler','los','circle','rect','cone'].includes(tool)){
       drawing = { type: tool==='ruler'?'ruler':tool, start:{x:snap(w.x), y:snap(w.y)}, cur:{x:snap(w.x), y:snap(w.y)} };
-      drawTemplate(); return;
+      drawTemplatePreview(); return;
     }
 
     if(tool==='portal'){
@@ -375,23 +416,72 @@
       portal.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); assignSubmapToPortal(p); });
       return;
     }
+
+    if(tool==='select'){
+      // try to select a template from topmost
+      selectedTemplate = hitTestTemplates(w.x, w.y);
+      if(selectedTemplate){ tplLabel.value = selectedTemplate.label||''; dragTemplateStart(w.x,w.y); }
+      redrawTemplates();
+      return;
+    }
   });
   window.addEventListener('mousemove', e=>{
     if(isPanning){ offset.x=e.clientX-panStart.x; offset.y=e.clientY-panStart.y; repositionAll(); return; }
     if(activeFog){ paintFog(e.offsetX, e.offsetY, fogModeSel.value==='reveal'); return; }
-    if(drawing){ const w=screenToWorld(e.offsetX,e.offsetY); drawing.cur={x:snap(w.x), y:snap(w.y)}; drawTemplate(); }
+    if(drawing){ const w=screenToWorld(e.offsetX,e.offsetY); drawing.cur={x:snap(w.x), y:snap(w.y)}; drawTemplatePreview(); }
+    if(draggingTemplate){ const w=screenToWorld(e.offsetX,e.offsetY); moveTemplateTo(w.x,w.y); }
   });
-  window.addEventListener('mouseup', ()=>{ isPanning=false; activeFog=false; });
+  window.addEventListener('mouseup', ()=>{ if(isPanning) isPanning=false; if(activeFog){ endFogStroke(); } if(drawing){ finalizeTemplate(); drawing=null; } if(draggingTemplate){ draggingTemplate=null; } });
 
-  function paintFog(sx,sy,reveal){
-    fog.style.pointerEvents='auto';
-    fctx.globalCompositeOperation = reveal ? 'destination-out':'source-over';
-    if(!reveal){ fctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist'); }
-    const r = parseInt(brushSel.value,10);
-    fctx.beginPath(); fctx.arc(sx,sy,r,0,Math.PI*2); fctx.fill();
-    fctx.globalCompositeOperation = 'source-over';
+  function drawTemplatePreview(){
+    tctx.clearRect(0,0,tpl.width,tpl.height);
+    // draw existing
+    redrawTemplates();
+    // preview new drawing
+    if(!drawing) return;
+    const s = worldToScreen(drawing.start.x, drawing.start.y);
+    const c = worldToScreen(drawing.cur.x, drawing.cur.y);
+    tctx.lineWidth = 2; tctx.strokeStyle = 'rgba(0,200,255,0.9)'; tctx.fillStyle='rgba(0,200,255,0.25)';
+    if(drawing.type==='ruler' || drawing.type==='los'){
+      tctx.beginPath(); tctx.moveTo(s.x,s.y); tctx.lineTo(c.x,c.y); tctx.stroke();
+      const dx=drawing.cur.x - drawing.start.x, dy=drawing.cur.y - drawing.start.y; const feet=Math.round(Math.hypot(dx,dy)/cell*5);
+      tctx.fillStyle='rgba(0,0,0,.7)'; tctx.fillRect((s.x+c.x)/2-18,(s.y+c.y)/2-10,36,18); tctx.fillStyle='#fff'; tctx.font='12px system-ui'; tctx.textAlign='center'; tctx.fillText(feet+' ft',(s.x+c.x)/2,(s.y+c.y)/2+4); tctx.fillStyle='rgba(0,200,255,0.25)';
+    }
+    if(drawing.type==='circle'){ const r=Math.hypot(c.x-s.x,c.y-s.y); tctx.beginPath(); tctx.arc(s.x,s.y,r,0,Math.PI*2); tctx.fill(); tctx.stroke(); }
+    if(drawing.type==='rect'){ tctx.beginPath(); tctx.rect(s.x,s.y,c.x-s.x,c.y-s.y); tctx.fill(); tctx.stroke(); }
+    if(drawing.type==='cone'){ const ang=Math.atan2(c.y-s.y,c.x-s.x); const len=Math.hypot(c.x-s.x,c.y-s.y); const spread=Math.PI/3; tctx.beginPath(); tctx.moveTo(s.x,s.y); tctx.lineTo(s.x+Math.cos(ang-spread/2)*len, s.y+Math.sin(ang-spread/2)*len); tctx.arc(s.x,s.y,len, ang-spread/2, ang+spread/2); tctx.closePath(); tctx.fill(); tctx.stroke(); }
   }
-  clearTplBtn.addEventListener('click', clearTemplates);
+
+  function finalizeTemplate(){
+    if(!drawing) return;
+    const tp = { id: Date.now().toString(36), type: drawing.type, x: drawing.start.x, y: drawing.start.y, label:'' };
+    if(drawing.type==='circle'){ const r=Math.hypot(drawing.cur.x-drawing.start.x, drawing.cur.y-drawing.start.y); tp.r = r; }
+    if(drawing.type==='rect'){ tp.w = drawing.cur.x - drawing.start.x; tp.h = drawing.cur.y - drawing.start.y; }
+    if(drawing.type==='cone'){ const ang=Math.atan2(drawing.cur.y-drawing.start.y, drawing.cur.x-drawing.start.x); const len=Math.hypot(drawing.cur.x-drawing.start.x, drawing.cur.y-drawing.start.y); tp.ang=ang; tp.len=len; tp.spread=Math.PI/3; }
+    if(['ruler','los'].includes(drawing.type)){ return; } // measurement only, not persisted
+    templates.push(tp); selectedTemplate = tp; tplLabel.value=''; redrawTemplates();
+  }
+
+  // ===== Template selection & dragging
+  let draggingTemplate=null; let dragTemplateOffset={x:0,y:0};
+  function hitTestTemplates(wx,wy){
+    for(let i=templates.length-1;i>=0;i--){ const tp=templates[i]; if(tp.type==='circle'){ const d=Math.hypot(wx-tp.x, wy-tp.y); if(d<=tp.r) return tp; } else if(tp.type==='rect'){ if(wx>=tp.x && wx<=tp.x+tp.w && wy>=tp.y && wy<=tp.y+tp.h) return tp; } else if(tp.type==='cone'){ const len=tp.len; const ang=Math.atan2(wy-tp.y, wx-tp.x); let da=Math.abs(((ang - tp.ang + Math.PI*3)%(Math.PI*2))-Math.PI); const d=Math.hypot(wx-tp.x, wy-tp.y); if(da<=tp.spread/2 && d<=len) return tp; } }
+    return null;
+  }
+  function dragTemplateStart(wx,wy){ draggingTemplate = selectedTemplate; if(!draggingTemplate) return; dragTemplateOffset.x = wx - draggingTemplate.x; dragTemplateOffset.y = wy - draggingTemplate.y; }
+  function moveTemplateTo(wx,wy){ if(!draggingTemplate) return; draggingTemplate.x = snap(wx - dragTemplateOffset.x); draggingTemplate.y = snap(wy - dragTemplateOffset.y); redrawTemplates(); }
+
+  // Apply label / delete
+  tplApply.addEventListener('click', ()=>{ if(!selectedTemplate) return; selectedTemplate.label = tplLabel.value.trim(); redrawTemplates(); });
+  tplDelete.addEventListener('click', ()=>{ if(!selectedTemplate) return; templates = templates.filter(t=>t!==selectedTemplate); selectedTemplate=null; tplLabel.value=''; redrawTemplates(); });
+
+  // ===== Fog painting with undo/redo
+  function pushFogState(){ try{ const img=fctx.getImageData(0,0,fog.width,fog.height); fogUndoStack.push(img); if(fogUndoStack.length>FOG_LIMIT) fogUndoStack.shift(); fogRedoStack.length=0; }catch(e){ /* cross-origin or memory */ } }
+  function startFogStroke(){ if(!paintedThisStroke){ pushFogState(); paintedThisStroke=true; } fog.style.pointerEvents='auto'; }
+  function endFogStroke(){ paintedThisStroke=false; try{ const img=fctx.getImageData(0,0,fog.width,fog.height); fogUndoStack.push(img); if(fogUndoStack.length>FOG_LIMIT) fogUndoStack.shift(); fogRedoStack.length=0; }catch(e){} }
+  function paintFog(sx,sy,reveal){ fctx.globalCompositeOperation = reveal ? 'destination-out':'source-over'; if(!reveal){ fctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist'); } const r = parseInt(brushSel.value,10); fctx.beginPath(); fctx.arc(sx,sy,r,0,Math.PI*2); fctx.fill(); fctx.globalCompositeOperation = 'source-over'; }
+  fogUndoBtn.addEventListener('click', ()=>{ if(fogUndoStack.length<2) return; const cur=fogUndoStack.pop(); fogRedoStack.push(cur); const prev=fogUndoStack[fogUndoStack.length-1]; fctx.putImageData(prev,0,0); });
+  fogRedoBtn.addEventListener('click', ()=>{ if(!fogRedoStack.length) return; const img=fogRedoStack.pop(); fogUndoStack.push(img); fctx.putImageData(img,0,0); });
 
   // ===== Tools toggle
   function setTool(t){ currentTool=t; toolButtons.forEach(b=> b.classList.toggle('toggled', b.dataset.tool===t)); fog.style.pointerEvents = (fogModeSel.value!=='none')?'auto':'none'; }
@@ -422,16 +512,8 @@
   }
   function positionToken(t){ const s=worldToScreen(t.x,t.y); t.el.style.transform=`translate(${s.x}px, ${s.y}px) scale(${scale})`; }
 
-  function openSheet(t){
-    const c = t.char||{};
-    charSheet.innerHTML = `
-      <div style="font-weight:700">${c.name||t.name}</div>
-      <div style="opacity:.8">${(c.class||'') + ' ' + (c.race||'')}</div>
-      <div class="row"><label>Initiative</label><input id="init-input" type="number" value="${c.initiative||0}"></div>
-      <div class="row"><button class="btn" id="init-add-btn">Add to Initiative</button></div>
-    `;
-    document.getElementById('init-add-btn').onclick = ()=>{ const val=parseInt(document.getElementById('init-input').value||'0',10); addInitiative((c.name||t.name), val); };
-  }
+  // Character sheet (quick)
+  function openSheet(t){ const c = t.char||{}; charSheet.innerHTML = `<div style="font-weight:700">${c.name||t.name}</div><div style="opacity:.8">${(c.class||'') + ' ' + (c.race||'')}</div><div class=\"row\"><label>Initiative</label><input id=\"init-input\" type=\"number\" value=\"${c.initiative||0}\"></div><div class=\"row\"><button class=\"btn\" id=\"init-add-btn\">Add to Initiative</button></div>`; document.getElementById('init-add-btn').onclick = ()=>{ const val=parseInt(document.getElementById('init-input').value||'0',10); addInitiative((c.name||t.name), val); }; }
 
   // Context menu for tokens
   function openCtx(x,y){ ctxMenu.style.display='block'; ctxMenu.style.left=x+'px'; ctxMenu.style.top=y+'px'; }
@@ -446,16 +528,7 @@
   });
 
   // ===== Submaps
-  function renderSubmapList(){
-    subList.innerHTML='';
-    submaps.forEach(sm=>{
-      const card=document.createElement('div'); card.className='map-item';
-      const th=document.createElement('div'); th.className='thumb'; th.style.backgroundImage=`url(${sm.image||sm.dataURL})`;
-      const name=document.createElement('div'); name.textContent=sm.name; name.style.flex='1'; name.style.color='#d8c797';
-      const btn=document.createElement('button'); btn.className='btn'; btn.textContent='Open'; btn.onclick=()=>openSubmapById(sm.id);
-      card.append(th,name,btn); subList.appendChild(card);
-    });
-  }
+  function renderSubmapList(){ subList.innerHTML=''; submaps.forEach(sm=>{ const card=document.createElement('div'); card.className='map-item'; const th=document.createElement('div'); th.className='thumb'; th.style.backgroundImage=`url(${sm.image||sm.dataURL})`; const name=document.createElement('div'); name.textContent=sm.name; name.style.flex='1'; name.style.color='#d8c797'; const btn=document.createElement('button'); btn.className='btn'; btn.textContent='Open'; btn.onclick=()=>openSubmapById(sm.id); card.append(th,name,btn); subList.appendChild(card); }); }
   renderSubmapList();
 
   function assignSubmapToToken(t){ if(!submaps.length) return alert('Add submaps in Submap Manager.'); const name=prompt('Type submap name to assign:\n'+submaps.map(s=>'- '+s.name).join('\n')); const f=submaps.find(s=>s.name.toLowerCase()===String(name||'').toLowerCase()); if(f){ t.submapId=f.id; alert('Assigned '+f.name); } }
@@ -463,64 +536,19 @@
 
   function openSubmapById(id){ const sm=submaps.find(s=>s.id===id); if(!sm) return alert('Submap missing'); subTitle.textContent=sm.name; const img=new Image(); img.onload=()=>{ const box=subCanvas.getBoundingClientRect(); subCanvas.width=box.width; subCanvas.height=box.height; const ar=Math.min(box.width/img.width, box.height/img.height); const dw=img.width*ar, dh=img.height*ar; const dx=(box.width-dw)/2, dy=(box.height-dh)/2; sctx.clearRect(0,0,subCanvas.width,subCanvas.height); sctx.fillStyle='#d7ccb0'; sctx.fillRect(0,0,subCanvas.width,subCanvas.height); sctx.drawImage(img,dx,dy,dw,dh); subOverlay.style.display='block'; }; img.src=sm.dataURL||sm.image; }
 
-  subAddBtn.addEventListener('click', ()=>{
-    const file=subFile.files?.[0]; const name=subName.value.trim()||'Submap'; if(!file){ alert('Choose an image'); return; }
-    const r=new FileReader(); r.onload=e=>{ const item={id:Date.now().toString(36), name, dataURL:e.target.result}; submaps.push(item); localStorage.setItem('warvault-submaps', JSON.stringify(submaps)); subFile.value=''; subName.value=''; renderSubmapList(); }; r.readAsDataURL(file);
-  });
+  subAddBtn.addEventListener('click', ()=>{ const file=subFile.files?.[0]; const name=subName.value.trim()||'Submap'; if(!file){ alert('Choose an image'); return; } const r=new FileReader(); r.onload=e=>{ const item={id:Date.now().toString(36), name, dataURL:e.target.result}; submaps.push(item); localStorage.setItem('warvault-submaps', JSON.stringify(submaps)); subFile.value=''; subName.value=''; renderSubmapList(); }; r.readAsDataURL(file); });
 
   // ===== Token Forge
-  createTokenBtn.addEventListener('click', ()=>{
-    const name=tfName.value.trim()||'Token'; const color=tfColor.value; const size=Math.max(24,Math.min(120, parseInt(tfSize.value||'42',10)));
-    const file=tfPhoto.files?.[0]; if(file){ const r=new FileReader(); r.onload=e=> spawnToken({name,color,size,img:e.target.result}); r.readAsDataURL(file); } else { spawnToken({name,color,size}); }
-  });
+  createTokenBtn.addEventListener('click', ()=>{ const name=tfName.value.trim()||'Token'; const color=tfColor.value; const size=Math.max(24,Math.min(120, parseInt(tfSize.value||'42',10))); const file=tfPhoto.files?.[0]; if(file){ const r=new FileReader(); r.onload=e=> spawnToken({name,color,size,img:e.target.result}); r.readAsDataURL(file); } else { spawnToken({name,color,size}); } });
 
-  // ===== Save/Load Maps (list shown next to photo)
-  function renderSavedMaps(){
-    savedMapsDiv.innerHTML='';
-    savedMaps.forEach((m,idx)=>{
-      const row=document.createElement('div'); row.className='map-item';
-      const th=document.createElement('div'); th.className='thumb'; th.style.backgroundImage=`url(${m.thumbnail||m.image})`;
-      const nm=document.createElement('div'); nm.textContent=m.name; nm.style.flex='1';
-      const load=document.createElement('button'); load.className='btn'; load.textContent='Load'; load.onclick=()=>loadMap(idx);
-      const del=document.createElement('button'); del.className='btn'; del.textContent='✕'; del.onclick=()=>{ savedMaps.splice(idx,1); localStorage.setItem('warvault-maps', JSON.stringify(savedMaps)); renderSavedMaps(); };
-      row.append(th,nm,load,del); savedMapsDiv.appendChild(row);
-    });
-  }
+  // ===== Save/Load Maps
+  function renderSavedMaps(){ savedMapsDiv.innerHTML=''; savedMaps.forEach((m,idx)=>{ const row=document.createElement('div'); row.className='map-item'; const th=document.createElement('div'); th.className='thumb'; th.style.backgroundImage=`url(${m.thumbnail||m.image})`; const nm=document.createElement('div'); nm.textContent=m.name; nm.style.flex='1'; const load=document.createElement('button'); load.className='btn'; load.textContent='Load'; load.onclick=()=>loadMap(idx); const del=document.createElement('button'); del.className='btn'; del.textContent='✕'; del.onclick=()=>{ savedMaps.splice(idx,1); localStorage.setItem('warvault-maps', JSON.stringify(savedMaps)); renderSavedMaps(); }; row.append(th,nm,load,del); savedMapsDiv.appendChild(row); }); }
   renderSavedMaps();
 
-  function saveCurrentMap(){
-    // Build thumbnail from map element (best-effort, not including fog/templates)
-    const cv=document.createElement('canvas'); const r=wrap.getBoundingClientRect(); cv.width=220; cv.height=140; const cx=cv.getContext('2d');
-    // Try draw: just the base map image scaled to thumbnail
-    try{ const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ const ar=Math.min(cv.width/img.width, cv.height/img.height); const dw=img.width*ar, dh=img.height*ar; const dx=(cv.width-dw)/2, dy=(cv.height-dh)/2; cx.fillStyle='#111'; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(img,dx,dy,dw,dh); finalize(); }; img.src=mapEl.src; } catch{ finalize(); }
-    function finalize(){
-      const name = prompt('Name this map:', 'My Battle') || 'Untitled';
-      const data = {
-        name,
-        image: mapEl.src,
-        tokens: tokens.map(t=>({x:t.x,y:t.y,size:t.size,color:t.color,img:t.img,name:t.name,submapId:t.submapId,char:t.char})),
-        portals: portals.map(p=>({x:p.x,y:p.y,submapId:p.submapId})),
-        submaps,
-        offset, scale
-      };
-      const thumbnail = cv.toDataURL('image/png');
-      savedMaps.unshift({...data, thumbnail}); if(savedMaps.length>20) savedMaps.pop();
-      localStorage.setItem('warvault-maps', JSON.stringify(savedMaps)); renderSavedMaps();
-      alert('Map saved.');
-    }
-  }
+  function saveCurrentMap(){ const cv=document.createElement('canvas'); const r=wrap.getBoundingClientRect(); cv.width=220; cv.height=140; const cx=cv.getContext('2d'); try{ const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ const ar=Math.min(cv.width/img.width, cv.height/img.height); const dw=img.width*ar, dh=img.height*ar; const dx=(cv.width-dw)/2, dy=(cv.height-dh)/2; cx.fillStyle='#111'; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(img,dx,dy,dw,dh); finalize(); }; img.src=mapEl.src; } catch{ finalize(); } function finalize(){ const name = prompt('Name this map:', 'My Battle') || 'Untitled'; const data = { name, image: mapEl.src, tokens: tokens.map(t=>({x:t.x,y:t.y,size:t.size,color:t.color,img:t.img,name:t.name,submapId:t.submapId,char:t.char})), portals: portals.map(p=>({x:p.x,y:p.y,submapId:p.submapId})), templates, submaps, offset, scale }; const thumbnail = cv.toDataURL('image/png'); savedMaps.unshift({...data, thumbnail}); if(savedMaps.length>20) savedMaps.pop(); localStorage.setItem('warvault-maps', JSON.stringify(savedMaps)); renderSavedMaps(); alert('Map saved.'); } }
   saveMapBtn.addEventListener('click', saveCurrentMap);
 
-  function loadMap(idx){
-    const m=savedMaps[idx]; if(!m) return;
-    mapEl.src=m.image; offset=m.offset||{x:0,y:0}; scale=m.scale||1;
-    // clear tokens & portals
-    tokens.forEach(t=>t.el.remove()); tokens=[]; portals.forEach(p=>p.el.remove()); portals=[];
-    (m.tokens||[]).forEach(tt=> spawnToken(tt));
-    (m.portals||[]).forEach(pp=>{ const portal=document.createElement('div'); portal.className='portal'; wrap.appendChild(portal); const p={el:portal,x:pp.x,y:pp.y,submapId:pp.submapId}; portals.push(p); const s=worldToScreen(p.x,p.y); portal.style.transform=`translate(${s.x-13}px, ${s.y-13}px) scale(${scale})`; portal.addEventListener('click', ()=>{ if(p.submapId) openSubmapById(p.submapId); else assignSubmapToPortal(p); }); portal.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); assignSubmapToPortal(p); }); });
-    submaps = m.submaps || submaps; localStorage.setItem('warvault-submaps', JSON.stringify(submaps)); renderSubmapList();
-    repositionAll();
-  }
+  function loadMap(idx){ const m=savedMaps[idx]; if(!m) return; mapEl.src=m.image; offset=m.offset||{x:0,y:0}; scale=m.scale||1; tokens.forEach(t=>t.el.remove()); tokens=[]; portals.forEach(p=>p.el.remove()); portals=[]; (m.tokens||[]).forEach(tt=> spawnToken(tt)); (m.portals||[]).forEach(pp=>{ const portal=document.createElement('div'); portal.className='portal'; wrap.appendChild(portal); const p={el:portal,x:pp.x,y:pp.y,submapId:pp.submapId}; portals.push(p); const s=worldToScreen(p.x,p.y); portal.style.transform=`translate(${s.x-13}px, ${s.y-13}px) scale(${scale})`; portal.addEventListener('click', ()=>{ if(p.submapId) openSubmapById(p.submapId); else assignSubmapToPortal(p); }); portal.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); assignSubmapToPortal(p); }); }); templates = m.templates || []; redrawTemplates(); submaps = m.submaps || submaps; localStorage.setItem('warvault-submaps', JSON.stringify(submaps)); renderSubmapList(); repositionAll(); }
 
   // ===== Initiative
   function addInitiative(name, roll){ initiative.push({name, roll}); initiative.sort((a,b)=>b.roll-a.roll); if(initIdx<0 && initiative.length) initIdx=0; renderInitiative(); }
@@ -528,6 +556,10 @@
   initAdd.addEventListener('click', ()=>{ const n=initName.value.trim(); const r=parseInt(initRoll.value||''); if(!n||isNaN(r)) return; addInitiative(n,r); initName.value=''; initRoll.value=''; });
   initNext.addEventListener('click', ()=>{ if(!initiative.length) return; initIdx=(initIdx+1)%initiative.length; renderInitiative(); });
   initReset.addEventListener('click', ()=>{ initiative=[]; initIdx=-1; renderInitiative(); });
+
+  // ===== Helpers
+  function setTool(t){ currentTool=t; toolButtons.forEach(b=> b.classList.toggle('toggled', b.dataset.tool===t)); fog.style.pointerEvents = (fogModeSel.value!=='none')?'auto':'none'; }
+  toolButtons.forEach(b=> b.addEventListener('click', ()=> setTool(b.dataset.tool)));
 
   // Start
   setTool('pan');
