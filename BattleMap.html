@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The War Vault | Living Battle Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #e6c57f;
+            --accent: #b88c5c;
+            --dark: #0a0a0f;
+            --grid: rgba(255, 255, 255, 0.15);
+            --los: rgba(255, 255, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #000 url('https://i.imgur.com/8V7V3sP.jpg') no-repeat center center;
+            background-size: cover;
+            color: var(--primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: rgba(10, 10, 15, 0.9);
+            padding: 0.8rem 1rem;
+            z-index: 10;
+            border-bottom: 1px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Cinzel', serif;
+            font-size: 1.6rem;
+            color: var(--primary);
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        button, input[type="file"] {
+            background: rgba(26, 27, 38, 0.8);
+            color: var(--primary);
+            border: 1px solid var(--accent);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            background: var(--accent);
+            box-shadow: 0 0 10px rgba(230, 197, 127, 0.5);
+        }
+
+        #map-container {
+            position: absolute;
+            top: 5rem; left: 0; right: 0; bottom: 0;
+            overflow: hidden;
+        }
+
+        #map-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            cursor: grab;
+        }
+
+        #grid-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+                              linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.6;
+            z-index: 2;
+        }
+
+        .token {
+            position: absolute;
+            width: 40px; height: 40px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 5;
+            cursor: move;
+        }
+
+        .token-3d {
+            width: 60px; height: 60px;
+        }
+
+        #initiative-panel {
+            position: fixed;
+            right: 1rem; top: 5.5rem;
+            background: rgba(10, 10, 15, 0.9);
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            padding: 1rem;
+            color: var(--primary);
+            font-size: 0.95rem;
+            z-index: 20;
+            max-width: 200px;
+        }
+
+        .initiative-item {
+            margin: 0.5rem 0;
+            padding: 0.4rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid var(--primary);
+            border-radius: 4px;
+        }
+
+        #fog-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.9) 100%);
+            z-index: 10;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+
+        .los-line {
+            position: absolute; background: var(--los); z-index: 3; height: 2px;
+            transform-origin: 0 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">The War Vault</div>
+        <div class="controls">
+            <button onclick="toggleGrid()">Grid: ON</button>
+            <button onclick="toggleLOS()">LOS Tool</button>
+            <input type="file" id="map-upload" accept=".png,.jpg,.jpeg,.glb" onchange="loadMap(event)" />
+            <button onclick="saveMap()">💾 Save</button>
+        </div>
+    </header>
+
+    <div id="map-container">
+        <img id="map-img" style="display:none;" />
+        <model-viewer id="map-3d" style="display:none;" camera-controls auto-rotate></model-viewer>
+        <canvas id="map-canvas"></canvas>
+        <div id="grid-layer"></div>
+        <div id="fog-layer" style="display:none;"></div>
+    </div>
+
+    <div id="initiative-panel">
+        <h3 style="color:var(--primary); margin-bottom:0.8rem;">Initiative</h3>
+        <div id="init-list"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('map-canvas');
+        const ctx = canvas.getContext('2d');
+        const upload = document.getElementById('map-upload');
+        const img = document.getElementById('map-img');
+        const map3d = document.getElementById('map-3d');
+        const gridBtn = document.querySelector('button:nth-child(1)');
+        const losBtn = document.querySelector('button:nth-child(2)');
+        const initList = document.getElementById('init-list');
+
+        let grid = true;
+        let losMode = false;
+        let tokens = [];
+        let selectedToken = null;
+        let losLine = null;
+        let drag = false;
+        let offsetX = 0, offsetY = 0;
+        let mapWidth = 0, mapHeight = 0;
+
+        // Resize
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight - 70;
+            if (img.complete) drawMap();
+        }
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('load', () => {
+            resize();
+            loadInitiative();
+        });
+
+        // Draw Map
+        function drawMap() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (img.src) {
+                const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+                mapWidth = img.width * scale;
+                mapHeight = img.height * scale;
+                const x = (canvas.width - mapWidth) / 2;
+                const y = (canvas.height - mapHeight) / 2;
+                ctx.drawImage(img, x, y, mapWidth, mapHeight);
+                drawTokens();
+            }
+        }
+
+        // Load Map
+        function loadMap(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type.includes('image')) {
+                map3d.style.display = 'none';
+                img.style.display = 'block';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        drawMap();
+                        saveMapState();
+                    };
+                };
+                reader.readAsDataURL(file);
+            } else if (file.name.endsWith('.glb')) {
+                img.style.display = 'none';
+                map3d.style.display = 'block';
+                map3d.src = URL.createObjectURL(file);
+            }
+        }
+
+        // Draw Tokens
+        function drawTokens() {
+            tokens.forEach(token => {
+                const x = token.x;
+                const y = token.y;
+                ctx.fillStyle = token.color || '#00ff88';
+                ctx.beginPath();
+                ctx.arc(x, y, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#000';
+                ctx.font = '14px Rajdhani';
+                ctx.textAlign = 'center';
+                ctx.fillText(token.name, x, y + 35);
+            });
+        }
+
+        // Add Token from Soul Forge
+        function addToken(name, x, y, color = '#00ff88', is3d = false) {
+            const token = { name, x, y, color, is3d };
+            tokens.push(token);
+            drawTokens();
+            syncTokens();
+            return token;
+        }
+
+        // Load Initiative from Soul Forge
+        function loadInitiative() {
+            const soul = JSON.parse(localStorage.getItem('dnd-soul'));
+            if (soul) {
+                const init = Math.floor(Math.random() * 20) + 10; // Simulate roll
+                const item = document.createElement('div');
+                item.className = 'initiative-item';
+                item.textContent = `${soul.name} — ${init}`;
+                initList.appendChild(item);
+            }
+        }
+
+        // Token Drag
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const token = tokens.find(t => (x-t.x)**2 + (y-t.y)**2 < 400);
+            if (token) {
+                selectedToken = token;
+                drag = true;
+            }
+
+            if (losMode && selectedToken) {
+                losLine = { x: selectedToken.x, y: selectedToken.y, x2: x, y2: y };
+                drawMap();
+                drawLOS();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!drag || !selectedToken) return;
+            const rect = canvas.getBoundingClientRect();
+            selectedToken.x = e.clientX - rect.left;
+            selectedToken.y = e.clientY - rect.top;
+            drawMap();
+            syncTokens();
+        });
+
+        window.addEventListener('mouseup', () => {
+            drag = false;
+            selectedToken = null;
+        });
+
+        // Toggle Grid
+        function toggleGrid() {
+            const layer = document.getElementById('grid-layer');
+            grid = !grid;
+            layer.style.opacity = grid ? 0.6 : 0;
+            gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
+        }
+
+        // Line of Sight
+        function toggleLOS() {
+            losMode = !losMode;
+            losBtn.textContent = losMode ? '🎯 LOS: ON' : '🎯 LOS Tool';
+            if (!losMode) {
+                losLine = null;
+                drawMap();
+            }
+        }
+
+        function drawLOS() {
+            if (!losLine) return;
+            const { x, y, x2, y2 } = losLine;
+            const angle = Math.atan2(y2 - y, x2 - x);
+            const length = Math.\sqrt{(x2 - x}**2 + (y2 - y)**2);
+
+            const line = document.createElement('div');
+            line.className = 'los-line';
+            line.style.width = length + 'px';
+            line.style.left = x + 'px';
+            line.style.top = y + 'px';
+            line.style.transform = `rotate(${angle}rad)`;
+            document.getElementById('map-container').appendChild(line);
+
+            setTimeout(() => line.remove(), 3000);
+        }
+
+        // Save Map
+        function saveMap() {
+            const state = { tokens, map: img.src };
+            localStorage.setItem('war-vault-map', JSON.stringify(state));
+            alert('🗺️ Map saved to local storage.');
+        }
+
+        function saveMapState() {
+            const state = { tokens, map: img.src };
+            localStorage.setItem('war-vault-map', JSON.stringify(state));
+        }
+
+        // Sync tokens across tabs (local)
+        const channel = new BroadcastChannel('war-vault-sync');
+        function syncTokens() {
+            channel.postMessage({ type: 'tokens', data: tokens });
+        }
+
+        channel.onmessage = (event) => {
+            if (event.data.type === 'tokens') {
+                tokens = event.data.data;
+                drawMap();
+            }
+        };
+
+        // Auto-load last map
+        window.onload = () => {
+            const saved = localStorage.getItem('war-vault-map');
+            if (saved) {
+                const state = JSON.parse(saved);
+                if (state.map) {
+                    img.src = state.map;
+                    tokens = state.tokens || [];
+                    img.onload = () => drawMap();
+                }
+            }
+            resize();
+            loadInitiative();
+        };
+    </script>
+</body>
+</html>
