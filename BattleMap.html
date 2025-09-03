@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The War Vault | Living Battle Map</title>
+    <title>The War Vault | Battle Map</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         :root {
             --primary: #e6c57f;
             --accent: #b88c5c;
-            --dark: #0a0a0f;
+            --dark: #000;
             --grid: rgba(255, 255, 255, 0.15);
-            --los: rgba(255, 255, 0, 0.3);
+            --los: rgba(255, 255, 0, 0.4);
         }
 
         body {
             font-family: 'Rajdhani', sans-serif;
-            background: #000 url('https://i.imgur.com/8V7V3sP.jpg') no-repeat center center;
-            background-size: cover;
+            background: #000; /* Plain black */
             color: var(--primary);
             overflow: hidden;
             height: 100vh;
@@ -30,7 +31,7 @@
         header {
             position: fixed;
             top: 0; left: 0; right: 0;
-            background: rgba(10, 10, 15, 0.9);
+            background: rgba(10, 10, 15, 0.95);
             padding: 0.8rem 1rem;
             z-index: 10;
             border-bottom: 1px solid var(--accent);
@@ -52,7 +53,7 @@
         }
 
         button, input[type="file"] {
-            background: rgba(26, 27, 38, 0.8);
+            background: rgba(30, 30, 40, 0.8);
             color: var(--primary);
             border: 1px solid var(--accent);
             padding: 0.4rem 0.8rem;
@@ -70,6 +71,7 @@
         #map-container {
             position: absolute;
             top: 5rem; left: 0; right: 0; bottom: 0;
+            background: #000;
             overflow: hidden;
         }
 
@@ -92,20 +94,33 @@
 
         .token {
             position: absolute;
-            width: 40px; height: 40px;
-            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
+            background: #00ff88;
+            color: black;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            line-height: 40px;
+            transform: translate(-50%, -50%);
             z-index: 5;
             cursor: move;
+            border: 2px solid white;
         }
 
-        .token-3d {
-            width: 60px; height: 60px;
+        .los-line {
+            position: absolute;
+            background: var(--los);
+            height: 3px;
+            z-index: 4;
+            transform-origin: 0 0;
         }
 
         #initiative-panel {
             position: fixed;
-            right: 1rem; top: 5.5rem;
+            right: 1rem;
+            top: 5.5rem;
             background: rgba(10, 10, 15, 0.9);
             border: 1px solid var(--accent);
             border-radius: 10px;
@@ -124,17 +139,44 @@
             border-radius: 4px;
         }
 
-        #fog-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.9) 100%);
-            z-index: 10;
-            pointer-events: none;
-            mix-blend-mode: multiply;
+        #saved-maps-panel {
+            position: fixed;
+            left: 1rem;
+            bottom: 1rem;
+            background: rgba(10, 10, 15, 0.9);
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            padding: 1rem;
+            z-index: 20;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
-        .los-line {
-            position: absolute; background: var(--los); z-index: 3; height: 2px;
-            transform-origin: 0 0;
+        .saved-map-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.6rem;
+            font-size: 0.85rem;
+        }
+
+        .saved-map-thumb {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border: 1px solid var(--accent);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .saved-map-actions {
+            font-size: 0.8rem;
+        }
+
+        .saved-map-actions button {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.4rem;
         }
     </style>
 </head>
@@ -143,19 +185,16 @@
     <header>
         <div class="logo">The War Vault</div>
         <div class="controls">
-            <button onclick="toggleGrid()">Grid: ON</button>
-            <button onclick="toggleLOS()">LOS Tool</button>
-            <input type="file" id="map-upload" accept=".png,.jpg,.jpeg,.glb" onchange="loadMap(event)" />
-            <button onclick="saveMap()">💾 Save</button>
+            <button id="grid-btn">Grid: ON</button>
+            <button id="los-btn">🎯 LOS Tool</button>
+            <input type="file" id="map-upload" accept=".png,.jpg,.jpeg" />
+            <button id="save-btn">💾 Save Map</button>
         </div>
     </header>
 
     <div id="map-container">
-        <img id="map-img" style="display:none;" />
-        <model-viewer id="map-3d" style="display:none;" camera-controls auto-rotate></model-viewer>
         <canvas id="map-canvas"></canvas>
         <div id="grid-layer"></div>
-        <div id="fog-layer" style="display:none;"></div>
     </div>
 
     <div id="initiative-panel">
@@ -163,81 +202,79 @@
         <div id="init-list"></div>
     </div>
 
+    <div id="saved-maps-panel">
+        <h3 style="color:var(--primary); margin-bottom:0.6rem;">Saved Maps</h3>
+        <div id="saved-maps-list"></div>
+    </div>
+
     <script>
+        // Elements
         const canvas = document.getElementById('map-canvas');
         const ctx = canvas.getContext('2d');
+        const gridBtn = document.getElementById('grid-btn');
+        const losBtn = document.getElementById('los-btn');
         const upload = document.getElementById('map-upload');
-        const img = document.getElementById('map-img');
-        const map3d = document.getElementById('map-3d');
-        const gridBtn = document.querySelector('button:nth-child(1)');
-        const losBtn = document.querySelector('button:nth-child(2)');
+        const saveBtn = document.getElementById('save-btn');
         const initList = document.getElementById('init-list');
+        const savedList = document.getElementById('saved-maps-list');
 
+        // State
         let grid = true;
         let losMode = false;
         let tokens = [];
         let selectedToken = null;
         let losLine = null;
         let drag = false;
-        let offsetX = 0, offsetY = 0;
+        let mapImg = null;
         let mapWidth = 0, mapHeight = 0;
+        let offsetX = 0, offsetY = 0;
+        let savedMaps = JSON.parse(localStorage.getItem('war-vault-saved-maps') || '[]');
 
-        // Resize
+        // Resize canvas
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight - 70;
-            if (img.complete) drawMap();
+            if (mapImg) drawMap();
         }
-
         window.addEventListener('resize', resize);
-        window.addEventListener('load', () => {
-            resize();
-            loadInitiative();
+
+        // Load map from file
+        upload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                mapImg = new Image();
+                mapImg.onload = () => {
+                    // Center image
+                    mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
+                    mapHeight = (mapImg.height * mapWidth) / mapImg.width;
+                    offsetX = (canvas.width - mapWidth) / 2;
+                    offsetY = (canvas.height - mapHeight) / 2;
+                    drawMap();
+                };
+                mapImg.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
         });
 
-        // Draw Map
+        // Draw map
         function drawMap() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (img.src) {
-                const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-                mapWidth = img.width * scale;
-                mapHeight = img.height * scale;
-                const x = (canvas.width - mapWidth) / 2;
-                const y = (canvas.height - mapHeight) / 2;
-                ctx.drawImage(img, x, y, mapWidth, mapHeight);
-                drawTokens();
+            if (mapImg) {
+                ctx.drawImage(mapImg, offsetX, offsetY, mapWidth, mapHeight);
             }
+            drawTokens();
         }
 
-        // Load Map
-        function loadMap(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (file.type.includes('image')) {
-                map3d.style.display = 'none';
-                img.style.display = 'block';
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    img.src = e.target.result;
-                    img.onload = () => {
-                        drawMap();
-                        saveMapState();
-                    };
-                };
-                reader.readAsDataURL(file);
-            } else if (file.name.endsWith('.glb')) {
-                img.style.display = 'none';
-                map3d.style.display = 'block';
-                map3d.src = URL.createObjectURL(file);
-            }
-        }
-
-        // Draw Tokens
+        // Draw tokens
         function drawTokens() {
             tokens.forEach(token => {
-                const x = token.x;
-                const y = token.y;
+                const x = offsetX + (token.x * mapWidth);
+                const y = offsetY + (token.y * mapHeight);
+                token.screenX = x;
+                token.screenY = y;
+
                 ctx.fillStyle = token.color || '#00ff88';
                 ctx.beginPath();
                 ctx.arc(x, y, 20, 0, Math.PI * 2);
@@ -250,55 +287,83 @@
                 ctx.textAlign = 'center';
                 ctx.fillText(token.name, x, y + 35);
             });
+
+            drawLOS();
         }
 
-        // Add Token from Soul Forge
-        function addToken(name, x, y, color = '#00ff88', is3d = false) {
-            const token = { name, x, y, color, is3d };
+        // Add token (from Soul Forge)
+        function addToken(name, color = '#00ff88') {
+            // Place at 50% of map size (center)
+            const token = {
+                name,
+                x: 0.5,
+                y: 0.5,
+                color
+            };
             tokens.push(token);
-            drawTokens();
-            syncTokens();
+            drawMap();
+            saveTokens();
             return token;
         }
 
-        // Load Initiative from Soul Forge
-        function loadInitiative() {
+        // Load character from Soul Forge
+        function loadSoul() {
             const soul = JSON.parse(localStorage.getItem('dnd-soul'));
-            if (soul) {
-                const init = Math.floor(Math.random() * 20) + 10; // Simulate roll
+            if (soul && !tokens.some(t => t.name === soul.name)) {
+                const initRoll = Math.floor(Math.random() * 20) + 10;
                 const item = document.createElement('div');
                 item.className = 'initiative-item';
-                item.textContent = `${soul.name} — ${init}`;
+                item.textContent = `${soul.name} — ${initRoll}`;
                 initList.appendChild(item);
+                addToken(soul.name);
             }
         }
 
-        // Token Drag
+        // Token drag
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            const token = tokens.find(t => (x-t.x)**2 + (y-t.y)**2 < 400);
-            if (token) {
-                selectedToken = token;
-                drag = true;
+            // Check if clicked on a token
+            for (let token of tokens) {
+                const dx = x - token.screenX;
+                const dy = y - token.screenY;
+                if (dx*dx + dy*dy < 400) {
+                    selectedToken = token;
+                    drag = true;
+                    return;
+                }
             }
 
+            // Line of Sight start
             if (losMode && selectedToken) {
-                losLine = { x: selectedToken.x, y: selectedToken.y, x2: x, y2: y };
+                losLine = {
+                    x: selectedToken.screenX,
+                    y: selectedToken.screenY,
+                    x2: x,
+                    y2: y
+                };
                 drawMap();
-                drawLOS();
             }
         });
 
         canvas.addEventListener('mousemove', (e) => {
             if (!drag || !selectedToken) return;
             const rect = canvas.getBoundingClientRect();
-            selectedToken.x = e.clientX - rect.left;
-            selectedToken.y = e.clientY - rect.top;
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Convert to relative position (0-1)
+            selectedToken.x = (x - offsetX) / mapWidth;
+            selectedToken.y = (y - offsetY) / mapHeight;
+
+            // Clamp
+            selectedToken.x = Math.max(0.05, Math.min(0.95, selectedToken.x));
+            selectedToken.y = Math.max(0.05, Math.min(0.95, selectedToken.y));
+
             drawMap();
-            syncTokens();
+            saveTokens();
         });
 
         window.addEventListener('mouseup', () => {
@@ -307,22 +372,21 @@
         });
 
         // Toggle Grid
-        function toggleGrid() {
-            const layer = document.getElementById('grid-layer');
+        gridBtn.addEventListener('click', () => {
             grid = !grid;
-            layer.style.opacity = grid ? 0.6 : 0;
+            document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
             gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
-        }
+        });
 
-        // Line of Sight
-        function toggleLOS() {
+        // Toggle LOS
+        losBtn.addEventListener('click', () => {
             losMode = !losMode;
             losBtn.textContent = losMode ? '🎯 LOS: ON' : '🎯 LOS Tool';
             if (!losMode) {
                 losLine = null;
                 drawMap();
             }
-        }
+        });
 
         function drawLOS() {
             if (!losLine) return;
@@ -336,49 +400,108 @@
             line.style.left = x + 'px';
             line.style.top = y + 'px';
             line.style.transform = `rotate(${angle}rad)`;
-            document.getElementById('map-container').appendChild(line);
+            document.body.appendChild(line);
 
-            setTimeout(() => line.remove(), 3000);
+            // Auto-remove
+            setTimeout(() => {
+                if (line.parentNode) line.parentNode.removeChild(line);
+            }, 3000);
         }
 
-        // Save Map
-        function saveMap() {
-            const state = { tokens, map: img.src };
-            localStorage.setItem('war-vault-map', JSON.stringify(state));
-            alert('🗺️ Map saved to local storage.');
-        }
+        // Save current map + tokens
+        saveBtn.addEventListener('click', () => {
+            const name = prompt("Name this map:", "My Battle");
+            if (!name || !mapImg) return;
 
-        function saveMapState() {
-            const state = { tokens, map: img.src };
-            localStorage.setItem('war-vault-map', JSON.stringify(state));
-        }
+            const mapData = {
+                name,
+                image: mapImg.src,
+                tokens: tokens.map(t => ({ ...t })),
+                grid,
+                timestamp: Date.now()
+            };
 
-        // Sync tokens across tabs (local)
-        const channel = new BroadcastChannel('war-vault-sync');
-        function syncTokens() {
-            channel.postMessage({ type: 'tokens', data: tokens });
-        }
+            savedMaps.unshift(mapData);
+            if (savedMaps.length > 10) savedMaps.pop();
 
-        channel.onmessage = (event) => {
-            if (event.data.type === 'tokens') {
-                tokens = event.data.data;
-                drawMap();
+            localStorage.setItem('war-vault-saved-maps', JSON.stringify(savedMaps));
+            renderSavedMaps();
+        });
+
+        // Save tokens on move
+        function saveTokens() {
+            if (mapImg) {
+                localStorage.setItem('war-vault-current', JSON.stringify({
+                    image: mapImg.src,
+                    tokens,
+                    grid
+                }));
             }
+        }
+
+        // Render saved maps
+        function renderSavedMaps() {
+            savedList.innerHTML = '';
+            savedMaps.forEach((map, i) => {
+                const item = document.createElement('div');
+                item.className = 'saved-map-item';
+
+                const thumb = document.createElement('div');
+                thumb.className = 'saved-map-thumb';
+                thumb.style.backgroundImage = `url(${map.image})`;
+
+                const actions = document.createElement('div');
+                actions.className = 'saved-map-actions';
+                actions.innerHTML = `
+                    <div>${map.name}</div>
+                    <button onclick="loadSavedMap(${i})">Load</button>
+                `;
+
+                item.appendChild(thumb);
+                item.appendChild(actions);
+                savedList.appendChild(item);
+            });
+        }
+
+        // Load saved map
+        window.loadSavedMap = function(i) {
+            const map = savedMaps[i];
+            mapImg = new Image();
+            mapImg.onload = () => {
+                mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
+                mapHeight = (mapImg.height * mapWidth) / mapImg.width;
+                offsetX = (canvas.width - mapWidth) / 2;
+                offsetY = (canvas.height - mapHeight) / 2;
+                tokens = map.tokens || [];
+                grid = map.grid;
+                document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
+                gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
+                drawMap();
+            };
+            mapImg.src = map.image;
         };
 
-        // Auto-load last map
+        // Auto-load
         window.onload = () => {
-            const saved = localStorage.getItem('war-vault-map');
-            if (saved) {
-                const state = JSON.parse(saved);
-                if (state.map) {
-                    img.src = state.map;
-                    tokens = state.tokens || [];
-                    img.onload = () => drawMap();
-                }
-            }
             resize();
-            loadInitiative();
+            renderSavedMaps();
+            loadSoul(); // Load hero from Soul Forge
+
+            // Restore last state?
+            const last = JSON.parse(localStorage.getItem('war-vault-current'));
+            if (last) {
+                mapImg = new Image();
+                mapImg.onload = () => {
+                    mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
+                    mapHeight = (mapImg.height * mapWidth) / mapImg.width;
+                    offsetX = (canvas.width - mapWidth) / 2;
+                    offsetY = (canvas.height - mapHeight) / 2;
+                    tokens = last.tokens || [];
+                    grid = last.grid;
+                    drawMap();
+                };
+                mapImg.src = last.image;
+            }
         };
     </script>
 </body>
