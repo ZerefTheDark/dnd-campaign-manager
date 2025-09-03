@@ -1,789 +1,353 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>The War Vault | Battle Map</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  :root{
-    --primary:#e6c57f;--accent:#b88c5c;--dark:#000;
-    --grid:rgba(255,255,255,.15);--los:rgba(255,255,0,.45);
-    --panel:rgba(10,10,15,.95)
-  }
-  body{font-family:'Rajdhani',sans-serif;background:#000;color:var(--primary);height:100vh;overflow:hidden}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The War Vault — Battlemap</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Great+Vibes&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --gold:#e6c57f;--accent:#b88c5c;--ink:#eee;--bg:#0b0b0f;--panel:#14131a;--mist:rgba(0,0,0,.7)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;height:100vh;display:flex;flex-direction:column;background:#000;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;overflow:hidden}
 
-  header{position:fixed;inset:0 0 auto 0;background:rgba(10,10,15,.95);border-bottom:1px solid var(--accent);
-    padding:.6rem .8rem;z-index:100;display:flex;align-items:center;gap:.8rem}
-  .logo{font-family:'Cinzel',serif;font-size:1.3rem;margin-right:.4rem}
-  .controls, .tools-right{display:flex;gap:.4rem;flex-wrap:wrap}
-  .spacer{flex:1}
-  button, .btnlike, input[type="file"]{background:rgba(30,30,40,.85);color:var(--primary);border:1px solid var(--accent);
-    padding:.35rem .6rem;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:.9rem}
-  button:hover{background:var(--accent);color:#000;box-shadow:0 0 10px rgba(230,197,127,.4)}
+    /* Header (Codex style) */
+    header{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;border-bottom:1px solid var(--accent);background:rgba(10,10,14,.9);backdrop-filter:blur(6px);position:relative;z-index:20}
+    .brand{display:flex;flex-direction:column}
+    .brand .title{font-family:'Cinzel',serif;font-weight:900;letter-spacing:.06em;color:var(--gold);text-shadow:0 0 12px rgba(230,197,127,.35);font-size:1.4rem}
+    .brand .byline{font-family:'Great Vibes',cursive;font-size:1.4rem;line-height:1;color:var(--gold)}
 
-  /* Layout */
-  #stage{position:absolute;inset:55px 0 0 0;display:grid;grid-template-columns:300px 1fr 320px}
-  #left-panel{border-right:1px solid var(--accent);background:var(--panel);overflow:auto}
-  #right-panel{border-left:1px solid var(--accent);background:var(--panel);overflow:auto}
-  #map-wrap{position:relative;background:#000;overflow:hidden}
+    .bar-actions{display:flex;gap:.5rem;align-items:center}
+    .btn{background:rgba(35,35,45,.85);border:1px solid var(--accent);color:var(--ink);padding:.35rem .6rem;border-radius:8px;cursor:pointer}
+    .btn:hover{background:var(--accent);color:#000;box-shadow:0 0 14px rgba(230,197,127,.35)}
 
-  /* Map layers */
-  canvas{image-rendering:auto}
-  #map-canvas{position:absolute;inset:0;z-index:1;cursor:grab}
-  #grid-layer{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.65;
-    background-image:linear-gradient(var(--grid) 1px, transparent 1px),linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-    background-size:50px 50px; /* dynamically updated */
-    background-position:0 0;
-  }
-  #template-canvas{position:absolute;inset:0;z-index:3;pointer-events:none}
-  #fog-canvas{position:absolute;inset:0;z-index:4;pointer-events:none}
+    /* Main layout */
+    #stage{flex:1;display:grid;grid-template-columns:300px 1fr 280px;min-height:0}
+    #left-panel{background:var(--panel);border-right:1px solid var(--accent);overflow:auto}
+    #right-panel{background:var(--panel);border-left:1px solid var(--accent);overflow:auto}
+    #map-container{position:relative;overflow:hidden;background:#111}
 
-  /* Initiative, saved maps, chat/video reused */
-  .panel-section{padding:.8rem;border-bottom:1px solid rgba(255,255,255,.1)}
-  h3{font-family:'Cinzel',serif;font-size:1.05rem;margin-bottom:.45rem}
-  .initiative-item{margin:.35rem 0;padding:.3rem;background:rgba(255,255,255,.08);border-left:3px solid var(--primary);border-radius:4px}
-  .active-turn{outline:2px solid #fff}
+    .section{padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .section h3{margin:.1rem 0 .6rem;font-family:'Cinzel',serif;color:var(--gold);font-size:1rem}
 
-  #saved-maps-list .saved-map-item{display:flex;align-items:center;gap:.5rem;margin:.45rem 0;font-size:.85rem}
-  .saved-map-thumb{width:40px;height:40px;background:#333;border:1px solid var(--accent);background-size:cover;background-position:center}
+    /* Map stack */
+    #map{position:absolute;inset:0;object-fit:contain;width:100%;height:100%;transform-origin:top left;cursor:grab;z-index:1}
+    canvas{position:absolute;left:0;top:0;pointer-events:none}
+    #grid-layer{z-index:2}
+    #fog-layer{z-index:4}
+    .token{position:absolute;width:42px;height:42px;border-radius:50%;background:#f44;color:#000;font-weight:800;display:flex;align-items:center;justify-content:center;user-select:none;cursor:grab;z-index:5;border:2px solid #fff;transform-origin:center}
 
-  /* Character panel */
-  #character-panel{padding:.8rem}
-  .char-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
-  .stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.35rem}
-  .stat{background:rgba(255,255,255,.06);padding:.35rem;border-radius:6px;text-align:center}
-  .kv{display:grid;grid-template-columns:auto 1fr;gap:.25rem .5rem;margin:.5rem 0}
-  .pill{display:inline-block;border:1px solid var(--accent);padding:.15rem .4rem;border-radius:999px;margin:.15rem .15rem 0 0}
+    /* Context menu */
+    #ctx{position:absolute;z-index:50;background:#1b1a22;border:1px solid var(--accent);border-radius:8px;overflow:hidden;display:none;min-width:160px}
+    #ctx button{display:block;width:100%;text-align:left;padding:.5rem .7rem;background:transparent;color:var(--ink);border:none;cursor:pointer}
+    #ctx button:hover{background:rgba(255,255,255,.08)}
 
-  /* Right tools */
-  .tool-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem}
-  .tool-toggle.active{background:var(--accent);color:#000}
-  .hint{font-size:.85rem;color:#c9c9c9}
+    /* Submap overlay (parchment modal) */
+    #submap-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:none;z-index:30}
+    .parchment{position:absolute;inset:5% 8%;background:#f4ecd7 url('https://i.imgur.com/2mJvRjF.png') center/cover no-repeat;box-shadow:0 20px 60px rgba(0,0,0,.6);border:2px solid #c9b27a;border-radius:14px;overflow:hidden}
+    .parchment .head{display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:linear-gradient(#f6eed9,#eadfbf);border-bottom:1px solid #c9b27a}
+    .parchment .head .ttl{font-family:'Cinzel',serif;color:#5a4829}
+    .parchment .head .x{background:#7a1; color:#fff; border:none; padding:.3rem .55rem;border-radius:999px;cursor:pointer}
+    .parchment .body{position:absolute;inset:42px 8px 8px 8px;background:#d7ccb0}
+    #submap-canvas{position:absolute;inset:0}
 
-  /* Comms (bottom-right floating) */
-  #comms-panel{position:absolute;right:10px;bottom:10px;width:280px;background:var(--panel);
-    border:1px solid var(--accent);border-radius:10px;z-index:20;overflow:hidden}
-  #video-box{height:110px;background:#000;position:relative}
-  .video-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#666;background:#1a1a2e}
-  .player-tag{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:4px;font-size:.8rem;color:#fff}
-  #chat-box{height:120px;background:rgba(20,20,30,.8);overflow-y:auto;padding:.6rem;font-size:.9rem;color:#ccc}
-  #chat-input{display:flex}
-  #message-input{flex:1;background:#1a1a2e;color:var(--primary);border:none;padding:.6rem}
-  #send-btn{background:var(--accent);color:#000;border:none;padding:0 .8rem;cursor:pointer}
-  @media (max-width: 1100px){
-    #stage{grid-template-columns:0 1fr 320px}
-    #left-panel{display:none}
-  }
-</style>
+    /* Submap manager */
+    .submap-card{padding:.5rem;border:1px solid rgba(255,255,255,.08);border-radius:8px;margin:.4rem 0}
+    .thumb{width:100%;height:110px;background:#222;border:1px solid rgba(255,255,255,.12);background-size:cover;background-position:center;border-radius:6px}
+    .row{display:flex;gap:.4rem;align-items:center;margin:.35rem 0}
+    input,select{background:#1c1b24;border:1px solid var(--accent);color:var(--ink);padding:.35rem;border-radius:6px;width:100%}
+    label{font-size:.8rem;color:#cbb27d}
+
+    @media (max-width:1100px){#stage{grid-template-columns:0 1fr 280px}#left-panel{display:none}}
+  </style>
 </head>
 <body>
+  <header>
+    <div class="brand">
+      <div class="title">The War Vault</div>
+      <div class="byline">Chris Marshall</div>
+    </div>
+    <div class="bar-actions">
+      <button id="btn-zoom-in" class="btn">＋</button>
+      <button id="btn-zoom-out" class="btn">－</button>
+      <input id="map-upload" type="file" accept="image/*" class="btn" title="Upload map" />
+    </div>
+  </header>
 
-<header>
-  <div class="logo">The War Vault</div>
+  <div id="stage">
+    <!-- Left: Character Sheet -->
+    <aside id="left-panel">
+      <div class="section">
+        <h3>Character Sheet</h3>
+        <div id="char-sheet">Click a token to view.</div>
+        <div class="row"><button id="btn-load-characters" class="btn" style="width:100%">📥 Load from Echo Vault</button></div>
+      </div>
+    </aside>
 
-  <div class="controls">
-    <button id="grid-btn">Grid: ON</button>
-    <button id="zoom-in">＋</button>
-    <button id="zoom-out">－</button>
-    <input type="file" id="map-upload" accept=".png,.jpg,.jpeg" />
-    <button id="save-btn">💾 Save Map</button>
-    <button id="clear-btn">🗑 Clear</button>
-    <button id="export-btn">📤 Export PNG</button>
+    <!-- Center: Map -->
+    <main id="map-container">
+      <img id="map" src="https://i.imgur.com/8V7V3sP.jpg" alt="Map" />
+      <canvas id="grid-layer"></canvas>
+      <canvas id="fog-layer"></canvas>
+
+      <!-- Token context menu -->
+      <div id="ctx">
+        <button data-act="sheet">View Character Sheet</button>
+        <button data-act="assign-submap">Assign Submap…</button>
+        <button data-act="open-submap">Open Submap</button>
+        <button data-act="delete">Delete Token</button>
+      </div>
+
+      <!-- Submap Overlay (parchment) -->
+      <div id="submap-overlay">
+        <div class="parchment">
+          <div class="head"><div class="ttl" id="submap-title">Submap</div><button class="x" id="close-submap">✕</button></div>
+          <div class="body">
+            <canvas id="submap-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right: Tools / Submap Manager / Initiative -->
+    <aside id="right-panel">
+      <div class="section">
+        <h3>Tools</h3>
+        <div class="row"><button id="btn-toggle-fog" class="btn" style="width:100%">🌫️ Toggle Fog</button></div>
+      </div>
+
+      <div class="section" id="submap-manager">
+        <h3>Submap Manager</h3>
+        <div class="row"><input type="file" id="submap-file" accept="image/*"></div>
+        <div class="row"><input type="text" id="submap-name" placeholder="Name (e.g., Kael's House)"></div>
+        <div class="row"><button id="btn-add-submap" class="btn" style="width:100%">➕ Add Submap</button></div>
+        <div id="submap-list"></div>
+      </div>
+
+      <div class="section">
+        <h3>Initiative</h3>
+        <div class="row">
+          <input id="init-name" placeholder="Name">
+          <input id="init-roll" type="number" placeholder="Roll" style="max-width:90px">
+        </div>
+        <div class="row"><button id="btn-init-add" class="btn" style="width:100%">Add</button></div>
+        <div class="row" style="gap:.5rem"><button id="btn-init-next" class="btn" style="flex:1">Next</button><button id="btn-init-reset" class="btn" style="flex:1">Reset</button></div>
+        <div id="init-list" style="margin-top:.5rem"></div>
+      </div>
+    </aside>
   </div>
 
-  <div class="spacer"></div>
+  <script>
+  // ===== Elements
+  const mapEl = document.getElementById('map');
+  const wrap = document.getElementById('map-container');
+  const grid = document.getElementById('grid-layer');
+  const fog = document.getElementById('fog-layer');
+  const gctx = grid.getContext('2d');
+  const fctx = fog.getContext('2d');
+  const charSheet = document.getElementById('char-sheet');
+  const ctxMenu = document.getElementById('ctx');
 
-  <div class="tools-right">
-    <input type="file" id="characters-upload" accept=".json" />
-    <button id="spawn-token">➕ Spawn Token</button>
-  </div>
-</header>
+  const zoomInBtn = document.getElementById('btn-zoom-in');
+  const zoomOutBtn = document.getElementById('btn-zoom-out');
+  const toggleFogBtn = document.getElementById('btn-toggle-fog');
+  const mapUpload = document.getElementById('map-upload');
 
-<div id="stage">
-  <!-- Left: Character Sheet -->
-  <aside id="left-panel">
-    <div id="character-panel">
-      <h3>Character Sheet</h3>
-      <div class="hint">Click a token to view its sheet. Load characters (JSON) to spawn linked tokens.</div>
-    </div>
-  </aside>
+  // Submap overlay
+  const subOverlay = document.getElementById('submap-overlay');
+  const subTitle = document.getElementById('submap-title');
+  const subCanvas = document.getElementById('submap-canvas');
+  const sctx = subCanvas.getContext('2d');
+  document.getElementById('close-submap').addEventListener('click', ()=> subOverlay.style.display='none');
 
-  <!-- Center: Map -->
-  <main id="map-wrap">
-    <canvas id="map-canvas"></canvas>
-    <div id="grid-layer"></div>
-    <canvas id="template-canvas"></canvas> <!-- LOS / AOE templates -->
-    <canvas id="fog-canvas"></canvas>      <!-- Fog of War -->
-    <!-- Comms floating -->
-    <div id="comms-panel">
-      <div id="video-box">
-        <div class="video-placeholder">🎥 Video Feed (Future: WebRTC)</div>
-        <div class="player-tag">You</div>
-      </div>
-      <div id="chat-box"></div>
-      <div id="chat-input">
-        <input type="text" id="message-input" placeholder="Say something..." />
-        <button id="send-btn">Send</button>
-      </div>
-    </div>
-  </main>
-
-  <!-- Right: Tools + Initiative + Saved -->
-  <aside id="right-panel">
-    <div class="panel-section">
-      <h3>Battle Tools</h3>
-      <div class="tool-row">
-        <button class="tool-toggle" data-tool="move" id="tool-move">🖱️ Move</button>
-        <button class="tool-toggle" data-tool="los" id="tool-los">🎯 LOS</button>
-        <button class="tool-toggle" data-tool="cone" id="tool-cone">🔺 Cone</button>
-        <button class="tool-toggle" data-tool="circle" id="tool-circle">⭕ Circle</button>
-        <button class="tool-toggle" data-tool="rect" id="tool-rect">▭ Rect</button>
-      </div>
-      <div class="tool-row">
-        <button class="tool-toggle" data-tool="fog-reveal" id="tool-fog-reveal">🌤 Reveal</button>
-        <button class="tool-toggle" data-tool="fog-hide" id="tool-fog-hide">🌫 Hide</button>
-        <select id="template-size">
-          <option value="10">10 ft</option>
-          <option value="15" selected>15 ft</option>
-          <option value="20">20 ft</option>
-          <option value="30">30 ft</option>
-          <option value="60">60 ft</option>
-        </select>
-        <select id="grid-size">
-          <option value="50" selected>5ft cell = 50px</option>
-          <option value="40">5ft cell = 40px</option>
-          <option value="60">5ft cell = 60px</option>
-        </select>
-      </div>
-      <div class="hint">Tip: mouse wheel to zoom, drag background to pan, drag token to move.</div>
-    </div>
-
-    <div class="panel-section">
-      <h3>Initiative</h3>
-      <form id="init-form" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem">
-        <input id="init-name" placeholder="Name" class="btnlike" style="flex:1"/>
-        <input id="init-roll" type="number" placeholder="Roll" class="btnlike" style="width:90px"/>
-        <button type="submit">Add</button>
-      </form>
-      <div style="display:flex;gap:.4rem;margin-bottom:.5rem">
-        <button id="init-next">Next Turn</button>
-        <button id="init-restart">Restart</button>
-        <button id="init-clear">Clear</button>
-      </div>
-      <div id="init-list"></div>
-    </div>
-
-    <div class="panel-section">
-      <h3>Saved Maps</h3>
-      <div id="saved-maps-list"></div>
-    </div>
-  </aside>
-</div>
-
-<script>
-(() => {
-  // ===== Shortcuts to elements
-  const canvas = document.getElementById('map-canvas');
-  const ctx = canvas.getContext('2d');
-  const templateCanvas = document.getElementById('template-canvas');
-  const tctx = templateCanvas.getContext('2d');
-  const fogCanvas = document.getElementById('fog-canvas');
-  const fctx = fogCanvas.getContext('2d');
-
-  const gridLayer = document.getElementById('grid-layer');
-
-  const gridBtn = document.getElementById('grid-btn');
-  const zoomInBtn = document.getElementById('zoom-in');
-  const zoomOutBtn = document.getElementById('zoom-out');
-  const upload = document.getElementById('map-upload');
-  const saveBtn = document.getElementById('save-btn');
-  const clearBtn = document.getElementById('clear-btn');
-  const exportBtn = document.getElementById('export-btn');
-
-  const charactersUpload = document.getElementById('characters-upload');
-  const spawnTokenBtn = document.getElementById('spawn-token');
-  const characterPanel = document.getElementById('character-panel');
-
-  const toolButtons = Array.from(document.querySelectorAll('.tool-toggle'));
-  const templateSizeSel = document.getElementById('template-size');
-  const gridSizeSel = document.getElementById('grid-size');
-
-  const initForm = document.getElementById('init-form');
-  const initName = document.getElementById('init-name');
-  const initRoll = document.getElementById('init-roll');
-  const initList = document.getElementById('init-list');
-  const initNext = document.getElementById('init-next');
-  const initRestart = document.getElementById('init-restart');
-  const initClear = document.getElementById('init-clear');
-
-  const chatBox = document.getElementById('chat-box');
-  const msgInput = document.getElementById('message-input');
-  const sendBtn = document.getElementById('send-btn');
-
-  // ===== App State
-  let mapImg = null;
-  let baseMapW = 0, baseMapH = 0;      // actual image size
-  let scale = 1;                        // zoom scale
-  let offsetX = 0, offsetY = 0;         // pan offset (screen pixels)
-  let isPanning = false;
-  let panStart = {x:0,y:0};
-  let mouseDown = false;
-
-  let gridVisible = true;
-  let gridCellPx = 50; // 5ft per cell at 50px default
-  let characters = []; // loaded from JSON
-  let tokens = [];     // { id, name, x(0..1), y(0..1), color, char?:object }
-  let selectedToken = null;
-  let draggingToken = false;
-
-  let currentTool = 'move'; // move, los, cone, circle, rect, fog-reveal, fog-hide
-  let templateDrag = null;  // {x,y} start in screen coords
+  // Submap manager
+  const subFile = document.getElementById('submap-file');
+  const subName = document.getElementById('submap-name');
+  const subAddBtn = document.getElementById('btn-add-submap');
+  const subList = document.getElementById('submap-list');
 
   // Initiative
-  let initiative = []; // [{name, roll}]
-  let initIndex = -1;
+  const initName = document.getElementById('init-name');
+  const initRoll = document.getElementById('init-roll');
+  const initAdd = document.getElementById('btn-init-add');
+  const initNext = document.getElementById('btn-init-next');
+  const initReset = document.getElementById('btn-init-reset');
+  const initList = document.getElementById('init-list');
 
-  // Saved maps
-  let savedMaps = JSON.parse(localStorage.getItem('war-vault-saved-maps') || '[]');
-
-  // ===== Utilities
-  const wrap = document.getElementById('map-wrap');
-  const fitToWrap = () => {
-    const rect = wrap.getBoundingClientRect();
-    [canvas, templateCanvas, fogCanvas].forEach(cv => { cv.width = rect.width; cv.height = rect.height; });
-    updateGridVisual();
-    redrawAll();
-  };
-  window.addEventListener('resize', fitToWrap);
-  fitToWrap();
-
-  function worldToScreen(wx, wy){
-    // world coords are image pixels; screen coords map with offset+scale
-    return { x: offsetX + wx * scale, y: offsetY + wy * scale };
-  }
-  function screenToWorld(sx, sy){
-    return { x: (sx - offsetX) / scale, y: (sy - offsetY) / scale };
-  }
-
-  function tokenToScreen(t){
-    // tokens store normalized coords relative to image (0..1)
-    const wx = t.x * baseMapW, wy = t.y * baseMapH;
-    return worldToScreen(wx, wy);
-  }
-
-  function redrawAll(){
-    // Map
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    if (mapImg){
-      const sw = baseMapW * scale, sh = baseMapH * scale;
-      ctx.drawImage(mapImg, offsetX, offsetY, sw, sh);
-    }
-    // Tokens
-    drawTokens();
-    // Templates
-    tctx.clearRect(0,0,templateCanvas.width,templateCanvas.height);
-    if (templateDrag && currentTool !== 'move'){
-      drawActiveTemplate();
-    }
-    // Fog is its own bitmap; no redraw unless brush used
-  }
-
-  function drawTokens(){
-    tokens.forEach(t => {
-      const p = tokenToScreen(t);
-      // token circle
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 18, 0, Math.PI*2);
-      ctx.fillStyle = t.color || '#00ff88';
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#fff';
-      ctx.stroke();
-      // name inside
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 13px Rajdhani';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(t.name, p.x, p.y);
-    });
-  }
-
-  // ===== Grid overlay (CSS background) aligned to map
-  function updateGridVisual(){
-    const cell = gridCellPx * scale;
-    gridLayer.style.backgroundSize = `${cell}px ${cell}px`;
-    // Align to map top-left so lines follow the image even when panned
-    const gx = (offsetX % cell + cell) % cell;
-    const gy = (offsetY % cell + cell) % cell;
-    gridLayer.style.backgroundPosition = `${gx}px ${gy}px`;
-    gridLayer.style.opacity = gridVisible ? .65 : 0;
-  }
-
-  // ===== Fog of War
-  function initFog(){
-    fctx.clearRect(0,0,fogCanvas.width,fogCanvas.height);
-    fctx.fillStyle = 'rgba(0,0,0,0.9)';
-    fctx.fillRect(0,0,fogCanvas.width,fogCanvas.height);
-  }
-  function fogBrush(sx, sy, reveal=true, radius=40){
-    fctx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
-    if (!reveal){ fctx.fillStyle = 'rgba(0,0,0,0.9)'; }
-    fctx.beginPath();
-    fctx.arc(sx, sy, radius, 0, Math.PI*2);
-    if (reveal) fctx.fill();
-    else fctx.fill();
-    fctx.globalCompositeOperation = 'source-over';
-  }
-
-  // ===== Templates (LOS & AOE)
-  function drawLine(a,b){
-    tctx.strokeStyle = 'yellow';
-    tctx.lineWidth = 3;
-    tctx.beginPath();
-    tctx.moveTo(a.x,a.y);
-    tctx.lineTo(b.x,b.y);
-    tctx.stroke();
-  }
-  function drawCircle(center, ftRadius){
-    const pxPer5ft = gridCellPx * scale;
-    const r = (ftRadius/5) * pxPer5ft;
-    tctx.fillStyle = 'rgba(0,200,255,0.25)';
-    tctx.strokeStyle = 'rgba(0,200,255,0.9)';
-    tctx.lineWidth = 2;
-    tctx.beginPath();
-    tctx.arc(center.x, center.y, r, 0, Math.PI*2);
-    tctx.fill(); tctx.stroke();
-  }
-  function drawRect(start, end){
-    tctx.fillStyle = 'rgba(0,200,255,0.25)';
-    tctx.strokeStyle = 'rgba(0,200,255,0.9)';
-    tctx.lineWidth = 2;
-    const w=end.x-start.x, h=end.y-start.y;
-    tctx.fillRect(start.x, start.y, w, h);
-    tctx.strokeRect(start.x, start.y, w, h);
-  }
-  function drawCone(origin, current, ftLength){
-    const dx = current.x - origin.x, dy = current.y - origin.y;
-    const ang = Math.atan2(dy, dx);
-    const pxPer5ft = gridCellPx * scale;
-    const len = (ftLength/5) * pxPer5ft;
-    const spread = Math.PI/3; // 60° cone (typical), tweak if needed
-    const a1 = ang - spread/2, a2 = ang + spread/2;
-    const p1 = {x: origin.x + Math.cos(a1)*len, y: origin.y + Math.sin(a1)*len};
-    const p2 = {x: origin.x + Math.cos(a2)*len, y: origin.y + Math.sin(a2)*len};
-    tctx.fillStyle = 'rgba(255,120,0,0.25)';
-    tctx.strokeStyle = 'rgba(255,120,0,0.9)';
-    tctx.lineWidth = 2;
-    tctx.beginPath();
-    tctx.moveTo(origin.x, origin.y);
-    tctx.lineTo(p1.x, p1.y);
-    tctx.arc(origin.x, origin.y, len, a1, a2);
-    tctx.closePath();
-    tctx.fill(); tctx.stroke();
-  }
-
-  function drawActiveTemplate(){
-    const sizeFt = parseInt(templateSizeSel.value,10);
-    if (!templateDrag) return;
-    const start = templateDrag.start, cur = templateDrag.cur || start;
-
-    switch(currentTool){
-      case 'los': drawLine(start, cur); break;
-      case 'circle': drawCircle(start, sizeFt); break; // centered at start
-      case 'rect': drawRect(start, cur); break;
-      case 'cone': drawCone(start, cur, sizeFt); break;
-    }
-  }
-
-  // ===== Characters & Tokens
-  charactersUpload.addEventListener('change', e=>{
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try{
-        const data = JSON.parse(ev.target.result);
-        if(Array.isArray(data)){ characters = data; alert(`Loaded ${characters.length} character(s).`);}
-        else { alert('JSON must be an array of characters'); }
-      }catch(err){ alert('Invalid JSON'); }
-    };
-    reader.readAsText(file);
+  // Load characters from Echo Vault
+  document.getElementById('btn-load-characters').addEventListener('click', ()=>{
+    const vault = JSON.parse(localStorage.getItem('echo-vault')||'[]');
+    if(!vault.length){ alert('No characters in Echo Vault'); return; }
+    const pick = vault[vault.length-1]; // latest
+    spawnToken(pick);
   });
 
-  spawnTokenBtn.addEventListener('click', ()=>{
-    if (!characters.length){
-      const name = prompt('Token name?', 'New Token');
-      if (name) addToken({name, color:'#00ff88'});
-      return;
-    }
-    const choice = prompt(`Type character id or name to spawn:\n${characters.map(c=>`- ${c.id || ''} ${c.name}`).join('\n')}`);
-    if (!choice) return;
-    const found = characters.find(c => (c.id && c.id.toLowerCase()===choice.toLowerCase()) || c.name.toLowerCase()===choice.toLowerCase());
-    if (found) addToken({name:found.name, color:found.color||'#00ff88', char:found});
-    else alert('Not found.');
+  // ===== State
+  let scale = 1; // zoom
+  let tokens = []; // {el,x,y,scale,name,submapId?,char?}
+  let isPanning=false, panStart={x:0,y:0}, offset={x:0,y:0};
+  let selectedToken=null;
+  let submaps = JSON.parse(localStorage.getItem('warvault-submaps')||'[]'); // {id,name,dataURL}
+
+  // Initiative
+  let initiative=[]; let initIdx=-1;
+
+  function fitCanvases(){
+    const r = wrap.getBoundingClientRect();
+    [grid,fog].forEach(cv=>{cv.width=r.width; cv.height=r.height});
+    drawGrid(); drawFog();
+  }
+  window.addEventListener('resize', fitCanvases);
+  window.addEventListener('load', fitCanvases);
+
+  function drawGrid(){
+    const cell = 50*scale; // 5ft
+    gctx.clearRect(0,0,grid.width,grid.height);
+    gctx.strokeStyle='rgba(230,197,127,.28)';
+    gctx.lineWidth=1;
+    for(let x=(offset.x%cell+cell)%cell; x<grid.width; x+=cell){ gctx.beginPath(); gctx.moveTo(x,0); gctx.lineTo(x,grid.height); gctx.stroke(); }
+    for(let y=(offset.y%cell+cell)%cell; y<grid.height; y+=cell){ gctx.beginPath(); gctx.moveTo(0,y); gctx.lineTo(grid.width,y); gctx.stroke(); }
+  }
+  function drawFog(){ fctx.clearRect(0,0,fog.width,fog.height); fctx.fillStyle='rgba(0,0,0,.55)'; fctx.fillRect(0,0,fog.width,fog.height); }
+
+  // Map upload
+  mapUpload.addEventListener('change', e=>{
+    const file=e.target.files[0]; if(!file) return; const r=new FileReader();
+    r.onload=ev=>{ mapEl.src=ev.target.result; }; r.readAsDataURL(file);
   });
 
-  function addToken({name, color='#00ff88', char=null, x=.5, y=.5}){
-    tokens.push({id: Date.now()+Math.random(), name, color, x, y, char});
-    redrawAll(); saveState();
+  // Zoom & Pan
+  function setScale(newScale, anchorX, anchorY){
+    const old = scale; scale = Math.max(.2, Math.min(6, newScale));
+    // keep anchor under cursor by adjusting offset
+    const ax = anchorX??(grid.width/2), ay = anchorY??(grid.height/2);
+    const dx = (ax - offset.x)/old; const dy = (ay - offset.y)/old;
+    offset.x = ax - dx*scale; offset.y = ay - dy*scale;
+    mapEl.style.transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
+    tokens.forEach(t=>{ t.el.style.transform=`translate(${offset.x + t.x*scale}px, ${offset.y + t.y*scale}px) scale(${scale})`; });
+    drawGrid();
   }
+  zoomInBtn.addEventListener('click',()=> setScale(scale*1.2));
+  zoomOutBtn.addEventListener('click',()=> setScale(scale/1.2));
+  wrap.addEventListener('wheel', e=>{ e.preventDefault(); setScale(scale*(e.deltaY<0?1.15:.87), e.offsetX, e.offsetY); }, {passive:false});
 
-  function openCharacterSheet(charOrToken){
-    const data = charOrToken.char || charOrToken;
-    if (!data){
-      characterPanel.innerHTML = `<h3>Character Sheet</h3><div class="hint">No sheet linked for this token.</div>`;
-      return;
-    }
-    characterPanel.innerHTML = `
-      <div class="char-header">
-        <h3>${data.name} <span style="font-weight:400">(${data.class||'—'} ${data.level? 'Lv '+data.level:''})</span></h3>
-        <span class="pill">AC ${data.ac ?? '—'}</span>
-      </div>
-      <div class="kv">
-        <div>HP</div><div>${data.hp ? (data.hp.current ?? data.hp) + (data.hp.max? ' / '+data.hp.max:'') : '—'}</div>
-        <div>Speed</div><div>${data.speed ?? '—'} ft</div>
-      </div>
-      <div class="stat-grid">
-        ${['STR','DEX','CON','INT','WIS','CHA'].map(k=>{
-          const v = data.stats?.[k] ?? '—';
-          return `<div class="stat"><div style="opacity:.8">${k}</div><div style="font-size:1.1rem;font-weight:700">${v}</div></div>`;
-        }).join('')}
-      </div>
-      <div style="margin:.6rem 0">
-        <div style="opacity:.85;margin-bottom:.25rem">Spells / Abilities</div>
-        <div>${(data.spells||[]).map(s=>`<span class="pill">${s}</span>`).join('') || '<span class="hint">None listed</span>'}</div>
-      </div>
-      <div style="margin:.6rem 0">
-        <div style="opacity:.85;margin-bottom:.25rem">Notes</div>
-        <div style="white-space:pre-wrap">${data.notes || '—'}</div>
-      </div>
+  wrap.addEventListener('mousedown', e=>{ if(e.target!==mapEl) return; isPanning=true; panStart={x:e.clientX-offset.x,y:e.clientY-offset.y}; });
+  window.addEventListener('mousemove', e=>{ if(!isPanning) return; offset.x=e.clientX-panStart.x; offset.y=e.clientY-panStart.y; mapEl.style.transform=`translate(${offset.x}px, ${offset.y}px) scale(${scale})`; tokens.forEach(t=>{ t.el.style.transform=`translate(${offset.x + t.x*scale}px, ${offset.y + t.y*scale}px) scale(${scale})`; }); drawGrid(); });
+  window.addEventListener('mouseup', ()=>{ isPanning=false; });
+
+  // ===== Tokens
+  function spawnToken(character){
+    const el=document.createElement('div'); el.className='token'; el.textContent=(character.name||'?').slice(0,1);
+    wrap.appendChild(el);
+    const t={el, x:120, y:120, name:character.name||'Token', char:character, submapId:null};
+    tokens.push(t);
+    positionToken(t);
+
+    // click -> sheet or open submap if ctrl/cmd-click
+    el.addEventListener('click', (e)=>{ if(t.submapId && (e.metaKey||e.ctrlKey)) { openSubmapById(t.submapId); } else { openSheet(t); } });
+
+    // right-click context
+    el.addEventListener('contextmenu', (e)=>{ e.preventDefault(); selectedToken=t; openCtx(e.clientX, e.clientY); });
+
+    // drag
+    let dragging=false, dOff={x:0,y:0};
+    el.addEventListener('mousedown', e=>{ if(e.button!==0) return; dragging=true; dOff.x = (offset.x + t.x*scale) - e.clientX; dOff.y = (offset.y + t.y*scale) - e.clientY; document.body.style.userSelect='none'; });
+    window.addEventListener('mousemove', e=>{ if(!dragging) return; const sx=e.clientX + dOff.x; const sy=e.clientY + dOff.y; t.x = (sx - offset.x)/scale; t.y = (sy - offset.y)/scale; positionToken(t); });
+    window.addEventListener('mouseup', ()=>{ dragging=false; document.body.style.userSelect=''; });
+  }
+  function positionToken(t){ t.el.style.transform = `translate(${offset.x + t.x*scale}px, ${offset.y + t.y*scale}px) scale(${scale})`; }
+
+  function openSheet(t){
+    const c = t.char || {};
+    charSheet.innerHTML = `
+      <div><strong>${c.name||t.name}</strong></div>
+      <div style="opacity:.8">${(c.class||'') + ' ' + (c.race||'')}</div>
+      <div class="row"><label>Initiative</label><input id="init-input" type="number" value="${c.initiative||0}"></div>
+      <div class="row"><button class="btn" id="init-add-btn">Add to Initiative</button></div>
     `;
-  }
-
-  // ===== Map Upload
-  upload.addEventListener('change', e=>{
-    const file = e.target.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = ev=>{
-      mapImg = new Image();
-      mapImg.onload = ()=>{
-        baseMapW = mapImg.width; baseMapH = mapImg.height;
-        // Fit to view
-        const sw = canvas.width / baseMapW, sh = canvas.height / baseMapH;
-        scale = Math.min(sw, sh) * 0.95;
-        offsetX = (canvas.width - baseMapW*scale)/2;
-        offsetY = (canvas.height - baseMapH*scale)/2;
-        tokens = [];
-        initFog();
-        updateGridVisual();
-        redrawAll();
-      };
-      mapImg.src = ev.target.result;
+    document.getElementById('init-add-btn').onclick = ()=>{
+      const val=parseInt(document.getElementById('init-input').value||'0',10);
+      addInitiative((c.name||t.name), val);
     };
-    reader.readAsDataURL(file);
-  });
-
-  // ===== Zoom & Pan
-  function zoomAt(factor, sx, sy){
-    const before = screenToWorld(sx, sy);
-    scale *= factor;
-    // clamp scale
-    scale = Math.max(0.2, Math.min(6, scale));
-    const after = screenToWorld(sx, sy);
-    // keep point under cursor
-    offsetX += (after.x - before.x) * scale;
-    offsetY += (after.y - before.y) * scale;
-    updateGridVisual();
-    redrawAll();
-  }
-  zoomInBtn.addEventListener('click', ()=> zoomAt(1.2, canvas.width/2, canvas.height/2));
-  zoomOutBtn.addEventListener('click', ()=> zoomAt(1/1.2, canvas.width/2, canvas.height/2));
-  canvas.addEventListener('wheel', (e)=>{
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.15 : 1/1.15;
-    zoomAt(factor, sx, sy);
-  }, {passive:false});
-
-  // Pan if dragging background (not token) with left mouse
-  canvas.addEventListener('mousedown', e=>{
-    mouseDown = true;
-    const rect = canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-
-    const hit = pickToken(sx, sy);
-    if (currentTool === 'move' && hit){
-      selectedToken = hit;
-      draggingToken = true;
-      openCharacterSheet(hit);
-      redrawAll();
-      return;
-    }
-
-    if (currentTool === 'move'){
-      isPanning = true;
-      panStart = {x: sx - offsetX, y: sy - offsetY};
-      return;
-    }
-
-    // Templates / Fog start
-    if (currentTool.startsWith('fog')){
-      templateDrag = { start:{x:sx,y:sy}, cur:{x:sx,y:sy} };
-      fogBrush(sx, sy, currentTool==='fog-reveal');
-      return;
-    } else {
-      templateDrag = { start:{x:sx,y:sy}, cur:{x:sx,y:sy} };
-      redrawAll();
-    }
-  });
-
-  canvas.addEventListener('mousemove', e=>{
-    const rect = canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-
-    if (draggingToken && selectedToken){
-      // move token in world coords then normalize to 0..1
-      const w = screenToWorld(sx, sy);
-      selectedToken.x = Math.max(0, Math.min(1, w.x / baseMapW));
-      selectedToken.y = Math.max(0, Math.min(1, w.y / baseMapH));
-      redrawAll(); saveState();
-      return;
-    }
-
-    if (isPanning && mouseDown){
-      offsetX = sx - panStart.x;
-      offsetY = sy - panStart.y;
-      updateGridVisual();
-      redrawAll();
-      return;
-    }
-
-    if (templateDrag){
-      templateDrag.cur = {x:sx,y:sy};
-      if (currentTool.startsWith('fog')){
-        fogBrush(sx, sy, currentTool==='fog-reveal');
-      } else {
-        redrawAll();
-      }
-    }
-  });
-
-  window.addEventListener('mouseup', ()=>{
-    mouseDown = false;
-    draggingToken = false;
-    isPanning = false;
-    if (currentTool !== 'move') {
-      // keep last template drawn until tool changes or new drag begins
-      // (i.e., templates are visual aids on templateCanvas; not persisted)
-    }
-    saveState();
-  });
-
-  function pickToken(sx, sy){
-    for (let i=tokens.length-1;i>=0;i--){
-      const p = tokenToScreen(tokens[i]);
-      const dx = sx - p.x, dy = sy - p.y;
-      if (dx*dx + dy*dy <= 18*18) return tokens[i];
-    }
-    return null;
   }
 
-  // ===== Tool toggles
-  function setTool(tool){
-    currentTool = tool;
-    toolButtons.forEach(b=> b.classList.toggle('active', b.dataset.tool===tool));
-    // When leaving template mode, clear template canvas
-    if (tool === 'move'){ tctx.clearRect(0,0,templateCanvas.width,templateCanvas.height); }
-  }
-  toolButtons.forEach(b=> b.addEventListener('click', ()=> setTool(b.dataset.tool)));
-  setTool('move');
-
-  gridBtn.addEventListener('click', ()=>{
-    gridVisible = !gridVisible;
-    gridBtn.textContent = `Grid: ${gridVisible ? 'ON' : 'OFF'}`;
-    updateGridVisual(); saveState();
-  });
-  gridSizeSel.addEventListener('change', ()=>{
-    gridCellPx = parseInt(gridSizeSel.value,10);
-    updateGridVisual(); redrawAll(); saveState();
+  // Context menu actions
+  function openCtx(x,y){ ctxMenu.style.display='block'; ctxMenu.style.left=x+'px'; ctxMenu.style.top=y+'px'; }
+  window.addEventListener('click', (e)=>{ if(e.target.closest('#ctx')==null) ctxMenu.style.display='none'; });
+  ctxMenu.addEventListener('click', (e)=>{
+    const act = e.target.dataset.act; if(!act||!selectedToken) return;
+    if(act==='sheet') openSheet(selectedToken);
+    if(act==='assign-submap') assignSubmapToToken(selectedToken);
+    if(act==='open-submap'){ if(selectedToken.submapId) openSubmapById(selectedToken.submapId); else alert('No submap assigned.'); }
+    if(act==='delete'){ selectedToken.el.remove(); tokens = tokens.filter(t=>t!==selectedToken); }
+    ctxMenu.style.display='none';
   });
 
-  clearBtn.addEventListener('click', ()=>{
-    tokens = [];
-    tctx.clearRect(0,0,templateCanvas.width,templateCanvas.height);
-    initFog();
-    redrawAll(); saveState();
-  });
-
-  exportBtn.addEventListener('click', ()=>{
-    // Compose map + templates + fog into one export (grid is visual only)
-    const exportCv = document.createElement('canvas');
-    exportCv.width = canvas.width; exportCv.height = canvas.height;
-    const ex = exportCv.getContext('2d');
-    ex.drawImage(canvas,0,0);
-    ex.drawImage(templateCanvas,0,0);
-    ex.drawImage(fogCanvas,0,0);
-    const a = document.createElement('a');
-    a.download = 'battlemap.png';
-    a.href = exportCv.toDataURL('image/png');
-    a.click();
-  });
-
-  // ===== Initiative
-  function renderInitiative(){
-    initList.innerHTML = '';
-    initiative.forEach((it, idx)=>{
-      const div = document.createElement('div');
-      div.className = 'initiative-item' + (idx===initIndex ? ' active-turn' : '');
-      div.textContent = `${it.name} — ${it.roll}`;
-      initList.appendChild(div);
+  // ===== Submaps
+  function renderSubmapList(){
+    subList.innerHTML = '';
+    submaps.forEach(sm=>{
+      const card=document.createElement('div'); card.className='submap-card';
+      const th=document.createElement('div'); th.className='thumb'; th.style.backgroundImage=`url(${sm.dataURL})`;
+      const row=document.createElement('div'); row.className='row';
+      const selBtn=document.createElement('button'); selBtn.className='btn'; selBtn.textContent='Open'; selBtn.onclick=()=>openSubmapById(sm.id);
+      card.append(th, document.createElement('div'));
+      card.appendChild(Object.assign(document.createElement('div'),{textContent:sm.name, style:'margin:6px 0;color:#d8c797'}));
+      card.appendChild(selBtn);
+      subList.appendChild(card);
     });
   }
-  initForm.addEventListener('submit', (e)=>{
-    e.preventDefault();
-    const name = initName.value.trim();
-    const roll = parseInt(initRoll.value,10);
-    if(!name || isNaN(roll)) return;
-    initiative.push({name, roll});
-    initiative.sort((a,b)=> b.roll - a.roll);
-    initIndex = (initiative.length && initIndex===-1) ? 0 : initIndex;
-    initName.value=''; initRoll.value='';
-    renderInitiative(); saveState();
-  });
-  initNext.addEventListener('click', ()=>{
-    if(!initiative.length) return;
-    initIndex = (initIndex + 1) % initiative.length;
-    renderInitiative(); saveState();
-  });
-  initRestart.addEventListener('click', ()=>{
-    initIndex = 0; renderInitiative(); saveState();
-  });
-  initClear.addEventListener('click', ()=>{
-    initiative = []; initIndex=-1; renderInitiative(); saveState();
+  renderSubmapList();
+
+  subAddBtn.addEventListener('click', ()=>{
+    const file=subFile.files?.[0]; const name=subName.value.trim()||'Submap';
+    if(!file){ alert('Choose an image'); return; }
+    const r=new FileReader(); r.onload=e=>{
+      const item={id:Date.now().toString(36), name, dataURL:e.target.result};
+      submaps.push(item); localStorage.setItem('warvault-submaps', JSON.stringify(submaps));
+      subFile.value=''; subName.value=''; renderSubmapList();
+    }; r.readAsDataURL(file);
   });
 
-  // ===== Save / Load Maps
-  function renderSavedMaps(){
-    const savedList = document.getElementById('saved-maps-list');
-    savedList.innerHTML = '';
-    savedMaps.forEach((map, i) => {
-      const item = document.createElement('div');
-      item.className = 'saved-map-item';
-      const thumb = document.createElement('div');
-      thumb.className = 'saved-map-thumb';
-      thumb.style.backgroundImage = `url(${map.image})`;
-      const actions = document.createElement('div');
-      actions.className = 'saved-map-actions';
-      const btn = document.createElement('button');
-      btn.textContent = 'Load';
-      btn.onclick = ()=>loadSavedMap(i);
-      actions.append(map.name, document.createElement('br'), btn);
-      item.append(thumb, actions);
-      savedList.appendChild(item);
-    });
+  function assignSubmapToToken(t){
+    if(!submaps.length){ alert('No submaps. Add one in Submap Manager.'); return; }
+    const choice = prompt('Type submap name to assign:\n' + submaps.map(s=>'- '+s.name).join('\n'));
+    if(!choice) return; const found=submaps.find(s=>s.name.toLowerCase()===choice.toLowerCase());
+    if(found){ t.submapId=found.id; alert('Assigned "'+found.name+'"'); } else { alert('Not found.'); }
   }
-  saveBtn.addEventListener('click', ()=>{
-    if (!mapImg) return alert('Load a map first.');
-    const name = prompt('Name this map:', 'My Battle');
-    if (!name) return;
-    const mapData = {
-      name,
-      image: mapImg.src,
-      tokens,
-      gridVisible,
-      gridCellPx,
-      baseMapW, baseMapH, scale, offsetX, offsetY,
-      initiative, initIndex,
+
+  function openSubmapById(id){
+    const sm=submaps.find(s=>s.id===id); if(!sm) return alert('Submap missing');
+    subTitle.textContent = sm.name;
+    // draw into canvas to fit
+    const img=new Image();
+    img.onload=()=>{
+      const box=subCanvas.getBoundingClientRect();
+      subCanvas.width = box.width; subCanvas.height = box.height;
+      // fit contain
+      const sw=img.width, sh=img.height; const ar=Math.min(box.width/sw, box.height/sh);
+      const dw=sw*ar, dh=sh*ar; const dx=(box.width-dw)/2, dy=(box.height-dh)/2;
+      sctx.clearRect(0,0,subCanvas.width,subCanvas.height); sctx.fillStyle='#d7ccb0'; sctx.fillRect(0,0,subCanvas.width,subCanvas.height);
+      sctx.drawImage(img, dx, dy, dw, dh);
+      subOverlay.style.display='block';
     };
-    savedMaps.unshift(mapData);
-    if (savedMaps.length > 12) savedMaps.pop();
-    localStorage.setItem('war-vault-saved-maps', JSON.stringify(savedMaps));
-    renderSavedMaps();
-    alert('Saved.');
-  });
-
-  function loadSavedMap(i){
-    const map = savedMaps[i];
-    const img = new Image();
-    img.onload = ()=>{
-      mapImg = img;
-      baseMapW = map.baseMapW || img.width;
-      baseMapH = map.baseMapH || img.height;
-      scale = map.scale ?? 1;
-      offsetX = map.offsetX ?? 0;
-      offsetY = map.offsetY ?? 0;
-      tokens = map.tokens || [];
-      gridVisible = map.gridVisible ?? true;
-      gridCellPx = map.gridCellPx || 50;
-      initiative = map.initiative || [];
-      initIndex = map.initIndex ?? -1;
-
-      gridBtn.textContent = `Grid: ${gridVisible ? 'ON' : 'OFF'}`;
-      gridSizeSel.value = String(gridCellPx);
-      initFog();
-      updateGridVisual();
-      renderInitiative();
-      redrawAll();
-    };
-    img.src = map.image;
+    img.src=sm.dataURL;
   }
 
-  renderSavedMaps();
+  // ===== Initiative helpers
+  function addInitiative(name, roll){ initiative.push({name, roll}); initiative.sort((a,b)=>b.roll-a.roll); if(initIdx<0 && initiative.length) initIdx=0; renderInitiative(); }
+  function renderInitiative(){ initList.innerHTML=''; initiative.forEach((it,i)=>{ const d=document.createElement('div'); d.textContent=`${i===initIdx?'▶ ':''}${it.name} — ${it.roll}`; initList.appendChild(d); }); }
+  initAdd.addEventListener('click', ()=>{ const n=initName.value.trim(); const r=parseInt(initRoll.value||''); if(!n||isNaN(r)) return; addInitiative(n,r); initName.value=''; initRoll.value=''; });
+  initNext.addEventListener('click', ()=>{ if(!initiative.length) return; initIdx=(initIdx+1)%initiative.length; renderInitiative(); });
+  initReset.addEventListener('click', ()=>{ initiative=[]; initIdx=-1; renderInitiative(); });
 
-  // ===== Chat
-  function sendMsg(){
-    const text = msgInput.value.trim(); if(!text) return;
-    const div = document.createElement('div');
-    div.innerHTML = `<b>You:</b> ${text}`;
-    chatBox.appendChild(div);
-    const atBottom = chatBox.scrollTop + chatBox.clientHeight >= chatBox.scrollHeight - 8;
-    if (atBottom) chatBox.scrollTop = chatBox.scrollHeight;
-    msgInput.value='';
-  }
-  sendBtn.addEventListener('click', sendMsg);
-  msgInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMsg(); });
+  // ===== Initial grid/fog and one demo token
+  drawGrid(); drawFog();
 
-  // ===== Persistence (current session)
-  function saveState(){
-    if (!mapImg) return;
-    const state = {
-      image: mapImg.src,
-      tokens, gridVisible, gridCellPx,
-      baseMapW, baseMapH, scale, offsetX, offsetY,
-      initiative, initIndex
-    };
-    localStorage.setItem('war-vault-current', JSON.stringify(state));
-  }
+  // Demo spawn button via header double-click (hidden shortcut)
+  document.querySelector('header .title').addEventListener('dblclick', ()=> spawnToken({name:'Hero'}));
 
-  // Initial fog & restore
-  initFog();
-  const last = JSON.parse(localStorage.getItem('war-vault-current') || 'null');
-  if (last && last.image){
-    const img = new Image();
-    img.onload = ()=>{
-      mapImg = img;
-      baseMapW = last.baseMapW || img.width;
-      baseMapH = last.baseMapH || img.height;
-      scale = last.scale ?? 1;
-      offsetX = last.offsetX ?? 0;
-      offsetY = last.offsetY ?? 0;
-      tokens = last.tokens || [];
-      gridVisible = last.gridVisible ?? true;
-      gridCellPx = last.gridCellPx || 50;
-      initiative = last.initiative || [];
-      initIndex = last.initIndex ?? -1;
-      gridBtn.textContent = `Grid: ${gridVisible ? 'ON' : 'OFF'}`;
-      gridSizeSel.value = String(gridCellPx);
-      updateGridVisual();
-      renderInitiative();
-      redrawAll();
-    };
-    img.src = last.image;
-  }
-
-})();
-</script>
+  </script>
 </body>
 </html>
