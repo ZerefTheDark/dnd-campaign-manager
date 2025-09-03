@@ -16,7 +16,6 @@
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;overflow:hidden
     }
 
-    /* Header */
     header{
       display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;
       border-bottom:1px solid var(--accent);background:rgba(10,10,14,.9);backdrop-filter:blur(6px);
@@ -40,7 +39,6 @@
       padding:.35rem;border-radius:6px;width:100%
     }
 
-    /* Layout: Left (Forge+Initiative) | Center (Map) | Right (Tools, Submaps, Omniverse) */
     #stage{flex:1;display:grid;grid-template-columns:320px 1fr 360px;min-height:0}
     #left-panel{
       background:var(--panel);border-right:1px solid var(--accent);overflow:auto;display:flex;flex-direction:column
@@ -57,7 +55,6 @@
     .row{display:flex;gap:.5rem;align-items:center;margin:.4rem 0}
     .row.stacked{flex-direction:column;align-items:stretch}
 
-    /* Map stack */
     #map{
       position:absolute;inset:0;object-fit:contain;width:100%;height:100%;
       transform-origin:top left;cursor:grab;z-index:1
@@ -67,7 +64,6 @@
     #template-layer{z-index:3}
     #fog-layer{z-index:5}
 
-    /* Tokens & portals */
     .token{
       position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;
       display:flex;align-items:center;justify-content:center;user-select:none;cursor:grab;
@@ -80,7 +76,6 @@
       border:2px solid #fff;box-shadow:0 0 10px #8df;z-index:7;cursor:pointer;transform-origin:center
     }
 
-    /* Context menu */
     #ctx{
       position:absolute;z-index:50;background:#1b1a22;border:1px solid var(--accent);
       border-radius:8px;overflow:hidden;display:none;min-width:180px
@@ -88,7 +83,6 @@
     #ctx button{display:block;width:100%;text-align:left;padding:.5rem .7rem;background:transparent;color:var(--ink);border:none;cursor:pointer}
     #ctx button:hover{background:rgba(255,255,255,.08)}
 
-    /* Submap overlay */
     #submap-overlay{
       position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:none;z-index:30
     }
@@ -106,7 +100,6 @@
 
     #submap-canvas{position:absolute;inset:0}
 
-    /* Token Forge (left) */
     #token-forge{flex:1;overflow:auto}
     #forge-grid{display:grid;grid-template-columns:1fr;gap:.6rem}
     #saved-maps{
@@ -117,10 +110,8 @@
     .thumb{width:42px;height:42px;background:#222;border:1px solid rgba(255,255,255,.12);background-size:cover;background-position:center;border-radius:6px}
     #initiative{margin-top:auto}
 
-    /* Handles for AoE selection (drawn on template layer in JS; class kept for reference) */
     .handle{position:absolute;width:10px;height:10px;border:2px solid #00c8ff;background:#00131a;border-radius:2px;z-index:9;pointer-events:auto}
 
-    /* Omniverse Lab styling */
     .ov-box{border:1px solid var(--paperEdge);border-radius:10px;background:rgba(235,220,185,.07);padding:.6rem}
     .ov-row{display:grid;grid-template-columns:100px 1fr;gap:.5rem;align-items:center;margin:.35rem 0}
     #ov-console{
@@ -135,7 +126,6 @@
   </style>
 </head>
 <body>
-  <!-- Header -->
   <header>
     <div class="brand">
       <div class="title">The War Vault</div>
@@ -149,9 +139,7 @@
     </div>
   </header>
 
-  <!-- Stage -->
   <div id="stage">
-    <!-- LEFT: Token Forge + Initiative -->
     <aside id="left-panel">
       <div class="section" id="token-forge">
         <h3>Token Forge</h3>
@@ -187,14 +175,12 @@
       </div>
     </aside>
 
-    <!-- CENTER: Map -->
     <main id="map-container">
       <img id="map" src="https://i.imgur.com/8V7V3sP.jpg" alt="Map" />
       <canvas id="grid-layer"></canvas>
       <canvas id="template-layer"></canvas>
       <canvas id="fog-layer"></canvas>
 
-      <!-- Token context menu -->
       <div id="ctx">
         <button data-act="sheet">View Character Sheet</button>
         <button data-act="assign-submap">Assign Submap…</button>
@@ -202,7 +188,6 @@
         <button data-act="delete">Delete Token</button>
       </div>
 
-      <!-- Submap Overlay (parchment) -->
       <div id="submap-overlay">
         <div class="parchment">
           <div class="head">
@@ -216,7 +201,6 @@
       </div>
     </main>
 
-    <!-- RIGHT: Tools, Submap Manager, Omniverse Lab -->
     <aside id="right-panel">
       <div class="section">
         <h3>Tools</h3>
@@ -260,7 +244,6 @@
         <div id="submap-list"></div>
       </div>
 
-      <!-- Omniverse Lab (Beta) -->
       <div class="section" id="omniverse-lab">
         <h3>Omniverse Lab (beta)</h3>
         <div class="ov-box">
@@ -297,7 +280,7 @@
 
   <script>
     window.onload = function () {
-$/* ===== Element refs ===== */$
+      /* Element refs */
       const wrap = document.getElementById('map-container');
       const mapEl = document.getElementById('map');
       const grid = document.getElementById('grid-layer');
@@ -341,7 +324,7 @@ $/* ===== Element refs ===== */$
       const initReset = document.getElementById('btn-init-reset');
       const initList = document.getElementById('init-list');
 
-$/* ===== Global state ===== */$
+      /* Global state */
       let scale = 1;
       let offset = { x: 0, y: 0 };
       const cell = 50;
@@ -366,11 +349,14 @@ $/* ===== Global state ===== */$
       let paintingFog = false;
       let beganStroke = false;
 
+      let draggingTemplate = null;
+      let dragTemplateOffset = { x: 0, y: 0 };
+
       /* Initiative */
       let initiative = [];
       let initIdx = -1;
 
-      /* ===== Canvas sizing & initial draw ===== */
+      /* Canvas sizing & initial draw */
       function fitCanvases() {
         const r = wrap.getBoundingClientRect();
         [grid, tpl, fog].forEach(cv => {
@@ -386,9 +372,9 @@ $/* ===== Global state ===== */$
         repositionAll();
       }
       window.addEventListener('resize', fitCanvases);
-      fitCanvases(); // run once
+      fitCanvases();
 
-$/* ===== Coordinates & helpers ===== */$
+      /* Coordinates & helpers */
       function screenToWorld(sx, sy) {
         return { x: (sx - offset.x) / scale, y: (sy - offset.y) / scale };
       }
@@ -399,7 +385,7 @@ $/* ===== Coordinates & helpers ===== */$
         return snapChk.checked ? Math.round(v / cell) * cell : v;
       }
 
-$/* ===== Grid ===== */$
+      /* Grid */
       function drawGrid() {
         const step = cell * scale;
         gctx.clearRect(0, 0, grid.width, grid.height);
@@ -414,7 +400,7 @@ $/* ===== Grid ===== */$
         }
       }
 
-      /* ===== Reposition map & overlays ===== */
+      /* Reposition map & overlays */
       function repositionAll() {
         mapEl.style.transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
         drawGrid();
@@ -429,7 +415,7 @@ $/* ===== Grid ===== */$
         redrawTemplates();
       }
 
-$/* ===== Zoom / Pan ===== */$
+      /* Zoom / Pan */
       function setScale(newScale, anchorX, anchorY) {
         const old = scale;
         scale = Math.max(0.2, Math.min(6, newScale));
@@ -448,22 +434,19 @@ $/* ===== Zoom / Pan ===== */$
         setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), e.offsetX, e.offsetY);
       }, { passive: false });
 
-$/* ===== Map upload ===== */$
+      /* Map upload */
       mapUpload.addEventListener('change', e => {
         const file = e.target.files?.[0];
         if (!file) return;
         const r = new FileReader();
         r.onload = ev => {
-          mapEl.onload = () => {
-            offset = { x: 0, y: 0 }; scale = 1;
-            fitCanvases();
-          };
+          mapEl.onload = () => fitCanvases();
           mapEl.src = ev.target.result;
         };
         r.readAsDataURL(file);
       });
 
-$/* ===== Tools ===== */$
+      /* Tools */
       function setTool(t) {
         currentTool = t;
         toolButtons.forEach(b => b.classList.toggle('toggled', b.dataset.tool === t));
@@ -472,7 +455,7 @@ $/* ===== Tools ===== */$
       toolButtons.forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
       setTool('pan');
 
-$/* ===== Drawing + Fog ===== */$
+      /* Drawing + Fog */
       wrap.addEventListener('mousedown', e => {
         const onMap = [wrap, mapEl, grid, tpl, fog].includes(e.target);
         if (!onMap) return;
@@ -529,16 +512,21 @@ $/* ===== Drawing + Fog ===== */$
           drawing.cur = { x: snap(w.x), y: snap(w.y) };
           drawTemplatePreview();
         }
+        if (draggingTemplate) {
+          const w = screenToWorld(e.offsetX, e.offsetY);
+          moveTemplateTo(w.x, w.y);
+        }
       });
 
       window.addEventListener('mouseup', () => {
         isPanning = false;
         if (paintingFog) endFogStroke();
+        if (draggingTemplate) draggingTemplate = null;
         if (drawing) finalizeTemplate();
         drawing = null;
       });
 
-$/* ===== Fog paint + undo/redo ===== */$
+      /* Fog paint + undo/redo */
       function pushFogState() {
         try {
           const img = fctx.getImageData(0, 0, fog.width, fog.height);
@@ -579,7 +567,7 @@ $/* ===== Fog paint + undo/redo ===== */$
         fctx.putImageData(img, 0, 0);
       });
 
-$/* ===== Templates ===== */$
+      /* Templates */
       function drawTemplatePreview() {
         tctx.clearRect(0, 0, tpl.width, tpl.height);
         redrawTemplates();
@@ -587,7 +575,7 @@ $/* ===== Templates ===== */$
         const s = worldToScreen(drawing.start.x, drawing.start.y);
         const c = worldToScreen(drawing.cur.x, drawing.cur.y);
         tctx.lineWidth = 2; tctx.strokeStyle = 'rgba(0,200,255,0.9)'; tctx.fillStyle = 'rgba(0,200,255,0.25)';
-        if (drawing.type === 'ruler') {
+        if (drawing.type === 'ruler' || drawing.type === 'los') {
           tctx.beginPath(); tctx.moveTo(s.x, s.y); tctx.lineTo(c.x, c.y); tctx.stroke();
           const ft = Math.round(Math.hypot(c.x - s.x, c.y - s.y) / (cell * scale) * 5);
           tctx.fillStyle = 'rgba(0,0,0,.7)'; tctx.fillRect((s.x + c.x) / 2 - 18, (s.y + c.y) / 2 - 10, 36, 18);
@@ -598,7 +586,8 @@ $/* ===== Templates ===== */$
         } else if (drawing.type === 'rect') {
           tctx.beginPath(); tctx.rect(s.x, s.y, c.x - s.x, c.y - s.y); tctx.fill(); tctx.stroke();
         } else if (drawing.type === 'cone') {
-          const ang = Math.atan2(c.y - s.y, c.x - s.x); const len = Math.hypot(c.x - s.x, c.y - s.y);
+          const ang = Math.atan2(c.y - s.y, c.x - s.x);
+          const len = Math.hypot(c.x - s.x, c.y - s.y);
           tctx.beginPath(); tctx.moveTo(s.x, s.y); tctx.lineTo(s.x + Math.cos(ang - Math.PI / 6) * len, s.y + Math.sin(ang - Math.PI / 6) * len);
           tctx.arc(s.x, s.y, len, ang - Math.PI / 6, ang + Math.PI / 6); tctx.closePath(); tctx.fill(); tctx.stroke();
         }
@@ -636,7 +625,39 @@ $/* ===== Templates ===== */$
         });
       }
 
-$/* ===== Tokens ===== */$
+      /* Select & drag template (main map) */
+      function hitTestTemplates(wx, wy) {
+        for (let i = templates.length - 1; i >= 0; i--) {
+          const tp = templates[i];
+          if (tp.type === 'circle') {
+            if (Math.hypot(wx - tp.x, wy - tp.y) <= tp.r) return tp;
+          } else if (tp.type === 'rect') {
+            if (wx >= tp.x && wx <= tp.x + tp.w && wy >= tp.y && wy <= tp.y + tp.h) return tp;
+          } else if (tp.type === 'cone') {
+            const ang = Math.atan2(wy - tp.y, wx - tp.x);
+            const d = Math.hypot(wx - tp.x, wy - tp.y);
+            const da = Math.abs((((ang - tp.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI));
+            if (da <= tp.spread / 2 && d <= tp.len) return tp;
+          }
+        }
+        return null;
+      }
+
+      function startDragTemplate(wx, wy) {
+        draggingTemplate = selectedTemplate;
+        if (!draggingTemplate) return;
+        dragTemplateOffset.x = wx - draggingTemplate.x;
+        dragTemplateOffset.y = wy - draggingTemplate.y;
+      }
+
+      function moveTemplateTo(wx, wy) {
+        if (!draggingTemplate) return;
+        draggingTemplate.x = snap(wx - dragTemplateOffset.x);
+        draggingTemplate.y = snap(wy - dragTemplateOffset.y);
+        redrawTemplates();
+      }
+
+      /* Tokens */
       function spawnToken({ name, color, size, img, char, x, y, submapId }) {
         const el = document.createElement('div');
         el.className = 'token'; el.style.width = size + 'px'; el.style.height = size + 'px'; el.style.backgroundColor = color;
@@ -664,7 +685,7 @@ $/* ===== Tokens ===== */$
       }
       function openQuickSheet(t) { alert(`${t.name}\n\n(Placeholder: Character sheet panel can render here)`); }
 
-$/* ===== Context menu ===== */$
+      /* Context menu */
       function openCtx(x, y) { ctxMenu.style.display = 'block'; ctxMenu.style.left = x + 'px'; ctxMenu.style.top = y + 'px'; }
       window.addEventListener('click', e => { if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none'; });
       ctxMenu.addEventListener('click', e => {
@@ -677,7 +698,7 @@ $/* ===== Context menu ===== */$
         ctxMenu.style.display = 'none';
       });
 
-$/* ===== Portals ===== */$
+      /* Portals */
       function createPortal(x, y) {
         const el = document.createElement('div'); el.className = 'portal'; wrap.appendChild(el);
         const p = { el, x, y, submapId: null };
@@ -699,7 +720,7 @@ $/* ===== Portals ===== */$
         if (f) { p.submapId = f.id; alert('Assigned ' + f.name); }
       }
 
-$/* ===== Submap Manager ===== */$
+      /* Submap Manager */
       function renderSubmapList() {
         subList.innerHTML = '';
         submaps.forEach(sm => {
@@ -722,7 +743,7 @@ $/* ===== Submap Manager ===== */$
         }; r.readAsDataURL(file);
       });
 
-$/* ===== Saved Maps ===== */$
+      /* Saved Maps */
       function renderSavedMaps() {
         savedMapsDiv.innerHTML = '';
         savedMaps.forEach((m, idx) => {
@@ -769,7 +790,7 @@ $/* ===== Saved Maps ===== */$
         repositionAll(); alert('Map loaded.');
       }
 
-$/* ===== Token Forge ===== */$
+      /* Token Forge */
       createTokenBtn.addEventListener('click', () => {
         const name = (tfName.value || '').trim() || 'Token';
         const color = tfColor.value || '#ff4444';
@@ -779,7 +800,7 @@ $/* ===== Token Forge ===== */$
         else { spawnToken({ name, color, size }); }
       });
 
-$/* ===== Initiative ===== */$
+      /* Initiative */
       initAdd.addEventListener('click', () => {
         const n = (initName.value || '').trim(); const r = parseInt(initRoll.value || '', 10);
         if (!n || isNaN(r)) return; initiative.push({ name: n, roll: r }); initiative.sort((a, b) => b.roll - a.roll);
@@ -789,7 +810,7 @@ $/* ===== Initiative ===== */$
       initNext.addEventListener('click', () => { if (initiative.length) initIdx = (initIdx + 1) % initiative.length; renderInitiative(); });
       initReset.addEventListener('click', () => { initiative = []; initIdx = -1; renderInitiative(); });
 
-$/* ===== Submap Engine ===== */$
+      /* Submap Engine */
       const subOverlay = document.getElementById('submap-overlay');
       const subCanvas = document.getElementById('submap-canvas');
       const subTitleEl = document.getElementById('submap-title');
@@ -818,12 +839,12 @@ $/* ===== Submap Engine ===== */$
         const tray = document.createElement('div'); tray.id = 'sub-toolbar'; tray.style.cssText = 'position:absolute;left:10px;top:52px;display:flex;flex-wrap:wrap;gap:6px;background:rgba(233,223,195,.9);border:1px solid #c9b27a;border-radius:8px;padding:6px;z-index:40';
         tray.innerHTML = `<button class="btn" data-sbtool="pan">🖐️</button><button class="btn" data-sbtool="select">🖱️</button><button class="btn" data-sbtool="ruler">📏</button><button class="btn" data-sbtool="circle">⭕</button><button class="btn" data-sbtool="rect">▭</button><button class="btn" data-sbtool="cone">🔺</button><button class="btn" data-sbtool="token">🎯</button><label style="display:flex;align-items:center;gap:4px;background:#eadfbf;padding:2px 6px;border-radius:6px;border:1px solid #c9b27a;"><span>Fog</span><select id="sb-fog-mode"><option value="none">Off</option><option value="reveal">Reveal</option><option value="hide">Hide</option></select><select id="sb-brush"><option value="20">20</option><option value="40" selected>40</option><option value="80">80</option></select></label><button id="sb-fog-undo" class="btn">⟲</button><button id="sb-fog-redo" class="btn">⟳</button><button id="sb-clear" class="btn">Clear</button><button id="sb-save" class="btn">💾 Save</button><button id="sb-reset" class="btn">↺ Reset</button>`;
         subCanvas.parentElement.appendChild(tray);
-        tray.querySelectorAll('[data-sbtool]').forEach(btn => btn.addEventListener('click', () => { const t = btn.dataset.sbttool; if (S) S.tool = t; tray.querySelectorAll('[data-sbtool]').forEach(b => b.classList.toggle('toggled', b === btn)); }));
+        tray.querySelectorAll('[data-sbtool]').forEach(btn => btn.addEventListener('click', () => { const t = btn.dataset.sbtool; if (S) S.tool = t; tray.querySelectorAll('[data-sbtool]').forEach(b => b.classList.toggle('toggled', b === btn)); }));
+        document.getElementById('sb-fog-undo').onclick = () => subFogUndo();
+        document.getElementById('sb-fog-redo').onclick = () => subFogRedo();
         document.getElementById('sb-clear').onclick = () => { if (S) S.templates = []; redrawSub(); };
         document.getElementById('sb-save').onclick = () => { if (S) saveActiveSubmap(); };
         document.getElementById('sb-reset').onclick = () => { if (S) resetToLastSave(); };
-        document.getElementById('sb-fog-undo').onclick = () => subFogUndo();
-        document.getElementById('sb-fog-redo').onclick = () => subFogRedo();
         setSubTool('pan');
       }
       function setSubTool(t) { if (S) S.tool = t; }
@@ -833,14 +854,7 @@ $/* ===== Submap Engine ===== */$
         sctx.fillStyle = '#d7ccb0'; sctx.fillRect(0, 0, subCanvas.width, subCanvas.height);
         sctx.save(); sctx.translate(S.offset.x, S.offset.y); sctx.scale(S.scale, S.scale); sctx.drawImage(S.base, 0, 0);
         const rune = getComputedStyle(document.documentElement).getPropertyValue('--rune'); sctx.strokeStyle = rune; sctx.lineWidth = 1;
-        const step = S.cell * S.scale;
-        for (let x = 0; x < S.base.width; x += step) { sctx.beginPath(); sctx.moveTo(x, 0); sctx.lineTo(x, S.base.height); sctx.stroke(); }
-        for (let y = 0; y < S.base.height; y += step) { sctx.beginPath(); sctx.moveTo(0, y); sctx.lineTo(S.base.width, y); sctx.stroke(); }
+        for (let x = 0; x < S.base.width; x += S.cell) { sctx.beginPath(); sctx.moveTo(x, 0); sctx.lineTo(x, S.base.height); sctx.stroke(); }
+        for (let y = 0; y < S.base.height; y += S.cell) { sctx.beginPath(); sctx.moveTo(0, y); sctx.lineTo(S.base.width, y); sctx.stroke(); }
         S.templates.forEach(tp => { sctx.save(); sctx.lineWidth = 2 / S.scale; sctx.strokeStyle = 'rgba(0,200,255,0.9)'; sctx.fillStyle = 'rgba(0,200,255,0.25)'; if (tp.type === 'circle') { sctx.beginPath(); sctx.arc(tp.x, tp.y, tp.r, 0, Math.PI * 2); sctx.fill(); sctx.stroke(); } else if (tp.type === 'rect') { sctx.beginPath(); sctx.rect(tp.x, tp.y, tp.w, tp.h); sctx.fill(); sctx.stroke(); } else if (tp.type === 'cone') { sctx.beginPath(); sctx.moveTo(tp.x, tp.y); sctx.lineTo(tp.x + Math.cos(tp.ang - tp.spread / 2) * tp.len, tp.y + Math.sin(tp.ang - tp.spread / 2) * tp.len); sctx.arc(tp.x, tp.y, tp.len, tp.ang - tp.spread / 2, tp.ang + tp.spread / 2); sctx.closePath(); sctx.fill(); sctx.stroke(); } sctx.restore(); });
-        S.tokens.forEach(tk => { sctx.save(); sctx.lineWidth = 2 / S.scale; if (tk.imgData) { const img = new Image(); img.src = tk.imgData; const r = tk.size / 2; sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI * 2); sctx.closePath(); sctx.save(); sctx.clip(); sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size); sctx.restore(); sctx.strokeStyle = '#fff'; sctx.stroke(); } else { sctx.fillStyle = tk.color || '#ff4444'; sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size / 2, 0, Math.PI * 2); sctx.fill(); sctx.strokeStyle = '#fff'; sctx.stroke(); sctx.fillStyle = '#000'; sctx.font = `${Math.max(10, tk.size / 3)}px system-ui`; sctx.textAlign = 'center'; sctx.textBaseline = 'middle'; sctx.fillText((tk.name || 'TK').slice(0, 3).toUpperCase(), tk.x, tk.y); } sctx.restore(); });
-        sctx.restore();
-        if (S.fogImg) sctx.drawImage(S.fogImg, 0, 0, subCanvas.width, subCanvas.height);
-        if (S.drawing) drawSubPreview();
-      }
-
-      function drawSubPreview() { if (!S || !S.drawing) return; const d = S.drawing; sctx.save(); sctx.translate(S.offset.x, S.offset.y); sctx.scale(S.scale, S.scale); sctx.lineWidth = 2 / S.scale; sctx.strokeStyle = 'rgba(0,200,255,0.9)'; sctx.fillStyle = 'rgba(0,200,255,0.25)'; if (d.type === 'ruler') { sctx.beginPath(); sctx.moveTo(d.start.x, d.start.y); sctx.lineTo(d.cur.x, d.cur.y); sctx.stroke(); const ft = Math.round((Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y) / S.cell) * 5); sctx.restore(); sctx.fillStyle = 'rgba(0,
+        S.tokens.forEach(tk => { sctx.save(); sctx.lineWidth = 2 / S.scale; if (tk.imgData) { const img = new Image(); img.src = tk.imgData; const r = tk.size / 2; sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI * 2); sctx.closePath(); sctx.save(); sctx.clip(); sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size); sctx.restore(); sctx.strokeStyle = '#fff'; sctx.stroke(); } else { sctx.fillStyle = tk.color || '#ff4444'; sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size / 2, 0, Math.PI * 2); sctx.fill(); sctx.strokeStyle = '#fff'; sctx.stroke(); sctx.fillStyle = '#000'; sctx.font = `${Math.max(10, tk.size / 3)}px system-ui`; sctx.textAlign = 'center'; sctx.textBaseline = 'middle'; sctx.fillText((tk.name || 'TK').slice(0, 3).toUpperCase(), tk.x, tk.y); } s
