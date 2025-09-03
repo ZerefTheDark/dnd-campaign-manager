@@ -3,309 +3,223 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>D&D Beyond Free | 5e Character Builder 2025</title>
-    <meta name="description" content="Create full D&D 5e characters with race, class, ability scores, and more — futuristic 2025 interface." />
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Poppins:wght@400;600&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
+    <title>D&D 5e Character Builder | Tome of the Ancients</title>
     <style>
-        :root {
-            --primary: #1a1a2e;
-            --secondary: #16213e;
-            --accent-blue: #4cc9f0;
-            --accent-pink: #f72585;
-            --accent-purple: #7209b7;
-            --text-light: #f0f0f0;
-            --text-dim: #b8b8b8;
-            --glass-bg: rgba(26, 26, 46, 0.7);
-            --glass-border: rgba(76, 201, 240, 0.3);
-            --card-hover: rgba(255, 255, 255, 0.08);
+        /* === TEXTURE BACKGROUNDS === */
+        @font-face {
+            font-family: 'D&D Script';
+            src: url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap');
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, #0f3460 100%);
-            color: var(--text-light);
+            margin: 0;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: url('https://www.transparenttextures.com/patterns/old-wall.png') fixed;
+            background-size: cover;
+            background-color: #1a1712;
+            color: #e6d5b8;
+            line-height: 1.8;
+            padding: 0;
             min-height: 100vh;
-            line-height: 1.6;
-            transition: all 0.4s ease;
         }
 
-        body.light-mode {
-            background: #f5f7fa;
-            color: #1a1a2e;
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --card-hover: #f0f0f0;
-            --glass-border: #4cc9f0;
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 1rem;
         }
 
-        .main-header {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-            border-bottom: 2px solid var(--accent-blue);
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .site-title {
-            font-family: 'Cinzel', serif;
-            font-size: 2.2rem;
-            color: var(--accent-pink);
-            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6);
-        }
-
-        .theme-switch {
-            display: flex;
-            align-items: center;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-
-        .switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider-round {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--accent-blue);
-            transition: 0.4s;
-            border-radius: 24px;
-        }
-
-        .slider-round:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: 0.4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider-round {
-            background-color: var(--accent-pink);
-        }
-
-        input:checked + .slider-round:before {
-            transform: translateX(26px);
-        }
-
-        .content-section {
-            max-width: 1200px;
-            margin: 3rem auto;
-            padding: 0 2rem;
-        }
-
-        .section-title {
-            font-family: 'Cinzel', serif;
-            font-size: 2.5rem;
-            color: var(--accent-blue);
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        .step-tabs {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .step-tab {
-            padding: 0.8rem 1.5rem;
-            background: rgba(76, 201, 240, 0.1);
-            color: var(--text-dim);
-            border: 1px solid var(--accent-blue);
-            border-radius: 10px 10px 0 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .step-tab.active {
-            background: var(--primary);
-            color: var(--accent-blue);
-            border-bottom: none;
-        }
-
-        .step-content {
-            display: none;
+        /* === PARCHMENT CARD === */
+        .character-sheet {
+            background: url('https://www.transparenttextures.com/patterns/paper-fibers.png') #fdf6e3;
+            background-blend-mode: overlay;
+            color: #442d20;
+            margin: 1rem;
             padding: 2rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.7),
+                inset 0 0 10px rgba(0, 0, 0, 0.2);
+            border: 2px solid #8b7355;
+            position: relative;
         }
 
-        .step-content.active {
-            display: block;
-            animation: fadeIn 0.5s ease;
+        .character-sheet::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('https://www.transparenttextures.com/patterns/dark-wood-grain.png');
+            opacity: 0.08;
+            pointer-events: none;
+            border-radius: 12px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        h1, h2, h3 {
+            color: #5c4033;
+            font-family: 'Cinzel', 'Georgia', serif;
+            text-shadow: 1px 1px 2px #e6d5b8;
+            letter-spacing: 1px;
         }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
+        h1 {
+            text-align: center;
+            font-size: 2.4rem;
             margin-bottom: 0.5rem;
-            color: var(--accent-blue);
-            font-weight: 500;
+            border-bottom: 3px double #8b7355;
+            padding-bottom: 0.5rem;
         }
 
-        .form-group select,
-        .form-group input,
-        .form-group textarea {
+        h2 {
+            font-size: 1.6rem;
+            margin-top: 1.5rem;
+            border-left: 8px solid #a67c52;
+            padding-left: 1rem;
+        }
+
+$/* === FORM STYLES === */$
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            color: #5c4033;
+            margin-bottom: 0.4rem;
+            font-size: 1.1rem;
+        }
+
+        select, input, textarea {
             width: 100%;
-            padding: 0.8rem;
-            border-radius: 8px;
-            border: 1px solid var(--accent-blue);
-            background: rgba(76, 201, 240, 0.1);
-            color: var(--text-light);
-            font-family: 'Roboto Mono', monospace;
+            padding: 0.7rem;
+            border: 2px solid #a67c52;
+            border-radius: 6px;
+            background: rgba(255, 252, 245, 0.9);
+            color: #442d20;
+            font-family: 'Georgia', serif;
+            font-size: 1rem;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        /* === ABILITY BLOCKS === */
+        .abilities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1.2rem;
+            margin: 1.5rem 0;
         }
 
         .ability-block {
-            display: grid;
-            grid-template-columns: 80px 1fr;
-            gap: 0.5rem;
-            align-items: center;
+            text-align: center;
+            background: #fdf6e3;
+            border: 2px solid #cdaa7d;
+            border-radius: 10px;
+            padding: 0.8rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .ability-block::before {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px;
+            width: 30px; height: 30px;
+            background: url('https://www.transparenttextures.com/patterns/crissXcross.png');
+            opacity: 0.3;
+            border-radius: 50%;
+            z-index: 0;
         }
 
         .ability-score {
             font-size: 1.8rem;
             font-weight: bold;
-            text-align: center;
-            color: var(--accent-pink);
+            color: #5c4033;
+            margin: 0;
+            position: relative;
+            z-index: 1;
         }
 
         .ability-mod {
             font-size: 1.1rem;
-            color: var(--accent-blue);
+            color: #a67c52;
             margin-top: 0.2rem;
+            font-weight: bold;
         }
 
-        .btn-nav {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 2rem;
-        }
-
-        .nav-btn {
-            background: var(--accent-purple);
-            color: white;
-            border: none;
+$/* === BUTTONS === */$
+        .btn {
+            background: #8b5a2b;
+            color: #f5e8c9;
+            border: 2px solid #654321;
             padding: 0.8rem 1.5rem;
-            border-radius: 50px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: bold;
+            font-family: 'Cinzel', serif;
             transition: all 0.3s ease;
+            display: block;
+            width: 200px;
+            margin: 2rem auto 0;
         }
 
-        .nav-btn:hover {
+        .btn:hover {
+            background: #654321;
+            color: #fff3c1;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(114, 9, 183, 0.4);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
 
-        .nav-btn.prev {
-            background: var(--accent-blue);
+        .btn.save {
+            background: #5c3d2e;
+            font-size: 1.1rem;
+            width: 250px;
         }
 
-        .stat-preview {
-            margin-top: 1.5rem;
+        /* === RACE FEATURES === */
+        .race-features {
+            background: rgba(210, 180, 140, 0.4);
+            border: 1px dashed #8b7355;
+            border-radius: 8px;
             padding: 1rem;
-            background: rgba(76, 201, 240, 0.1);
-            border-radius: 10px;
-            font-family: 'Roboto Mono', monospace;
+            font-size: 0.95rem;
+            color: #5c4033;
         }
 
-        .save-btn {
-            background: linear-gradient(135deg, var(--accent-pink), #b5179e);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-top: 1.5rem;
-            transition: all 0.3s ease;
+$/* === FOOTER SEAL === */$
+        .seal {
+            text-align: center;
+            margin-top: 2rem;
+            color: #5c4033;
+            font-style: italic;
+            font-size: 0.9rem;
         }
 
-        .save-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(247, 37, 133, 0.5);
-        }
-
-        @media (max-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            .step-tabs {
-                font-size: 0.9rem;
-            }
+        .seal::after {
+            content: '✦';
+            display: block;
+            font-size: 1.5rem;
+            color: #a67c52;
+            margin-top: 0.5rem;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="container">
+        <div class="character-sheet">
+            <h1>Character Codex</h1>
+            <p style="text-align:center; color:#5c4033; font-style:italic;">"By the runes and blood of ancients, a hero is forged."</p>
 
-    <header class="main-header">
-        <div class="header-content">
-            <h1 class="site-title">D&D 2025</h1>
-            <label class="theme-switch">
-                <input type="checkbox" id="theme-toggle" />
-                <span class="slider-round"></span>
-            </label>
-        </div>
-    </header>
-
-    <section class="content-section">
-        <h2 class="section-title">Character Builder</h2>
-
-        <!-- Step Tabs -->
-        <div class="step-tabs">
-            <div class="step-tab active" data-step="1">Basics</div>
-            <div class="step-tab" data-step="2">Race</div>
-            <div class="step-tab" data-step="3">Class</div>
-            <div class="step-tab" data-step="4">Ability Scores</div>
-            <div class="step-tab" data-step="5">Background</div>
-        </div>
-
-        <!-- Step 1: Basics -->
-        <div class="step-content active" data-step="1">
+            <!-- BASICS -->
+            <h2>Hero’s Essence</h2>
             <div class="form-grid">
                 <div class="form-group">
                     <label>Name</label>
-                    <input type="text" id="char-name" placeholder="e.g. Tharos Flamebeard" />
+                    <input type="text" id="char-name" placeholder="e.g. Borin Stonehand" />
                 </div>
                 <div class="form-group">
                     <label>Player</label>
@@ -330,34 +244,25 @@
                     </select>
                 </div>
             </div>
-            <div class="btn-nav">
-                <div></div>
-                <button class="nav-btn next" data-next="2">Next: Race →</button>
-            </div>
-        </div>
 
-        <!-- Step 2: Race -->
-        <div class="step-content" data-step="2">
+            <!-- RACE -->
+            <h2>Lineage</h2>
             <div class="form-group">
                 <label>Race</label>
                 <select id="race" onchange="updateRaceFeatures()">
                     <option value="human">Human</option>
-                    <option value="elf">Elf (Drow +2 CHA)</option>
-                    <option value="dwarf">Dwarf (+2 CON)</option>
-                    <option value="tiefling">Tiefling (+2 CHA, +1 INT)</option>
+                    <option value="elf">Elf</option>
+                    <option value="dwarf">Dwarf</option>
+                    <option value="tiefling">Tiefling</option>
                 </select>
             </div>
-            <div id="race-features" class="stat-preview">
+            <div id="race-features" class="race-features">
                 <p><strong>Speed:</strong> 30 ft</p>
+                <p><strong>Ability:</strong> +1 to all (Human)</p>
             </div>
-            <div class="btn-nav">
-                <button class="nav-btn prev" data-prev="1">← Basics</button>
-                <button class="nav-btn next" data-next="3">Next: Class →</button>
-            </div>
-        </div>
 
-        <!-- Step 3: Class -->
-        <div class="step-content" data-step="3">
+            <!-- CLASS -->
+            <h2>Calling</h2>
             <div class="form-group">
                 <label>Class</label>
                 <select id="class">
@@ -368,187 +273,110 @@
                     <option>Barbarian</option>
                 </select>
             </div>
-            <div class="btn-nav">
-                <button class="nav-btn prev" data-prev="2">← Race</button>
-                <button class="nav-btn next" data-next="4">Next: Abilities →</button>
-            </div>
-        </div>
 
-        <!-- Step 4: Ability Scores -->
-        <div class="step-content" data-step="4">
+            <!-- ABILITY SCORES -->
+            <h2>Abilities</h2>
+            <div class="abilities-grid">
+                <div class="ability-block">
+                    <label>STR</label>
+                    <input type="number" class="ability-score" id="str" value="10" onchange="calcMod('str')" />
+                    <div class="ability-mod" id="str-mod">+0</div>
+                </div>
+                <div class="ability-block">
+                    <label>DEX</label>
+                    <input type="number" class="ability-score" id="dex" value="10" onchange="calcMod('dex')" />
+                    <div class="ability-mod" id="dex-mod">+0</div>
+                </div>
+                <div class="ability-block">
+                    <label>CON</label>
+                    <input type="number" class="ability-score" id="con" value="10" onchange="calcMod('con')" />
+                    <div class="ability-mod" id="con-mod">+0</div>
+                </div>
+                <div class="ability-block">
+                    <label>INT</label>
+                    <input type="number" class="ability-score" id="int" value="10" onchange="calcMod('int')" />
+                    <div class="ability-mod" id="int-mod">+0</div>
+                </div>
+                <div class="ability-block">
+                    <label>WIS</label>
+                    <input type="number" class="ability-score" id="wis" value="10" onchange="calcMod('wis')" />
+                    <div class="ability-mod" id="wis-mod">+0</div>
+                </div>
+                <div class="ability-block">
+                    <label>CHA</label>
+                    <input type="number" class="ability-score" id="cha" value="10" onchange="calcMod('cha')" />
+                    <div class="ability-mod" id="cha-mod">+0</div>
+                </div>
+            </div>
+
+            <!-- BACKGROUND -->
+            <h2>Origin</h2>
             <div class="form-group">
-                <label>Method</label>
-                <select id="ability-method" onchange="generateAbilities()">
-                    <option value="standard">Standard Array (15,14,13,12,10,8)</option>
-                    <option value="point">Point Buy</option>
+                <label>Background</label>
+                <select id="background">
+                    <option>Sage</option>
+                    <option>Outlander</option>
+                    <option>Criminal</option>
+                    <option>Folk Hero</option>
                 </select>
             </div>
-            <div class="form-grid" id="abilities">
-                <div>
-                    <label>STR</label>
-                    <div class="ability-block">
-                        <input type="number" class="ability-score" id="str" value="10" onchange="calcMod('str')" />
-                        <div class="ability-mod" id="str-mod">+0</div>
-                    </div>
-                </div>
-                <div>
-                    <label>DEX</label>
-                    <div class="ability-block">
-                        <input type="number" class="ability-score" id="dex" value="10" onchange="calcMod('dex')" />
-                        <div class="ability-mod" id="dex-mod">+0</div>
-                    </div>
-                </div>
-                <div>
-                    <label>CON</label>
-                    <div class="ability-block">
-                        <input type="number" class="ability-score" id="con" value="10" onchange="calcMod('con')" />
-                        <div class="ability-mod" id="con-mod">+0</div>
-                    </div>
-                </div>
-                <div>
-                    <label>INT</label>
-                    <div class="ability-block">
-                        <input type="number" class="ability-score" id="int" value="10" onchange="calcMod('int')" />
-                        <div class="ability-mod" id="int-mod">+0</div>
-                    </div>
-                </div>
-                <div>
-                    <label>WIS</label>
-                    <div class="ability-block">
-                        <input type="number" class="ability-score" id="wis" value="10" onchange="calcMod('wis')" />
-                        <div class="ability-mod" id="wis-mod">+0</div>
-                    </div>
-                </div>
-                <div>
-                    <label>CHA</label>
-                    <div class="ability-block">
-                        <input type="number" class="ability-score" id="cha" value="10" onchange="calcMod('cha')" />
-                        <div class="ability-mod" id="cha-mod">+0</div>
-                    </div>
-                </div>
+            <div class="form-group">
+                <label>Backstory</label>
+                <textarea id="backstory" placeholder="The fire took everything... but I survived."></textarea>
             </div>
-            <div class="btn-nav">
-                <button class="nav-btn prev" data-prev="3">← Class</button>
-                <button class="nav-btn next" data-next="5">Next: Background →</button>
+
+            <!-- SAVE BUTTON -->
+            <button class="btn save" onclick="saveCharacter()">🖋️ Etch Character into Tome</button>
+
+            <div class="seal">
+                The Ancients Watch<br>
+                Year of the Crimson Wyrm, 2025
             </div>
         </div>
-
-        <!-- Step 5: Background -->
-        <div class="step-content" data-step="5">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Background</label>
-                    <select id="background">
-                        <option>Sage</option>
-                        <option>Outlander</option>
-                        <option>Criminal</option>
-                        <option>Folk Hero</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Backstory</label>
-                    <textarea id="backstory" rows="4" placeholder="Tell your character's tale..."></textarea>
-                </div>
-            </div>
-            <button class="save-btn" onclick="saveCharacter()">💾 Save Character</button>
-            <div class="btn-nav">
-                <button class="nav-btn prev" data-prev="4">← Abilities</button>
-                <div></div>
-            </div>
-        </div>
-
-    </section>
+    </div>
 
     <script>
-        // Theme Toggle
-        document.getElementById('theme-toggle').addEventListener('change', () => {
-            document.body.classList.toggle('light-mode');
-        });
-
-        // Step Navigation
-        document.querySelectorAll('.step-tab, .nav-btn').forEach(el => {
-            el.addEventListener('click', () => {
-                const step = el.dataset.step || el.dataset.next || el.dataset.prev;
-                if (!step) return;
-
-                document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
-                document.querySelectorAll('.step-tab').forEach(t => t.classList.remove('active'));
-
-                document.querySelector(`.step-content[data-step="${step}"]`).classList.add('active');
-                document.querySelector(`.step-tab[data-step="${step}"]`).classList.add('active');
-            });
-        });
-
-        // Ability Score Modifier Calculator
+        // Calculate Ability Modifier
         function calcMod(stat) {
             const score = parseInt(document.getElementById(stat).value) || 10;
             const mod = Math.floor((score - 10) / 2);
             document.getElementById(`${stat}-mod`).textContent = mod >= 0 ? `+${mod}` : `${mod}`;
         }
 
-        // Initialize modifiers
-        ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(calcMod);
-
-        // Generate Abilities
-        function generateAbilities() {
-            const method = document.getElementById('ability-method').value;
-            const arr = method === 'standard' 
-                ? [15,14,13,12,10,8] 
-                : [8,10,12,13,14,15]; // point buy starter
-
-            const stats = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
-            for (let i = 0; i < stats.length; i++) {
-                document.getElementById(stats[i]).value = arr[i];
-                calcMod(stats[i]);
-            }
-        }
+        // Initialize all modifiers
+        ['str','dex','con','int','wis','cha'].forEach(calcMod);
 
         // Race Features
         function updateRaceFeatures() {
             const race = document.getElementById('race').value;
             const features = {
-                human: "<p><strong>Speed:</strong> 30 ft</p><p><strong>Ability:</strong> +1 to all</p>",
-                elf: "<p><strong>Speed:</strong> 30 ft</p><p><strong>Darkvision:</strong> 60 ft</p><p><strong>Ability:</strong> +2 DEX</p>",
-                dwarf: "<p><strong>Speed:</strong> 25 ft</p><p><strong>Darkvision:</strong> 60 ft</p><p><strong>Ability:</strong> +2 CON</p>",
-                tiefling: "<p><strong>Speed:</strong> 30 ft</p><p><strong>Darkvision:</strong> 60 ft</p><p><strong>Ability:</strong> +2 CHA, +1 INT</p>"
+                human: `<p><strong>Speed:</strong> 30 ft</p><p><strong>Ability:</strong> +1 to all abilities</p>`,
+                elf: `<p><strong>Speed:</strong> 30 ft</p><p><strong>Darkvision:</strong> 60 ft</p><p><strong>Ability:</strong> +2 DEX</p>`,
+                dwarf: `<p><strong>Speed:</strong> 25 ft</p><p><strong>Darkvision:</strong> 60 ft</p><p><strong>Ability:</strong> +2 CON</p>`,
+                tiefling: `<p><strong>Speed:</strong> 30 ft</p><p><strong>Darkvision:</strong> 60 ft</p><p><strong>Ability:</strong> +2 CHA, +1 INT</p>`
             };
-            document.getElementById('race-features').innerHTML = features[race] || features.human;
+            document.getElementById('race-features').innerHTML = features[race];
         }
 
-        // Save Character
+        // Save Character to Tome (localStorage)
         function saveCharacter() {
             const data = {
-                name: document.getElementById('char-name').value || 'Unnamed',
-                player: document.getElementById('player-name').value,
-                level: document.getElementById('char-level').value,
-                alignment: document.getElementById('alignment').value,
-                race: document.getElementById('race').value,
-                class: document.getElementById('class').value,
-                background: document.getElementById('background').value,
-                str: document.getElementById('str').value,
-                dex: document.getElementById('dex').value,
-                con: document.getElementById('con').value,
-                int: document.getElementById('int').value,
-                wis: document.getElementById('wis').value,
-                cha: document.getElementById('cha').value,
+                name: document.getElementById('char-name').value || 'Unknown',
                 savedAt: new Date().toLocaleString()
             };
-            localStorage.setItem('dnd-character', JSON.stringify(data));
-            alert(`✅ Character "${data.name}" saved!`);
+            localStorage.setItem('dnd-tome-entry', JSON.stringify(data));
+            alert(`✅ The Tome whispers: "${data.name} has been inscribed."`);
         }
 
-        // Load on start
+        // Load on open
         window.onload = () => {
-            const saved = localStorage.getItem('dnd-character');
+            updateRaceFeatures();
+            const saved = localStorage.getItem('dnd-tome-entry');
             if (saved) {
                 const char = JSON.parse(saved);
-                document.getElementById('char-name').value = char.name;
-                alert(`📜 Loaded saved character: ${char.name}`);
+                alert(`📜 The Tome stirs... "${char.name}" lives within.`);
             }
-            updateRaceFeatures();
-            generateAbilities(); // init standard array
         };
     </script>
-
 </body>
 </html>
