@@ -1,4 +1,3 @@
-<!-- PART 1/4 — HTML + CSS (Structure & Styling, with Omniverse Lab space) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -178,7 +177,7 @@
           <input id="init-roll" type="number" placeholder="Roll" style="max-width:90px">
         </div>
         <div class="row"><button id="btn-init-add" class="btn" style="width:100%">Add</button></div>
-        <div class="row" style="gap:.5rem">
+        <div class="row"> style="gap:.5rem">
           <button id="btn-init-next" class="btn" style="flex:1">Next</button>
           <button id="btn-init-reset" class="btn" style="flex:1">Reset</button>
         </div>
@@ -209,32 +208,9 @@
             <button class="x" id="close-submap">✕</button>
           </div>
           <div class="body">
-            <!-- Submap tool tray (wired in Part 2) -->
-            <div class="row" style="gap:.4rem;flex-wrap:wrap;padding:6px 4px">
-              <button class="btn subtool" data-subtool="pan">🖐️ Pan</button>
-              <button class="btn subtool" data-subtool="select">🖱️ Select</button>
-              <button class="btn subtool" data-subtool="ruler">📏</button>
-              <button class="btn subtool" data-subtool="circle">⭕</button>
-              <button class="btn subtool" data-subtool="rect">▭</button>
-              <button class="btn subtool" data-subtool="cone">🔺</button>
-              <button class="btn subtool" data-subtool="token">🎯 Token</button>
-              <select id="sub-fog-mode" style="max-width:140px">
-                <option value="none">Fog: off</option>
-                <option value="reveal">Reveal</option>
-                <option value="hide">Hide</option>
-              </select>
-              <select id="sub-brush" style="max-width:120px">
-                <option value="20">Brush 20</option>
-                <option value="40" selected>Brush 40</option>
-                <option value="80">Brush 80</option>
-              </select>
-              <button id="sub-clear-templates" class="btn">Clear</button>
-              <button id="sub-save" class="btn">💾 Save</button>
-              <button id="sub-reset" class="btn">↺ Reset</button>
-            </div>
-            <!-- Submap drawing surface -->
-            <canvas id="submap-canvas"></canvas>
-          </div>
+  <canvas id="submap-canvas"></canvas>
+</div>
+
         </div>
       </div>
     </main>
@@ -243,7 +219,7 @@
     <aside id="right-panel">
       <div class="section">
         <h3>Tools</h3>
-        <div class="row" style="flex-wrap:wrap">
+        <div class="row"> style="flex-wrap:wrap">
           <button class="btn tool" data-tool="pan">🖐️ Pan</button>
           <button class="btn tool" data-tool="select">🖱️ Select</button>
           <button class="btn tool" data-tool="ruler">📏 Ruler</button>
@@ -269,7 +245,7 @@
             <option value="80">Brush 80</option>
           </select>
         </div>
-        <div class="row" style="gap:.5rem">
+        <div class="row"> style="gap:.5rem">
           <button id="btn-fog-undo" class="btn" style="flex:1">⟲ Fog Undo</button>
           <button id="btn-fog-redo" class="btn" style="flex:1">⟳ Fog Redo</button>
         </div>
@@ -306,7 +282,7 @@
               <option value="png">PNG</option>
             </select>
           </div>
-          <div class="row" style="gap:.5rem;flex-wrap:wrap">
+          <div class="row"> style="gap:.5rem;flex-wrap:wrap">
             <button id="ov-connect" class="btn">🔗 Connect</button>
             <button id="ov-generate" class="btn">✨ Generate Map</button>
             <button id="ov-refresh" class="btn">↻ Refresh</button>
@@ -770,16 +746,20 @@ let dragTemplateOffset = { x: 0, y: 0 };
 function hitTestTemplates(wx, wy) {
   for (let i = templates.length - 1; i >= 0; i--) {
     const tp = templates[i];
-    if (tp.type === 'circle') {
-      if (Math.hypot(wx - tp.x, wy - tp.y) <= tp.r) return tp;
-    } else if (tp.type === 'rect') {
-      if (wx >= tp.x && wx <= tp.x + tp.w && wy >= tp.y && wy <= tp.y + tp.h) return tp;
-    } else if (tp.type === 'cone') {
-      const ang = Math.atan2(wy - tp.y, wx - tp.x);
-      const d = Math.hypot(wx - tp.y, wy - tp.y);
-      const da = Math.abs((((ang - tp.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI));
-      if (da <= tp.spread / 2 && d <= tp.len) return tp;
-    }
+if (tp.type === 'circle') {
+  if (Math.hypot(wx - tp.x, wy - tp.y) <= tp.r) return tp;
+
+} else if (tp.type === 'rect') {
+  if (wx >= tp.x && wx <= tp.x + tp.w && wy >= tp.y && wy <= tp.y + tp.h) return tp;
+
+} else if (tp.type === 'cone') {
+  const ang = Math.atan2(wy - tp.y, wx - tp.x);
+  const d   = Math.hypot(wx - tp.x, wy - tp.y); // fixed: use tp.x
+  const da  = Math.abs((((ang - tp.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI));
+  if (da <= tp.spread / 2 && d <= tp.len) return tp;
+}
+
+
   }
   return null;
 }
@@ -1169,52 +1149,11 @@ initReset.addEventListener('click', () => {
 });
 
 /* ===== Context helpers ===== */
-function openSubmapById(id) {
-  // Part 3/4 wires full submap editing (tools, tokens, fog) and save/reset workflow.
-  const overlay = document.getElementById('submap-overlay');
-  const title = document.getElementById('submap-title');
-  const canvas = document.getElementById('submap-canvas');
-  const sctx = canvas.getContext('2d');
-
-  const sm = submaps.find((s) => s.id === id);
-  if (!sm) return alert('Submap missing.');
-  title.textContent = sm.name;
-
-  const box = canvas.getBoundingClientRect();
-  canvas.width = box.width;
-  canvas.height = box.height;
-
-  const img = new Image();
-  img.onload = () => {
-    const ar = Math.min(canvas.width / img.width, canvas.height / img.height);
-    const dw = img.width * ar;
-    const dh = img.height * ar;
-    const dx = (canvas.width - dw) / 2;
-    const dy = (canvas.height - dh) / 2;
-    sctx.clearRect(0, 0, canvas.width, canvas.height);
-    sctx.fillStyle = '#d7ccb0';
-    sctx.fillRect(0, 0, canvas.width, canvas.height);
-    sctx.drawImage(img, dx, dy, dw, dh);
-  };
-  img.src = sm.dataURL || sm.image;
-
-  overlay.style.display = 'block';
-  document.getElementById('close-submap').onclick = () => (overlay.style.display = 'none');
-}
 function openCtx(x, y) {
   ctxMenu.style.display = 'block';
   ctxMenu.style.left = x + 'px';
   ctxMenu.style.top = y + 'px';
 }
-
-<script>
-const submapSaves = JSON.parse(localStorage.getItem('warvault-submap-saves') || '{}');
-function saveSubmapState(id, payload){
-  submapSaves[id] = payload;
-  localStorage.setItem('warvault-submap-saves', JSON.stringify(submapSaves));
-}
-</script>
-  function getSubmapState(id){ return submapSaves[id] || null; }
 
 /* ========= Submap Editor Engine ========= */
 const subOverlay = document.getElementById('submap-overlay');
