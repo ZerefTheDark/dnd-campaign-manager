@@ -847,19 +847,86 @@
         document.getElementById('sb-reset').onclick = () => { if (S) resetToLastSave(); };
         setSubTool('pan');
       }
-      function setSubTool(t) { if (S) S.tool = t; }
-
       function redrawSub() {
-        if (!S || !S.base) return; sctx.clearRect(0, 0, subCanvas.width, subCanvas.height);
-        sctx.fillStyle = '#d7ccb0'; sctx.fillRect(0, 0, subCanvas.width, subCanvas.height);
-        sctx.save(); sctx.translate(S.offset.x, S.offset.y); sctx.scale(S.scale, S.scale); sctx.drawImage(S.base, 0, 0);
-        const rune = getComputedStyle(document.documentElement).getPropertyValue('--rune'); sctx.strokeStyle = rune; sctx.lineWidth = 1;
-        for (let x = 0; x < S.base.width; x += S.cell) { sctx.beginPath(); sctx.moveTo(x, 0); sctx.lineTo(x, S.base.height); sctx.stroke(); }
-        for (let y = 0; y < S.base.height; y += S.cell) { sctx.beginPath(); sctx.moveTo(0, y); sctx.lineTo(S.base.width, y); sctx.stroke(); }
-        S.templates.forEach(tp => { sctx.save(); sctx.lineWidth = 2 / S.scale; sctx.strokeStyle = 'rgba(0,200,255,0.9)'; sctx.fillStyle = 'rgba(0,200,255,0.25)'; if (tp.type === 'circle') { sctx.beginPath(); sctx.arc(tp.x, tp.y, tp.r, 0, Math.PI * 2); sctx.fill(); sctx.stroke(); } else if (tp.type === 'rect') { sctx.beginPath(); sctx.rect(tp.x, tp.y, tp.w, tp.h); sctx.fill(); sctx.stroke(); } else if (tp.type === 'cone') { sctx.beginPath(); sctx.moveTo(tp.x, tp.y); sctx.lineTo(tp.x + Math.cos(tp.ang - tp.spread / 2) * tp.len, tp.y + Math.sin(tp.ang - tp.spread / 2) * tp.len); sctx.arc(tp.x, tp.y, tp.len, tp.ang - tp.spread / 2, tp.ang + tp.spread / 2); sctx.closePath(); sctx.fill(); sctx.stroke(); } sctx.restore(); });
-        S.tokens.forEach(tk => { sctx.save(); sctx.lineWidth = 2 / S.scale; if (tk.imgData) { const img = new Image(); img.src = tk.imgData; const r = tk.size / 2; sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI * 2); sctx.closePath(); sctx.save(); sctx.clip(); sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size); sctx.restore(); sctx.strokeStyle = '#fff'; sctx.stroke(); } else { sctx.fillStyle = tk.color || '#ff4444'; sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size / 2, 0, Math.PI * 2); sctx.fill(); sctx.strokeStyle = '#fff'; sctx.stroke(); sctx.fillStyle = '#000'; sctx.font = `${Math.max(10, tk.size / 3)}px system-ui`; sctx.textAlign = 'center'; sctx.textBaseline = 'middle'; sctx.fillText((tk.name || 'TK').slice(0, 3).toUpperCase(), tk.x, tk.y); } s
+  if (!S || !S.base) return;
+
+  // clear and parchment bg
+  sctx.clearRect(0, 0, subCanvas.width, subCanvas.height);
+  sctx.fillStyle = '#d7ccb0';
+  sctx.fillRect(0, 0, subCanvas.width, subCanvas.height);
+
+  // world transform
+  sctx.save();
+  sctx.translate(S.offset.x, S.offset.y);
+  sctx.scale(S.scale, S.scale);
+
+  // base image
+  sctx.drawImage(S.base, 0, 0);
+
+  // grid (world space, uses S.cell)
+  const rune = getComputedStyle(document.documentElement).getPropertyValue('--rune');
+  sctx.strokeStyle = rune;
+  sctx.lineWidth = 1;
+  for (let x = 0; x < S.base.width; x += S.cell) {
+    sctx.beginPath(); sctx.moveTo(x, 0); sctx.lineTo(x, S.base.height); sctx.stroke();
+  }
+  for (let y = 0; y < S.base.height; y += S.cell) {
+    sctx.beginPath(); sctx.moveTo(0, y); sctx.lineTo(S.base.width, y); sctx.stroke();
+  }
+
+  // templates
+  S.templates.forEach(tp => {
+    sctx.save();
+    sctx.lineWidth = 2 / S.scale;
+    sctx.strokeStyle = 'rgba(0,200,255,0.9)';
+    sctx.fillStyle = 'rgba(0,200,255,0.25)';
+    if (tp.type === 'circle') {
+      sctx.beginPath(); sctx.arc(tp.x, tp.y, tp.r, 0, Math.PI * 2); sctx.fill(); sctx.stroke();
+    } else if (tp.type === 'rect') {
+      sctx.beginPath(); sctx.rect(tp.x, tp.y, tp.w, tp.h); sctx.fill(); sctx.stroke();
+    } else if (tp.type === 'cone') {
+      sctx.beginPath();
+      sctx.moveTo(tp.x, tp.y);
+      sctx.lineTo(tp.x + Math.cos(tp.ang - tp.spread / 2) * tp.len, tp.y + Math.sin(tp.ang - tp.spread / 2) * tp.len);
+      sctx.arc(tp.x, tp.y, tp.len, tp.ang - tp.spread / 2, tp.ang + tp.spread / 2);
+      sctx.closePath(); sctx.fill(); sctx.stroke();
+    }
+    sctx.restore();
+  });
+
+  // tokens
+  S.tokens.forEach(tk => {
+    sctx.save();
+    sctx.lineWidth = 2 / S.scale;
+    if (tk.imgData) {
+      const img = new Image(); img.src = tk.imgData;
+      const r = tk.size / 2;
+      sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI * 2); sctx.closePath();
+      sctx.save(); sctx.clip(); sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size); sctx.restore();
+      sctx.strokeStyle = '#fff'; sctx.stroke();
+    } else {
+      sctx.fillStyle = tk.color || '#ff4444';
+      sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size / 2, 0, Math.PI * 2); sctx.fill();
+      sctx.strokeStyle = '#fff'; sctx.stroke();
+      sctx.fillStyle = '#000';
+      sctx.font = `${Math.max(10, tk.size / 3)}px system-ui`;
+      sctx.textAlign = 'center';
+      sctx.textBaseline = 'middle';
       sctx.fillText((tk.name || 'TK').slice(0, 3).toUpperCase(), tk.x, tk.y);
     }
+    sctx.restore();
+  });
+
+  // end world transform
+  sctx.restore();
+
+  // fog (screen space)
+  if (S.fogImg) sctx.drawImage(S.fogImg, 0, 0, subCanvas.width, subCanvas.height);
+
+  // live preview
+  if (S.drawing) drawSubPreview();
+}
+
     sctx.restore();
   });
 
