@@ -858,3 +858,303 @@
         for (let y = 0; y < S.base.height; y += S.cell) { sctx.beginPath(); sctx.moveTo(0, y); sctx.lineTo(S.base.width, y); sctx.stroke(); }
         S.templates.forEach(tp => { sctx.save(); sctx.lineWidth = 2 / S.scale; sctx.strokeStyle = 'rgba(0,200,255,0.9)'; sctx.fillStyle = 'rgba(0,200,255,0.25)'; if (tp.type === 'circle') { sctx.beginPath(); sctx.arc(tp.x, tp.y, tp.r, 0, Math.PI * 2); sctx.fill(); sctx.stroke(); } else if (tp.type === 'rect') { sctx.beginPath(); sctx.rect(tp.x, tp.y, tp.w, tp.h); sctx.fill(); sctx.stroke(); } else if (tp.type === 'cone') { sctx.beginPath(); sctx.moveTo(tp.x, tp.y); sctx.lineTo(tp.x + Math.cos(tp.ang - tp.spread / 2) * tp.len, tp.y + Math.sin(tp.ang - tp.spread / 2) * tp.len); sctx.arc(tp.x, tp.y, tp.len, tp.ang - tp.spread / 2, tp.ang + tp.spread / 2); sctx.closePath(); sctx.fill(); sctx.stroke(); } sctx.restore(); });
         S.tokens.forEach(tk => { sctx.save(); sctx.lineWidth = 2 / S.scale; if (tk.imgData) { const img = new Image(); img.src = tk.imgData; const r = tk.size / 2; sctx.beginPath(); sctx.arc(tk.x, tk.y, r, 0, Math.PI * 2); sctx.closePath(); sctx.save(); sctx.clip(); sctx.drawImage(img, tk.x - r, tk.y - r, tk.size, tk.size); sctx.restore(); sctx.strokeStyle = '#fff'; sctx.stroke(); } else { sctx.fillStyle = tk.color || '#ff4444'; sctx.beginPath(); sctx.arc(tk.x, tk.y, tk.size / 2, 0, Math.PI * 2); sctx.fill(); sctx.strokeStyle = '#fff'; sctx.stroke(); sctx.fillStyle = '#000'; sctx.font = `${Math.max(10, tk.size / 3)}px system-ui`; sctx.textAlign = 'center'; sctx.textBaseline = 'middle'; sctx.fillText((tk.name || 'TK').slice(0, 3).toUpperCase(), tk.x, tk.y); } s
+      sctx.fillText((tk.name || 'TK').slice(0, 3).toUpperCase(), tk.x, tk.y);
+    }
+    sctx.restore();
+  });
+
+  // end pan/zoom transform
+  sctx.restore();
+
+  // fog overlay (bitmap same size as subCanvas)
+  if (S.fogImg) sctx.drawImage(S.fogImg, 0, 0, subCanvas.width, subCanvas.height);
+
+  // preview during draw
+  if (S.drawing) drawSubPreview();
+}
+
+function drawSubPreview() {
+  if (!S || !S.drawing) return;
+  const d = S.drawing;
+
+  // world-space preview for shapes/ruler
+  sctx.save();
+  sctx.translate(S.offset.x, S.offset.y);
+  sctx.scale(S.scale, S.scale);
+
+  sctx.lineWidth = 2 / S.scale;
+  sctx.strokeStyle = 'rgba(0,200,255,0.9)';
+  sctx.fillStyle = 'rgba(0,200,255,0.25)';
+
+  if (d.type === 'ruler') {
+    sctx.beginPath(); sctx.moveTo(d.start.x, d.start.y); sctx.lineTo(d.cur.x, d.cur.y); sctx.stroke();
+    const ft = Math.round((Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y) / S.cell) * 5);
+    sctx.restore();
+
+    // small label in screen space for clarity
+    sctx.save();
+    const midX = (d.scrS.x + d.scrC.x) / 2, midY = (d.scrS.y + d.scrC.y) / 2;
+    sctx.fillStyle = 'rgba(0,0,0,.7)';
+    sctx.fillRect(midX - 18, midY - 10, 36, 18);
+    sctx.fillStyle = '#fff';
+    sctx.font = '12px system-ui';
+    sctx.textAlign = 'center';
+    sctx.fillText(ft + ' ft', midX, midY + 4);
+    sctx.restore();
+    return;
+  }
+
+  if (d.type === 'circle') {
+    const r = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y);
+    sctx.beginPath(); sctx.arc(d.start.x, d.start.y, r, 0, Math.PI * 2); sctx.fill(); sctx.stroke();
+  } else if (d.type === 'rect') {
+    sctx.beginPath(); sctx.rect(d.start.x, d.start.y, d.cur.x - d.start.x, d.cur.y - d.start.y); sctx.fill(); sctx.stroke();
+  } else if (d.type === 'cone') {
+    const ang = Math.atan2(d.cur.y - d.start.y, d.cur.x - d.start.x);
+    const len = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y);
+    const spread = Math.PI / 3;
+    sctx.beginPath();
+    sctx.moveTo(d.start.x, d.start.y);
+    sctx.lineTo(d.start.x + Math.cos(ang - spread / 2) * len, d.start.y + Math.sin(ang - spread / 2) * len);
+    sctx.arc(d.start.x, d.start.y, len, ang - spread / 2, ang + spread / 2);
+    sctx.closePath(); sctx.fill(); sctx.stroke();
+  }
+  sctx.restore();
+}
+
+/* ===== Pointer helpers ===== */
+function scr2world(sx, sy) { return { x: (sx - S.offset.x) / S.scale, y: (sy - S.offset.y) / S.scale }; }
+function snapW(v) { return S.snap ? Math.round(v / S.cell) * S.cell : v; }
+
+/* ===== Submap mouse / wheel ===== */
+subCanvas.addEventListener('wheel', (e) => {
+  if (!S) return;
+  e.preventDefault();
+  const old = S.scale;
+  const ns = Math.max(.2, Math.min(6, S.scale * (e.deltaY < 0 ? 1.15 : 0.87)));
+  const ax = e.offsetX, ay = e.offsetY;
+  const wx = (ax - S.offset.x) / old, wy = (ay - S.offset.y) / old;
+  S.scale = ns;
+  S.offset.x = ax - wx * ns;
+  S.offset.y = ay - wy * ns;
+  redrawSub();
+}, { passive: false });
+
+subCanvas.addEventListener('mousedown', (e) => {
+  if (!S) return;
+  const fogMode = (document.getElementById('sb-fog-mode') || {}).value || 'none';
+  const world = scr2world(e.offsetX, e.offsetY);
+
+  if (fogMode !== 'none') {
+    beginSubFogStroke();
+    paintSubFog(e.offsetX, e.offsetY, fogMode === 'reveal');
+    return;
+  }
+
+  if (S.tool === 'pan') {
+    S.isPanning = true;
+    S.panStart = { x: e.clientX - S.offset.x, y: e.clientY - S.offset.y };
+    return;
+  }
+
+  if (['ruler', 'circle', 'rect', 'cone'].includes(S.tool)) {
+    const sx = snapW(world.x), sy = snapW(world.y);
+    S.drawing = { type: S.tool === 'ruler' ? 'ruler' : S.tool, start: { x: sx, y: sy }, cur: { x: sx, y: sy }, scrS: { x: e.offsetX, y: e.offsetY }, scrC: { x: e.offsetX, y: e.offsetY } };
+    redrawSub();
+    return;
+  }
+
+  if (S.tool === 'token') {
+    const name = prompt('Token name?', 'Token');
+    if (name === null) return;
+    const size = parseInt(prompt('Size (px)?', '42') || '42', 10);
+    const color = prompt('Color (hex)?', '#ff4444') || '#ff4444';
+    const tk = { name, size: Math.max(24, Math.min(120, size)), color, x: snapW(world.x), y: snapW(world.y), imgData: null };
+    S.tokens.push(tk);
+    redrawSub();
+    return;
+  }
+
+  if (S.tool === 'select') {
+    const hit = subHitTemplate(world.x, world.y);
+    if (hit) {
+      S.draggingTemplate = hit;
+      S.dragOff = { x: world.x - hit.x, y: world.y - hit.y };
+    }
+  }
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!S) return;
+  if (S.isPanning) {
+    S.offset.x = e.clientX - S.panStart.x;
+    S.offset.y = e.clientY - S.panStart.y;
+    redrawSub();
+    return;
+  }
+  const fogMode = (document.getElementById('sb-fog-mode') || {}).value || 'none';
+  if (S.paintingFog) {
+    paintSubFog(e.offsetX, e.offsetY, fogMode === 'reveal');
+    return;
+  }
+  if (S.drawing) {
+    const w = scr2world(e.offsetX, e.offsetY);
+    S.drawing.cur = { x: snapW(w.x), y: snapW(w.y) };
+    S.drawing.scrC = { x: e.offsetX, y: e.offsetY };
+    redrawSub();
+  }
+  if (S.draggingTemplate) {
+    const w = scr2world(e.offsetX, e.offsetY);
+    S.draggingTemplate.x = snapW(w.x - S.dragOff.x);
+    S.draggingTemplate.y = snapW(w.y - S.dragOff.y);
+    redrawSub();
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  if (!S) return;
+  if (S.isPanning) S.isPanning = false;
+  if (S.paintingFog) endSubFogStroke();
+  if (S.drawing) { finalizeSubTemplate(); S.drawing = null; }
+  if (S.draggingTemplate) S.draggingTemplate = null;
+});
+
+/* ===== Submap template finalize / hit-test ===== */
+function finalizeSubTemplate() {
+  const d = S.drawing; if (!d) return;
+  const tp = { type: d.type, x: d.start.x, y: d.start.y };
+  if (d.type === 'circle') { tp.r = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y); }
+  if (d.type === 'rect')   { tp.w = d.cur.x - d.start.x; tp.h = d.cur.y - d.start.y; }
+  if (d.type === 'cone')   { tp.ang = Math.atan2(d.cur.y - d.start.y, d.cur.x - d.start.x); tp.len = Math.hypot(d.cur.x - d.start.x, d.cur.y - d.start.y); tp.spread = Math.PI / 3; }
+  if (d.type === 'ruler') return; // transient
+  S.templates.push(tp);
+  redrawSub();
+}
+function subHitTemplate(wx, wy) {
+  for (let i = S.templates.length - 1; i >= 0; i--) {
+    const tp = S.templates[i];
+    if (tp.type === 'circle') {
+      if (Math.hypot(wx - tp.x, wy - tp.y) <= tp.r) return tp;
+    } else if (tp.type === 'rect') {
+      if (wx >= tp.x && wx <= tp.x + tp.w && wy >= tp.y && wy <= tp.y + tp.h) return tp;
+    } else if (tp.type === 'cone') {
+      const ang = Math.atan2(wy - tp.y, wx - tp.x);
+      const d   = Math.hypot(wx - tp.x, wy - tp.y); // ✅ correct: use tp.x
+      const da  = Math.abs((((ang - tp.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI));
+      if (da <= tp.spread / 2 && d <= tp.len) return tp;
+    }
+  }
+  return null;
+}
+
+/* ===== Submap fog bitmap + undo/redo ===== */
+function clearFog() {
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  S.fogImg = new Image();
+  S.fogImg.src = fc.toDataURL('image/png');
+  pushFogState();
+}
+function pushFogState() {
+  try {
+    const snap = exportFogPNG();
+    S.undo.push(snap);
+    if (S.undo.length > 15) S.undo.shift();
+    S.redo.length = 0;
+  } catch (e) {}
+}
+function beginSubFogStroke() { S.paintingFog = true; S.beganStroke = false; }
+function endSubFogStroke() {
+  S.paintingFog = false;
+  try {
+    const snap = exportFogPNG();
+    S.undo.push(snap);
+    if (S.undo.length > 15) S.undo.shift();
+    S.redo.length = 0;
+  } catch (e) {}
+}
+function paintSubFog(sx, sy, reveal) {
+  if (!S.beganStroke) { pushFogState(); S.beganStroke = true; }
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  const fx = fc.getContext('2d');
+  if (S.fogImg) fx.drawImage(S.fogImg, 0, 0, fc.width, fc.height);
+
+  fx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
+  if (!reveal) fx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
+  const r = parseInt((document.getElementById('sb-brush') || {}).value || '40', 10);
+  fx.beginPath(); fx.arc(sx, sy, r, 0, Math.PI * 2); fx.fill();
+  fx.globalCompositeOperation = 'source-over';
+
+  S.fogImg = new Image();
+  S.fogImg.src = fc.toDataURL('image/png');
+  S.fogImg.onload = () => redrawSub();
+}
+function subFogUndo() {
+  if (!S || S.undo.length < 2) return;
+  const cur = S.undo.pop();
+  S.redo.push(cur);
+  const prev = S.undo[S.undo.length - 1];
+  S.fogImg = new Image();
+  S.fogImg.onload = () => redrawSub();
+  S.fogImg.src = prev;
+}
+function subFogRedo() {
+  if (!S || !S.redo.length) return;
+  const img = S.redo.pop();
+  S.undo.push(img);
+  S.fogImg = new Image();
+  S.fogImg.onload = () => redrawSub();
+  S.fogImg.src = img;
+}
+function exportFogPNG() {
+  const fc = document.createElement('canvas');
+  fc.width = subCanvas.width; fc.height = subCanvas.height;
+  const fx = fc.getContext('2d');
+  if (S.fogImg) fx.drawImage(S.fogImg, 0, 0, fc.width, fc.height);
+  return fc.toDataURL('image/png');
+}
+
+/* ===== Save / Reset for submap ===== */
+function saveActiveSubmap() {
+  if (!S) return;
+  const payload = {
+    image: S.baseImage,
+    tokens: deepClone(S.tokens),
+    templates: deepClone(S.templates),
+    fogPNG: exportFogPNG(),
+    offset: deepClone(S.offset),
+    scale: S.scale
+  };
+  saveSubmapState(S.id, payload);
+  alert('Submap saved.');
+}
+function resetToLastSave() {
+  if (!S) return;
+  const last = getSubmapState(S.id);
+  if (!last) {
+    S.tokens = []; S.templates = [];
+    clearFog(); S.offset = { x: 0, y: 0 }; S.scale = 1;
+    redrawSub();
+    return;
+  }
+  S.tokens = deepClone(last.tokens) || [];
+  S.templates = deepClone(last.templates) || [];
+  S.offset = deepClone(last.offset) || { x: 0, y: 0 };
+  S.scale = last.scale || 1;
+  if (last.fogPNG) {
+    const fogPic = new Image();
+    fogPic.onload = () => { S.fogImg = fogPic; redrawSub(); pushFogState(); };
+    fogPic.src = last.fogPNG;
+  } else {
+    clearFog();
+  }
+  redrawSub();
+}
+
+/* ===== Utilities ===== */
+function deepClone(v) { return v ? JSON.parse(JSON.stringify(v)) : v; }
+
+// END window.onload
+};
+</script>
