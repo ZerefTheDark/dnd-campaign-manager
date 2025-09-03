@@ -386,25 +386,28 @@
         }
 
         function updateModel() {
-            const race = document.getElementById('race').value;
-            const cls = document.getElementById('class').value;
-            const model = document.getElementById('hero-model');
+    const race = document.getElementById('race').value;
+    const cls = document.getElementById('class').value;
+    const model = document.getElementById('hero-model');
 
-            // Test model (guaranteed to work)
-            const duck = "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb";
-            const wizard = "https://opengameart.org/sites/default/files/WizardCharacterGLB.glb";
-            const knight = "https://opengameart.org/sites/default/files/KnightCharacterGLB.glb";
+    const models = {
+        elf: 'https://opengameart.org/sites/default/files/ElvenArcherCharacterGLB.glb',
+        tiefling: 'https://opengameart.org/sites/default/files/DemonCharacterGLB.glb',
+        dwarf: 'https://opengameart.org/sites/default/files/DwarfCharacterGLB.glb',
+        human: 'https://opengameart.org/sites/default/files/KnightCharacterGLB.glb',
+        wizard: 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb'
+    };
 
-            if (cls === 'wizard') {
-                model.src = wizard;
-            } else if (cls === 'fighter' || cls === 'cleric') {
-                model.src = knight;
-            } else {
-                model.src = duck; // fallback
-            }
+    // Prioritize class if wizard
+    if (cls === 'wizard') {
+        model.src = models.wizard;
+    } else {
+        model.src = models[race] || models.human;
+    }
 
-            document.body.classList.toggle('infernal-mode', race === 'tiefling');
-        }
+    // Blood effect for Tiefling
+    document.body.classList.toggle('infernal-mode', race === 'tiefling');
+}
 
         function saveCharacter() {
             const name = document.getElementById('char-name').value || 'Nameless One';
