@@ -1,519 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Echo Vault | Remembered Heroes</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Echo Vault | Remembered Heroes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet" />
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    /* --- same CSS you had, with a few tweaks --- */
+    body { font-family: 'Rajdhani', sans-serif; background: #000 url('https://i.imgur.com/8V7V3sP.jpg') no-repeat center/cover; color: var(--primary); }
 
-        :root {
-            --primary: #e6c57f;
-            --accent: #b88c5c;
-            --danger: #d15656;
-            --dark: #0a0a0f;
-            --mid: #1a1b26;
-            --light: #f5e8c9;
-            --glow: 0 0 12px rgba(230, 197, 127, 0.4);
-            --pulse: 0 0 20px rgba(230, 197, 127, 0.3);
-        }
+    .stat-inputs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(80px,1fr));
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+    .stat-inputs label { font-size: 0.75rem; text-align: center; }
+    .stat-inputs input { text-align: center; }
 
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            background: #000 url('https://i.imgur.com/8V7V3sP.jpg') no-repeat center center;
-            background-size: cover;
-            color: var(--primary);
-            line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
-            padding: 0;
-        }
+    .speech-bubble {
+      margin: 1rem auto;
+      max-width: 500px;
+      background: rgba(26,27,38,0.8);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      color: var(--light);
+      font-style: italic;
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle at center, transparent 20%, var(--dark) 90%);
-            pointer-events: none;
-            z-index: -1;
-        }
+    @keyframes fadeIn { from {opacity:0; transform:scale(0.95);} to {opacity:1; transform:scale(1);} }
 
-        .vault-header {
-            text-align: center;
-            padding: 1.5rem;
-            background: rgba(10, 10, 15, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--accent);
-            position: relative;
-        }
-
-        .vault-title {
-            font-family: 'Cinzel', serif;
-            font-size: 2.6rem;
-            color: var(--primary);
-            letter-spacing: 3px;
-            text-shadow: var(--glow);
-            margin: 0;
-            font-weight: 900;
-            text-transform: uppercase;
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            color: var(--accent);
-            font-weight: 300;
-            margin-top: 0.4rem;
-        }
-
-        main {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem;
-        }
-
-        .identity-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.2rem;
-            margin-bottom: 1.8rem;
-        }
-
-        @media (min-width: 900px) {
-            .identity-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .input-glyph {
-            background: rgba(26, 27, 38, 0.8);
-            border: 1px solid var(--accent);
-            border-radius: 10px;
-            padding: 1.2rem;
-            box-shadow: var(--glow);
-            backdrop-filter: blur(4px);
-            transition: all 0.3s ease;
-        }
-
-        .input-glyph:hover, .input-glyph:focus-within {
-            border-color: var(--primary);
-            box-shadow: var(--pulse);
-            transform: translateY(-2px);
-        }
-
-        label {
-            display: block;
-            font-size: 0.9rem;
-            color: var(--accent);
-            margin-bottom: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 0.6rem;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--accent);
-            border-radius: 6px;
-            color: var(--primary);
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1rem;
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(230, 197, 127, 0.5);
-        }
-
-        textarea {
-            height: 100px;
-            resize: vertical;
-            font-size: 0.95rem;
-        }
-
-        .btn-glyph {
-            background: transparent;
-            color: var(--primary);
-            border: 1px solid var(--accent);
-            padding: 0.8rem 1.6rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: 'Cinzel', serif;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            transition: all 0.3s;
-            margin: 0 0.5rem;
-            text-transform: uppercase;
-        }
-
-        .btn-glyph:hover {
-            background: var(--accent);
-            border-color: var(--primary);
-            box-shadow: var(--pulse);
-            transform: translateY(-3px);
-        }
-
-        .model-vault {
-            position: relative;
-            height: 520px;
-            background: rgba(10, 10, 15, 0.9);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(0, 0, 0, 0.6);
-            margin: 2rem 0;
-        }
-
-        model-viewer {
-            width: 100%;
-            height: 100%;
-            --poster-color: #0a0a0f;
-            background-color: #000;
-        }
-
-        .model-scan {
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-            animation: scan 3s infinite linear;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        @keyframes scan {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(1000%); }
-        }
-
-        .voice-chamber {
-            text-align: center;
-            margin: 2rem 0;
-        }
-
-        #mic-btn {
-            background: rgba(209, 86, 86, 0.2);
-            color: var(--danger);
-            border: 1px solid var(--danger);
-            padding: 0.8rem 2rem;
-            font-family: 'Cinzel', serif;
-            font-size: 1.1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        #mic-btn.listening {
-            background: rgba(209, 86, 86, 0.6);
-            box-shadow: 0 0 20px rgba(209, 86, 86, 0.5);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        #voice-player {
-            margin-top: 1rem;
-            width: 80%;
-            background: var(--mid);
-            border-radius: 8px;
-        }
-
-        .mechanics-panel {
-            background: rgba(26, 27, 38, 0.7);
-            border: 1px solid var(--accent);
-            border-radius: 12px;
-            padding: 1.4rem;
-            margin: 2rem 0;
-            backdrop-filter: blur(6px);
-            display: none;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem;
-            margin: 1.2rem 0;
-        }
-
-        .stat {
-            text-align: center;
-            font-size: 1.1rem;
-        }
-
-        .stat-value {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--accent);
-            text-transform: uppercase;
-        }
-
-        .toggle-mechanics {
-            text-align: center;
-            margin: 1rem 0;
-        }
-
-        .echo-log {
-            text-align: center;
-            font-size: 0.9rem;
-            color: var(--accent);
-            margin-top: 2rem;
-        }
-    </style>
+    .mechanics-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s ease;
+    }
+    .mechanics-panel.open {
+      max-height: 600px;
+      padding: 1.4rem;
+    }
+  </style>
 </head>
 <body>
+  <header class="vault-header">
+    <h1 class="vault-title">Echo Vault</h1>
+    <p class="subtitle">"Speak the name. Recall the soul."</p>
+  </header>
 
-    <header class="vault-header">
-        <h1 class="vault-title">Echo Vault</h1>
-        <p class="subtitle">"Speak the name. Recall the soul."</p>
-    </header>
+  <main>
+    <!-- IDENTITY -->
+    <div class="identity-grid">
+      <div class="input-glyph"><label>Name</label><input type="text" id="char-name" placeholder="e.g. Kael" /></div>
+      <div class="input-glyph"><label>Title</label><input type="text" id="char-title" placeholder="e.g. Oathbreaker" /></div>
+      <div class="input-glyph"><label>Race</label>
+        <select id="race" onchange="updateEcho()"><option value="human">Human</option><option value="elf">Elf</option><option value="dwarf">Dwarf</option><option value="tiefling">Tiefling</option></select>
+      </div>
+      <div class="input-glyph"><label>Class</label>
+        <select id="class" onchange="updateEcho()"><option value="fighter">Fighter</option><option value="wizard">Wizard</option><option value="cleric">Cleric</option><option value="rogue">Rogue</option></select>
+      </div>
+    </div>
 
-    <main>
-        <!-- IDENTITY -->
-        <div class="identity-grid">
-            <div class="input-glyph">
-                <label>Name</label>
-                <input type="text" id="char-name" placeholder="e.g. Kael" />
-            </div>
+    <!-- ABILITY SCORES -->
+    <div class="input-glyph">
+      <label>Ability Scores</label>
+      <div class="stat-inputs">
+        <div><label>STR</label><input id="str" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
+        <div><label>DEX</label><input id="dex" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
+        <div><label>CON</label><input id="con" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
+        <div><label>INT</label><input id="int" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
+        <div><label>WIS</label><input id="wis" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
+        <div><label>CHA</label><input id="cha" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
+      </div>
+    </div>
 
-            <div class="input-glyph">
-                <label>Title</label>
-                <input type="text" id="char-title" placeholder="e.g. Oathbreaker" />
-            </div>
+    <!-- 3D MODEL -->
+    <div class="model-vault">
+      <div class="model-scan"></div>
+      <model-viewer id="echo-model"
+        src="https://sbdev2.kavdev.io/demo_site/media/catalog/product/placeholder/d/a/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.glb"
+        alt="Echo of the Hero"
+        auto-rotate camera-controls shadow-intensity="1" exposure="1.2"></model-viewer>
+    </div>
 
-            <div class="input-glyph">
-                <label>Race</label>
-                <select id="race" onchange="updateEcho()">
-                    <option value="human">Human</option>
-                    <option value="elf">Elf</option>
-                    <option value="dwarf">Dwarf</option>
-                    <option value="tiefling">Tiefling</option>
-                </select>
-            </div>
+    <!-- VOICE -->
+    <div class="voice-chamber">
+      <button id="mic-btn" onclick="recordVoice()">🎤 Speak as Your Character</button>
+      <div id="speech-output" class="speech-bubble"></div>
+    </div>
 
-            <div class="input-glyph">
-                <label>Class</label>
-                <select id="class" onchange="updateEcho()">
-                    <option value="fighter">Fighter</option>
-                    <option value="wizard">Wizard</option>
-                    <option value="cleric">Cleric</option>
-                    <option value="rogue">Rogue</option>
-                </select>
-            </div>
-        </div>
+    <!-- MECHANICS TOGGLE -->
+    <div class="toggle-mechanics">
+      <button class="btn-glyph" onclick="toggleMechanics()">📊 Reveal Mechanics</button>
+    </div>
 
-        <!-- 3D MODEL -->
-        <div class="model-vault">
-            <div class="model-scan"></div>
-            <model-viewer
-                id="echo-model"
-                src="https://sbdev2.kavdev.io/demo_site/media/catalog/product/placeholder/d/a/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.glb"
-                alt="Echo of the Hero"
-                auto-rotate
-                camera-controls
-                shadow-intensity="1"
-                exposure="1.2"
-                ar
-                style="width:100%;height:100%">
-            </model-viewer>
-        </div>
+    <!-- MECHANICS PANEL -->
+    <div class="mechanics-panel" id="mechanics-panel">
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-value" id="ac">10</div><div class="stat-label">AC</div></div>
+        <div class="stat"><div class="stat-value" id="hp">8</div><div class="stat-label">HP</div></div>
+        <div class="stat"><div class="stat-value" id="init">+0</div><div class="stat-label">INIT</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.8rem;margin:1rem 0;">
+        <div>STR <span id="str-mod">+0</span></div><div>Save: <span id="str-save">+0</span></div>
+        <div>DEX <span id="dex-mod">+0</span></div><div>Save: <span id="dex-save">+0</span></div>
+        <div>CON <span id="con-mod">+0</span></div><div>Save: <span id="con-save">+0</span></div>
+        <div>INT <span id="int-mod">+0</span></div><div>Save: <span id="int-save">+0</span></div>
+        <div>WIS <span id="wis-mod">+0</span></div><div>Save: <span id="wis-save">+0</span></div>
+        <div>CHA <span id="cha-mod">+0</span></div><div>Save: <span id="cha-save">+0</span></div>
+      </div>
+    </div>
 
-        <!-- VOICE -->
-        <div class="voice-chamber">
-            <button id="mic-btn" onclick="recordVoice()">🎤 Speak as Your Character</button>
-            <audio id="voice-player" controls style="display:none; margin-top:1rem;"></audio>
-        </div>
+    <!-- ACTION -->
+    <div style="text-align:center;margin:2rem 0;">
+      <button class="btn-glyph" onclick="saveEcho()">💾 Etch to Vault</button>
+    </div>
 
-        <!-- MECHANICS TOGGLE -->
-        <div class="toggle-mechanics">
-            <button class="btn-glyph" onclick="toggleMechanics()">Reveal Mechanics</button>
-        </div>
+    <div class="echo-log" id="echo-log">No soul recalled.</div>
+  </main>
 
-        <!-- MECHANICS PANEL -->
-        <div class="mechanics-panel" id="mechanics-panel">
-            <div class="stats-grid">
-                <div class="stat">
-                    <div class="stat-value" id="ac">10</div>
-                    <div class="stat-label">AC</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="hp">8</div>
-                    <div class="stat-label">HP</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="init">+0</div>
-                    <div class="stat-label">INIT</div>
-                </div>
-            </div>
+  <script>
+    function calcMod(score) { return Math.floor((score - 10) / 2); }
 
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.8rem;margin:1rem 0;">
-                <div>STR <span id="str-mod">+0</span></div>
-                <div>Save: <span id="str-save">+0</span></div>
-                <div>DEX <span id="dex-mod">+0</span></div>
-                <div>Save: <span id="dex-save">+0</span></div>
-                <div>CON <span id="con-mod">+0</span></div>
-                <div>Save: <span id="con-save">+0</span></div>
-                <div>INT <span id="int-mod">+0</span></div>
-                <div>Save: <span id="int-save">+0</span></div>
-                <div>WIS <span id="wis-mod">+0</span></div>
-                <div>Save: <span id="wis-save">+0</span></div>
-                <div>CHA <span id="cha-mod">+0</span></div>
-                <div>Save: <span id="cha-save">+0</span></div>
-            </div>
-        </div>
+    function updateEcho() {
+      const race = document.getElementById('race').value;
+      const cls = document.getElementById('class').value;
+      const model = document.getElementById('echo-model');
+      const models = {
+        tiefling: 'https://opengameart.org/sites/default/files/DemonCharacterGLB.glb',
+        elf: 'https://opengameart.org/sites/default/files/ElvenArcherCharacterGLB.glb',
+        dwarf: 'https://opengameart.org/sites/default/files/DwarfCharacterGLB.glb',
+        human: 'https://sbdev2.kavdev.io/demo_site/media/catalog/product/placeholder/d/a/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.glb',
+        wizard: 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb'
+      };
+      model.src = cls === 'wizard' ? models.wizard : models[race] || models.human;
+      updateMechanics();
+    }
 
-        <!-- ACTION -->
-        <div style="text-align:center;margin:2rem 0;">
-            <button class="btn-glyph" onclick="saveEcho()">💾 Etch to Vault</button>
-        </div>
+    function updateMechanics() {
+      const abilities = ['str','dex','con','int','wis','cha'];
+      const cls = document.getElementById('class').value;
+      abilities.forEach(stat => {
+        const score = parseInt(document.getElementById(stat).value) || 10;
+        const mod = calcMod(score);
+        document.getElementById(`${stat}-mod`).textContent = mod>=0?`+${mod}`:`${mod}`;
+        const profs = {fighter:['str','con'], wizard:['int','wis'], cleric:['wis','cha'], rogue:['dex','int']}[cls]||[];
+        const save = mod + (profs.includes(stat)?2:0);
+        document.getElementById(`${stat}-save`).textContent = save>=0?`+${save}`:`${save}`;
+      });
+      const dexMod = calcMod(parseInt(document.getElementById('dex').value));
+      document.getElementById('ac').textContent = 10+dexMod;
+      const conMod = calcMod(parseInt(document.getElementById('con').value));
+      const classHP = {fighter:10, cleric:8, rogue:8, wizard:6}[cls];
+      document.getElementById('hp').textContent = classHP+conMod;
+      document.getElementById('init').textContent = dexMod>=0?`+${dexMod}`:`${dexMod}`;
+    }
 
-        <div class="echo-log" id="echo-log">No soul recalled.</div>
-    </main>
+    function toggleMechanics() {
+      const panel=document.getElementById('mechanics-panel');
+      const btn=document.querySelector('.toggle-mechanics .btn-glyph');
+      panel.classList.toggle('open');
+      btn.textContent=panel.classList.contains('open')?'❌ Hide Mechanics':'📊 Reveal Mechanics';
+    }
 
-    <script>
-        function calcMod(score) {
-            return Math.floor((score - 10) / 2);
-        }
-
-        function updateEcho() {
-            const race = document.getElementById('race').value;
-            const cls = document.getElementById('class').value;
-            const model = document.getElementById('echo-model');
-
-            const models = {
-                tiefling: 'https://opengameart.org/sites/default/files/DemonCharacterGLB.glb',
-                elf: 'https://opengameart.org/sites/default/files/ElvenArcherCharacterGLB.glb',
-                dwarf: 'https://opengameart.org/sites/default/files/DwarfCharacterGLB.glb',
-                human: 'https://sbdev2.kavdev.io/demo_site/media/catalog/product/placeholder/d/a/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.glb',
-                wizard: 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb'
-            };
-
-            model.src = cls === 'wizard' ? models.wizard : models[race] || models.human;
-            updateMechanics();
-        }
-
-        function updateMechanics() {
-            const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
-            abilities.forEach(stat => {
-                const score = parseInt(document.getElementById(stat)?.value) || 10;
-                const mod = calcMod(score);
-                document.getElementById(`${stat}-mod`).textContent = mod >= 0 ? `+${mod}` : `${mod}`;
-
-                const isProficient = {
-                    'fighter': ['str', 'con'],
-                    'wizard': ['int', 'wis'],
-                    'cleric': ['wis', 'cha'],
-                    'rogue': ['dex', 'int']
-                }[document.getElementById('class').value]?.includes(stat);
-
-                const save = mod + (isProficient ? 2 : 0);
-                document.getElementById(`${stat}-save`).textContent = save >= 0 ? `+${save}` : `${save}`;
-            });
-
-            const dexMod = calcMod(parseInt(document.getElementById('dex').value));
-            document.getElementById('ac').textContent = 10 + dexMod;
-
-            const conMod = calcMod(parseInt(document.getElementById('con').value));
-            const classHP = {'fighter': 10, 'cleric': 8, 'rogue': 8, 'wizard': 6}[document.getElementById('class').value];
-            document.getElementById('hp').textContent = classHP + conMod;
-
-            document.getElementById('init').textContent = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
-        }
-
-        function toggleMechanics() {
-            const panel = document.getElementById('mechanics-panel');
-            const btn = document.querySelector('.toggle-mechanics .btn-glyph');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-            btn.textContent = panel.style.display === 'block' ? '❌ Hide Mechanics' : '📊 Reveal Mechanics';
-        }
-
-        function recordVoice() {
-            const btn = document.getElementById('mic-btn');
-            const player = document.getElementById('voice-player');
-
-            if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                const recognition = new SpeechRecognition();
-                recognition.lang = 'en-US';
-
-                btn.classList.add('listening');
-                btn.textContent = '🔊 Recording...';
-
-                recognition.start();
-
-                recognition.onresult = (e) => {
-                    const transcript = e.results[0][0].transcript;
-                    const blob = new Blob([transcript], {type: 'text/plain'});
-                    const url = URL.createObjectURL(blob);
-                    player.src = url;
-                    player.style.display = 'block';
-                    player.play();
-                    localStorage.setItem('echo-voice', url);
-                    btn.classList.remove('listening');
-                    btn.textContent = '✅ Recorded';
-                };
-
-                recognition.onerror = () => {
-                    btn.classList.remove('listening');
-                    btn.textContent = '❌ Error';
-                };
-
-                recognition.onend = () => {
-                    if (btn.textContent.includes('Recording')) {
-                        btn.classList.remove('listening');
-                        btn.textContent = '🎤 Speak as Your Character';
-                    }
-                };
-            } else {
-                btn.textContent = '❌ Voice not supported';
-            }
-        }
-
-        function saveEcho() {
-            const name = document.getElementById('char-name').value || 'Unknown';
-            const data = {
-                name,
-                title: document.getElementById('char-title').value,
-                race: document.getElementById('race').value,
-                class: document.getElementById('class').value,
-                savedAt: new Date().toISOString()
-            };
-            localStorage.setItem('echo-vault', JSON.stringify(data));
-            alert(`💾 ${name} has been archived in the Vault.`);
-            updateLog();
-        }
-
-        function updateLog() {
-            const data = JSON.parse(localStorage.getItem('echo-vault'));
-            if (data) {
-                const then = new Date(data.savedAt);
-                const days = Math.floor((new Date() - then) / 86400000);
-                document.getElementById('echo-log').innerHTML = `
-                    Last echo: <strong>${data.name}</strong> (${data.class} ${data.race}) — ${days} days ago.
-                `;
-            }
-        }
-
-        window.onload = () => {
-            updateEcho();
-            updateLog();
+    function recordVoice() {
+      const btn=document.getElementById('mic-btn');
+      const output=document.getElementById('speech-output');
+      if('SpeechRecognition'in window||'webkitSpeechRecognition'in window){
+        const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+        const recog=new SR();
+        recog.lang='en-US';
+        btn.classList.add('listening'); btn.textContent='🔊 Listening...';
+        recog.start();
+        recog.onresult=e=>{
+          const transcript=e.results[0][0].transcript;
+          output.textContent=transcript;
+          output.style.display='block';
+          btn.classList.remove('listening'); btn.textContent='✅ Recorded';
+          // Optional: TTS playback
+          const utter=new SpeechSynthesisUtterance(transcript);
+          speechSynthesis.speak(utter);
         };
-    </script>
+        recog.onerror=()=>{btn.textContent='❌ Error'; btn.classList.remove('listening');};
+        recog.onend=()=>{ if(btn.textContent.includes('Listening')){btn.textContent='🎤 Speak as Your Character'; btn.classList.remove('listening');}};
+      } else { btn.textContent='❌ Voice not supported'; }
+    }
+
+    function saveEcho() {
+      const data={name:document.getElementById('char-name').value||'Unknown', title:document.getElementById('char-title').value,
+        race:document.getElementById('race').value, class:document.getElementById('class').value, savedAt:new Date().toISOString()};
+      let vault=JSON.parse(localStorage.getItem('echo-vault'))||[];
+      vault.push(data); localStorage.setItem('echo-vault',JSON.stringify(vault));
+      alert(`💾 ${data.name} has been archived in the Vault.`); updateLog();
+    }
+
+    function updateLog() {
+      const vault=JSON.parse(localStorage.getItem('echo-vault'))||[];
+      if(vault.length){
+        const last=vault[vault.length-1]; const then=new Date(last.savedAt);
+        const days=Math.floor((new Date()-then)/86400000);
+        document.getElementById('echo-log').innerHTML=`Last echo: <strong>${last.name}</strong> (${last.class} ${last.race}) — ${days} days ago.`;
+      }
+    }
+
+    window.onload=()=>{updateEcho(); updateLog();};
+  </script>
 </body>
 </html>
