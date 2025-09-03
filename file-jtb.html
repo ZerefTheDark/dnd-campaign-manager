@@ -38,7 +38,7 @@
             mix-blend-mode: soft-light;
         }
 
-        body.infernal-mode::after, body.chaotic-mode::after {
+        body.infernal-mode::after {
             opacity: 0.15;
             animation: bloodGlow 3s infinite alternate;
         }
@@ -65,7 +65,6 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
         }
 
-        /* Compact 2-Column Layout */
         .character-container {
             display: grid;
             grid-template-columns: 1fr;
@@ -80,7 +79,6 @@
             }
         }
 
-        /* FORM PANEL */
         .character-form-panel {
             background: url('parchmentpaper.jpg');
             background-size: cover;
@@ -175,7 +173,6 @@
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
         }
 
-        /* 3D MODEL PANEL */
         .model-panel {
             background: rgba(10, 10, 15, 0.85) url('Wood-4566.jpg');
             background-blend-mode: multiply;
@@ -209,7 +206,6 @@
             pointer-events: none;
         }
 
-        /* Last Character */
         #last-char {
             font-size: 0.85rem;
             color: #b8a580;
@@ -217,7 +213,6 @@
             text-align: center;
         }
 
-        /* Microphone */
         #mic-btn {
             position: absolute;
             right: 8px;
@@ -231,7 +226,6 @@
             cursor: pointer;
         }
 
-        /* Compact text */
         .section-title {
             font-family: 'Cinzel', serif;
             font-size: 1.4rem;
@@ -240,7 +234,6 @@
             margin-bottom: 0.8rem;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .character-container {
                 grid-template-columns: 1fr;
@@ -345,23 +338,22 @@
 
         <!-- RIGHT: 3D MODEL -->
         <div class="model-panel">
-           <model-viewer
-    id="hero-model"
-    src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb"
-    alt="3D Duck Model"
-    auto-rotate
-    camera-controls
-    shadow-intensity="1"
-    style="width:100%;height:100%;background:#1a1a2e"
-    poster="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/Screenshot/screenshot.png">
-</model-viewer>
+            <model-viewer
+                id="hero-model"
+                src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb"
+                alt="3D Duck Test Model"
+                auto-rotate
+                camera-controls
+                shadow-intensity="1"
+                style="width:100%;height:100%"
+                poster="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/Screenshot/screenshot.png">
+            </model-viewer>
             <div class="model-hint">🖱️ Drag to rotate • 🖱️ Scroll to zoom</div>
         </div>
     </main>
 
     <!-- SCRIPTS -->
     <script>
-        // Calc Modifiers
         function calcMod(stat) {
             const score = parseInt(document.getElementById(stat).value) || 10;
             const mod = Math.floor((score - 10) / 2);
@@ -369,7 +361,6 @@
         }
         ['str','dex','con','int','wis','cha'].forEach(calcMod);
 
-        // Voice Input
         const micBtn = document.getElementById('mic-btn');
         const backstory = document.getElementById('backstory');
 
@@ -394,27 +385,27 @@
             micBtn.remove();
         }
 
-        // Update 3D Model by Race/Class
         function updateModel() {
-    const race = document.getElementById('race').value;
-    const cls = document.getElementById('class').value;
-    const model = document.getElementById('hero-model');
+            const race = document.getElementById('race').value;
+            const cls = document.getElementById('class').value;
+            const model = document.getElementById('hero-model');
 
-    const modelMap = {
-        'human-wizard': 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb',
-        'elf-wizard': 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb',
-        'tiefling-wizard': 'https://opengameart.org/sites/default/files/DemonCharacterGLB.glb',
-        'dwarf-fighter': 'https://opengameart.org/sites/default/files/DwarfCharacterGLB.glb',
-        'human-fighter': 'https://opengameart.org/sites/default/files/KnightCharacterGLB.glb'
-    };
+            // Test model (guaranteed to work)
+            const duck = "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb";
+            const wizard = "https://opengameart.org/sites/default/files/WizardCharacterGLB.glb";
+            const knight = "https://opengameart.org/sites/default/files/KnightCharacterGLB.glb";
 
-    const fallback = 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb';
+            if (cls === 'wizard') {
+                model.src = wizard;
+            } else if (cls === 'fighter' || cls === 'cleric') {
+                model.src = knight;
+            } else {
+                model.src = duck; // fallback
+            }
 
-    model.src = modelMap[`${race}-${cls}`] || fallback;
-    document.body.classList.toggle('infernal-mode', race === 'tiefling');
-}}
+            document.body.classList.toggle('infernal-mode', race === 'tiefling');
+        }
 
-        // Save Character
         function saveCharacter() {
             const name = document.getElementById('char-name').value || 'Nameless One';
             const savedAt = new Date().toISOString();
@@ -442,7 +433,6 @@
         };
     </script>
 
-    <!-- Font Awesome for Icons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
 </html>
