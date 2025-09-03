@@ -397,23 +397,27 @@
 
         // Update 3D Model by Race/Class
         function updateModel() {
-            const race = document.getElementById('race').value;
-            const cls = document.getElementById('class').value;
-            const model = document.getElementById('hero-model');
+    const race = document.getElementById('race').value;
+    const cls = document.getElementById('class').value;
+    const model = document.getElementById('hero-model');
 
-            // Simple logic: always show warrior
-            // You can expand this with different models
-            if (race === 'tiefling' && cls === 'wizard') {
-                model.src = 'https://vaztohu.github.io/3d-models/gltf/character_wizard_red/scene.gltf';
-            } else if (cls === 'wizard') {
-                model.src = 'https://vaztohu.github.io/3d-models/gltf/character_wizard/scene.gltf';
-            } else {
-                model.src = 'https://vaztohu.github.io/3d-models/gltf/character_warrior/scene.gltf';
-            }
+    const base = "https://models.readyplayer.me/avatars/";
+    const queryParams = "?morphTargets=ARKit,faceCapIKit&textureSize=1024&lod=0";
 
-            // Blood pulse
-            document.body.classList.toggle('infernal-mode', race === 'tiefling');
-        }
+    const modelMap = {
+        'tiefling-wizard': base + "64e8d4b1e8b2e4e9c8a9d9f2.glb" + queryParams,
+        'tiefling-fighter': base + "64e8d4b1e8b2e4e9c8a9d9f2.glb" + queryParams,
+        'human-wizard': base + "67c9b2a1d3e4f5c6d7e8f9a0.glb" + queryParams,
+        'human-fighter': base + "67c9b2a1d3e4f5c6d7e8f9a0.glb" + queryParams,
+        'elf-wizard': base + "66b8a1c2d3e4f5a6b7c8d9e0.glb" + queryParams,
+        'dwarf-fighter': base + "65a7b2c3d4e5f6a7b8c9d0e1.glb" + queryParams
+    };
+
+    const fallback = "https://vaztohu.github.io/3d-models/gltf/character_warrior/scene.gltf";
+    model.src = modelMap[`${race}-${cls}`] || fallback;
+
+    document.body.classList.toggle('infernal-mode', race === 'tiefling');
+}
 
         // Save Character
         function saveCharacter() {
