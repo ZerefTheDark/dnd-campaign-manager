@@ -340,13 +340,14 @@
         <div class="model-panel">
             <model-viewer
                 id="hero-model"
-                src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Duck/glTF-Binary/Duck.glb"
-                alt="3D Duck Test Model"
+                src="https://sbdev2.kavdev.io/demo_site/media/catalog/product/placeholder/d/a/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.glb"
+                alt="3D Fantasy Knight"
                 auto-rotate
                 camera-controls
                 shadow-intensity="1"
+                exposure="1.2"
                 style="width:100%;height:100%"
-                poster="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/Screenshot/screenshot.png">
+                poster="https://sbdev2.kavdev.io/demo_site/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/placeholder/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.png">
             </model-viewer>
             <div class="model-hint">🖱️ Drag to rotate • 🖱️ Scroll to zoom</div>
         </div>
@@ -354,6 +355,7 @@
 
     <!-- SCRIPTS -->
     <script>
+        // Ability Score Modifiers
         function calcMod(stat) {
             const score = parseInt(document.getElementById(stat).value) || 10;
             const mod = Math.floor((score - 10) / 2);
@@ -361,6 +363,7 @@
         }
         ['str','dex','con','int','wis','cha'].forEach(calcMod);
 
+        // Voice Input
         const micBtn = document.getElementById('mic-btn');
         const backstory = document.getElementById('backstory');
 
@@ -385,30 +388,30 @@
             micBtn.remove();
         }
 
+        // Update 3D Model by Race/Class
         function updateModel() {
-    const race = document.getElementById('race').value;
-    const cls = document.getElementById('class').value;
-    const model = document.getElementById('hero-model');
+            const race = document.getElementById('race').value;
+            const cls = document.getElementById('class').value;
+            const model = document.getElementById('hero-model');
 
-    const models = {
-        elf: 'https://opengameart.org/sites/default/files/ElvenArcherCharacterGLB.glb',
-        tiefling: 'https://opengameart.org/sites/default/files/DemonCharacterGLB.glb',
-        dwarf: 'https://opengameart.org/sites/default/files/DwarfCharacterGLB.glb',
-        human: 'https://opengameart.org/sites/default/files/KnightCharacterGLB.glb',
-        wizard: 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb'
-    };
+            const models = {
+                tiefling: 'https://opengameart.org/sites/default/files/DemonCharacterGLB.glb',
+                elf: 'https://opengameart.org/sites/default/files/ElvenArcherCharacterGLB.glb',
+                dwarf: 'https://opengameart.org/sites/default/files/DwarfCharacterGLB.glb',
+                human: 'https://sbdev2.kavdev.io/demo_site/media/catalog/product/placeholder/d/a/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.glb',
+                wizard: 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb'
+            };
 
-    // Prioritize class if wizard
-    if (cls === 'wizard') {
-        model.src = models.wizard;
-    } else {
-        model.src = models[race] || models.human;
-    }
+            if (cls === 'wizard') {
+                model.src = models.wizard;
+            } else {
+                model.src = models[race] || models.human;
+            }
 
-    // Blood effect for Tiefling
-    document.body.classList.toggle('infernal-mode', race === 'tiefling');
-}
+            document.body.classList.toggle('infernal-mode', race === 'tiefling');
+        }
 
+        // Save & Remember Character
         function saveCharacter() {
             const name = document.getElementById('char-name').value || 'Nameless One';
             const savedAt = new Date().toISOString();
@@ -430,6 +433,7 @@
             }
         }
 
+        // On Load
         window.onload = () => {
             updateModel();
             updateLastChar();
