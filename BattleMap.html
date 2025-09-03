@@ -292,291 +292,302 @@
     </div>
 
     <script>
-        // All Elements (wait for DOM)
-        window.onload = function() {
-            const canvas = document.getElementById('map-canvas');
-            const ctx = canvas.getContext('2d');
-            const gridBtn = document.getElementById('grid-btn');
-            const losBtn = document.getElementById('los-btn');
-            const upload = document.getElementById('map-upload');
-            const saveBtn = document.getElementById('save-btn');
-            const initList = document.getElementById('init-list');
-            const savedList = document.getElementById('saved-maps-list');
-            const chatBox = document.getElementById('chat-box');
-            const msgInput = document.getElementById('message-input');
-            const sendBtn = document.getElementById('send-btn');
+window.onload = function() {
+    const canvas = document.getElementById('map-canvas');
+    const ctx = canvas.getContext('2d');
+    const gridBtn = document.getElementById('grid-btn');
+    const losBtn = document.getElementById('los-btn');
+    const upload = document.getElementById('map-upload');
+    const saveBtn = document.getElementById('save-btn');
+    const initList = document.getElementById('init-list');
+    const savedList = document.getElementById('saved-maps-list');
+    const chatBox = document.getElementById('chat-box');
+    const msgInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
 
-            // State
-            let grid = true;
-            let losMode = false;
-            let tokens = [];
-            let selectedToken = null;
-            let drag = false;
-            let mapImg = null;
-            let mapWidth = 0, mapHeight = 0;
-            let offsetX = 0, offsetY = 0;
-            let savedMaps = JSON.parse(localStorage.getItem('war-vault-saved-maps') || '[]');
-            let losLine = null;
+    // --- NEW BUTTONS ---
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = "🗑 Clear Map";
+    document.querySelector('.controls').appendChild(clearBtn);
 
-            // Resize
-            function resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight - 70 - 60; // leave space for chat
-                if (mapImg) drawMap();
-            }
-            window.addEventListener('resize', resize);
-            resize();
+    const addTokenBtn = document.createElement('button');
+    addTokenBtn.textContent = "➕ Token";
+    document.querySelector('.controls').appendChild(addTokenBtn);
 
-            // Upload map
-            upload.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    mapImg = new Image();
-                    mapImg.onload = function() {
-                        mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
-                        mapHeight = (mapImg.height * mapWidth) / mapImg.width;
-                        offsetX = (canvas.width - mapWidth) / 2;
-                        offsetY = (canvas.height - mapHeight) / 2;
-                        tokens = [];
-                        loadSoul(); // Re-add hero
-                        drawMap();
-                    };
-                    mapImg.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = "📤 Export PNG";
+    document.querySelector('.controls').appendChild(exportBtn);
 
-            // Draw map
-            function drawMap() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                if (mapImg) {
-                    ctx.drawImage(mapImg, offsetX, offsetY, mapWidth, mapHeight);
-                }
-                drawTokens();
-            }
+    // State
+    let grid = true;
+    let losMode = false;
+    let tokens = [];
+    let selectedToken = null;
+    let drag = false;
+    let mapImg = null;
+    let mapWidth = 0, mapHeight = 0;
+    let offsetX = 0, offsetY = 0;
+    let savedMaps = JSON.parse(localStorage.getItem('war-vault-saved-maps') || '[]');
+    let losLine = null;
+    let losElement = null;
 
-            // Draw tokens
-            function drawTokens() {
-                tokens.forEach(token => {
-                    const x = offsetX + (token.x * mapWidth);
-                    const y = offsetY + (token.y * mapHeight);
-                    token.screenX = x;
-                    token.screenY = y;
+    // Resize
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 70 - 60;
+        if (mapImg) drawMap();
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-                    ctx.fillStyle = token.color || '#00ff88';
-                    ctx.beginPath();
-                    ctx.arc(x, y, 20, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = '#fff';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.fillStyle = '#000';
-                    ctx.font = '14px Rajdhani';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(token.name, x, y + 35);
-                });
-
-                // LOS
-                if (losLine) {
-                    const { x, y, x2, y2 } = losLine;
-                    const angle = Math.atan2(y2 - y, x2 - x);
-                    const length = Math.\sqrt{(x2 - x}**2 + (y2 - y)**2);
-                    const line = document.createElement('div');
-                    line.className = 'los-line';
-                    line.style.width = length + 'px';
-                    line.style.left = x + 'px';
-                    line.style.top = y + 'px';
-                    line.style.transform = `rotate(${angle}rad)`;
-                    document.body.appendChild(line);
-                    setTimeout(() => { if (line.parentNode) line.parentNode.removeChild(line); }, 3000);
-                }
-            }
-
-            // Add token
-            function addToken(name, color = '#00ff88') {
-                const token = { name, x: 0.5, y: 0.5, color };
-                tokens.push(token);
+    // Upload map
+    upload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            mapImg = new Image();
+            mapImg.onload = function() {
+                mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
+                mapHeight = (mapImg.height * mapWidth) / mapImg.width;
+                offsetX = (canvas.width - mapWidth) / 2;
+                offsetY = (canvas.height - mapHeight) / 2;
+                tokens = [];
+                loadSoul();
                 drawMap();
-                saveState();
-            }
-
-            // Load from Soul Forge
-            function loadSoul() {
-                const soul = JSON.parse(localStorage.getItem('dnd-soul'));
-                if (soul && !tokens.some(t => t.name === soul.name)) {
-                    const initRoll = Math.floor(Math.random() * 20) + 10;
-                    const item = document.createElement('div');
-                    item.className = 'initiative-item';
-                    item.textContent = `${soul.name} — ${initRoll}`;
-                    initList.appendChild(item);
-                    addToken(soul.name);
-                }
-            }
-
-            // Drag tokens
-            canvas.addEventListener('mousedown', (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                for (let token of tokens) {
-                    const dx = x - token.screenX;
-                    const dy = y - token.screenY;
-                    if (dx*dx + dy*dy < 400) {
-                        selectedToken = token;
-                        drag = true;
-                        return;
-                    }
-                }
-
-                if (losMode && selectedToken) {
-                    losLine = { x: selectedToken.screenX, y: selectedToken.screenY, x2: x, y2: y };
-                    drawMap();
-                }
-            });
-
-            canvas.addEventListener('mousemove', (e) => {
-                if (drag && selectedToken) {
-                    const rect = canvas.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    selectedToken.x = (x - offsetX) / mapWidth;
-                    selectedToken.y = (y - offsetY) / mapHeight;
-                    selectedToken.x = Math.max(0.05, Math.min(0.95, selectedToken.x));
-                    selectedToken.y = Math.max(0.05, Math.min(0.95, selectedToken.y));
-                    drawMap();
-                    saveState();
-                }
-            });
-
-            window.addEventListener('mouseup', () => {
-                drag = false;
-                selectedToken = null;
-            });
-
-            // Toggle Grid
-            gridBtn.addEventListener('click', () => {
-                grid = !grid;
-                document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
-                gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
-                saveState();
-            });
-
-            // Toggle LOS
-            losBtn.addEventListener('click', () => {
-                losMode = !losMode;
-                losBtn.textContent = losMode ? '🎯 LOS: ON' : '🎯 LOS Tool';
-                if (!losMode) losLine = null;
-            });
-
-            // Save Map
-            saveBtn.addEventListener('click', () => {
-                const name = prompt("Name this map:", "My Battle");
-                if (!name || !mapImg) return;
-
-                const mapData = {
-                    name,
-                    image: mapImg.src,
-                    tokens: JSON.parse(JSON.stringify(tokens)),
-                    grid,
-                    timestamp: Date.now()
-                };
-
-                savedMaps.unshift(mapData);
-                if (savedMaps.length > 10) savedMaps.pop();
-                localStorage.setItem('war-vault-saved-maps', JSON.stringify(savedMaps));
-                renderSavedMaps();
-            });
-
-            // Render Saved Maps
-            function renderSavedMaps() {
-                savedList.innerHTML = '';
-                savedMaps.forEach((map, i) => {
-                    const item = document.createElement('div');
-                    item.className = 'saved-map-item';
-
-                    const thumb = document.createElement('div');
-                    thumb.className = 'saved-map-thumb';
-                    thumb.style.backgroundImage = `url(${map.image})`;
-
-                    const actions = document.createElement('div');
-                    actions.className = 'saved-map-actions';
-                    actions.innerHTML = `<div>${map.name}</div><button onclick="loadSavedMap(${i})">Load</button>`;
-
-                    item.appendChild(thumb);
-                    item.appendChild(actions);
-                    savedList.appendChild(item);
-                });
-            }
-
-            // Load Saved Map
-            window.loadSavedMap = function(i) {
-                const map = savedMaps[i];
-                mapImg = new Image();
-                mapImg.onload = () => {
-                    mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
-                    mapHeight = (mapImg.height * mapWidth) / mapImg.width;
-                    offsetX = (canvas.width - mapWidth) / 2;
-                    offsetY = (canvas.height - mapHeight) / 2;
-                    tokens = JSON.parse(JSON.stringify(map.tokens));
-                    grid = map.grid;
-                    document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
-                    gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
-                    drawMap();
-                };
-                mapImg.src = map.image;
             };
-
-            // Save current state
-            function saveState() {
-                if (mapImg) {
-                    localStorage.setItem('war-vault-current', JSON.stringify({
-                        image: mapImg.src,
-                        tokens,
-                        grid
-                    }));
-                }
-            }
-
-            // Chat
-            sendBtn.addEventListener('click', sendMsg);
-            msgInput.addEventListener('keypress', e => {
-                if (e.key === 'Enter') sendMsg();
-            });
-
-            function sendMsg() {
-                const text = msgInput.value.trim();
-                if (!text) return;
-                const div = document.createElement('div');
-                div.innerHTML = `<b>You:</b> ${text}`;
-                chatBox.appendChild(div);
-                chatBox.scrollTop = chatBox.scrollHeight;
-                msgInput.value = '';
-            }
-
-            // Initial load
-            renderSavedMaps();
-            loadSoul();
-
-            const last = JSON.parse(localStorage.getItem('war-vault-current'));
-            if (last) {
-                mapImg = new Image();
-                mapImg.onload = () => {
-                    mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
-                    mapHeight = (mapImg.height * mapWidth) / mapImg.width;
-                    offsetX = (canvas.width - mapWidth) / 2;
-                    offsetY = (canvas.height - mapHeight) / 2;
-                    tokens = last.tokens || [];
-                    grid = last.grid;
-                    document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
-                    gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
-                    drawMap();
-                };
-                mapImg.src = last.image;
-            }
+            mapImg.src = ev.target.result;
         };
-    </script>
-</body>
-</html>
+        reader.readAsDataURL(file);
+    });
+
+    // Draw map + tokens
+    function drawMap() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (mapImg) {
+            ctx.drawImage(mapImg, offsetX, offsetY, mapWidth, mapHeight);
+        }
+        drawTokens();
+    }
+
+    function drawTokens() {
+        tokens.forEach(token => {
+            const x = offsetX + (token.x * mapWidth);
+            const y = offsetY + (token.y * mapHeight);
+            token.screenX = x;
+            token.screenY = y;
+
+            ctx.fillStyle = token.color || '#00ff88';
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 14px Rajdhani';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(token.name, x, y);
+        });
+
+        // LOS persistent line
+        if (losLine && losElement) {
+            const { x, y, x2, y2 } = losLine;
+            const angle = Math.atan2(y2 - y, x2 - x);
+            const length = Math.sqrt((x2 - x) ** 2 + (y2 - y) ** 2);
+            losElement.style.width = length + 'px';
+            losElement.style.left = x + 'px';
+            losElement.style.top = y + 'px';
+            losElement.style.transform = `rotate(${angle}rad)`;
+        }
+    }
+
+    function addToken(name = "Token", color = '#00ff88') {
+        const token = { name, x: 0.5, y: 0.5, color };
+        tokens.push(token);
+        drawMap();
+        saveState();
+    }
+
+    function loadSoul() {
+        const soul = JSON.parse(localStorage.getItem('dnd-soul'));
+        if (soul && !tokens.some(t => t.name === soul.name)) {
+            const initRoll = Math.floor(Math.random() * 20) + 10;
+            const item = document.createElement('div');
+            item.className = 'initiative-item';
+            item.textContent = `${soul.name} — ${initRoll}`;
+            initList.appendChild(item);
+            addToken(soul.name);
+        }
+    }
+
+    // --- Mouse events ---
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        for (let token of tokens) {
+            const dx = x - token.screenX;
+            const dy = y - token.screenY;
+            if (dx * dx + dy * dy < 400) {
+                selectedToken = token;
+                drag = true;
+                return;
+            }
+        }
+
+        if (losMode && selectedToken) {
+            losLine = { x: selectedToken.screenX, y: selectedToken.screenY, x2: x, y2: y };
+            if (!losElement) {
+                losElement = document.createElement('div');
+                losElement.className = 'los-line';
+                document.body.appendChild(losElement);
+            }
+            drawMap();
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (drag && selectedToken) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            selectedToken.x = (x - offsetX) / mapWidth;
+            selectedToken.y = (y - offsetY) / mapHeight;
+            selectedToken.x = Math.max(0.05, Math.min(0.95, selectedToken.x));
+            selectedToken.y = Math.max(0.05, Math.min(0.95, selectedToken.y));
+            drawMap();
+            saveState();
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        drag = false;
+        selectedToken = null;
+    });
+
+    // --- Controls ---
+    gridBtn.addEventListener('click', () => {
+        grid = !grid;
+        document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
+        gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
+        saveState();
+    });
+
+    losBtn.addEventListener('click', () => {
+        losMode = !losMode;
+        losBtn.textContent = losMode ? '🎯 LOS: ON' : '🎯 LOS Tool';
+        if (!losMode && losElement) {
+            losElement.remove();
+            losElement = null;
+            losLine = null;
+        }
+    });
+
+    saveBtn.addEventListener('click', () => {
+        const name = prompt("Name this map:", "My Battle");
+        if (!name || !mapImg) return;
+        const mapData = { name, image: mapImg.src, tokens: [...tokens], grid, timestamp: Date.now() };
+        savedMaps.unshift(mapData);
+        if (savedMaps.length > 10) savedMaps.pop();
+        localStorage.setItem('war-vault-saved-maps', JSON.stringify(savedMaps));
+        renderSavedMaps();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        tokens = [];
+        losLine = null;
+        if (losElement) { losElement.remove(); losElement = null; }
+        drawMap();
+        saveState();
+    });
+
+    addTokenBtn.addEventListener('click', () => {
+        const name = prompt("Token name?", "New Token");
+        if (name) addToken(name);
+    });
+
+    exportBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'battlemap.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+
+    // --- Saved Maps ---
+    function renderSavedMaps() {
+        savedList.innerHTML = '';
+        savedMaps.forEach((map, i) => {
+            const item = document.createElement('div');
+            item.className = 'saved-map-item';
+            const thumb = document.createElement('div');
+            thumb.className = 'saved-map-thumb';
+            thumb.style.backgroundImage = `url(${map.image})`;
+            const actions = document.createElement('div');
+            actions.className = 'saved-map-actions';
+            actions.innerHTML = `<div>${map.name}</div><button onclick="loadSavedMap(${i})">Load</button>`;
+            item.appendChild(thumb);
+            item.appendChild(actions);
+            savedList.appendChild(item);
+        });
+    }
+
+    window.loadSavedMap = function(i) {
+        const map = savedMaps[i];
+        mapImg = new Image();
+        mapImg.onload = () => {
+            mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
+            mapHeight = (mapImg.height * mapWidth) / mapImg.width;
+            offsetX = (canvas.width - mapWidth) / 2;
+            offsetY = (canvas.height - mapHeight) / 2;
+            tokens = [...map.tokens];
+            grid = map.grid;
+            document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
+            gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
+            drawMap();
+        };
+        mapImg.src = map.image;
+    };
+
+    function saveState() {
+        if (mapImg) {
+            localStorage.setItem('war-vault-current', JSON.stringify({ image: mapImg.src, tokens, grid }));
+        }
+    }
+
+    // --- Chat ---
+    function sendMsg() {
+        const text = msgInput.value.trim();
+        if (!text) return;
+        const div = document.createElement('div');
+        div.innerHTML = `<b>You:</b> ${text}`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        msgInput.value = '';
+    }
+    sendBtn.addEventListener('click', sendMsg);
+    msgInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMsg(); });
+
+    // --- Initial Load ---
+    renderSavedMaps();
+    loadSoul();
+    const last = JSON.parse(localStorage.getItem('war-vault-current'));
+    if (last) {
+        mapImg = new Image();
+        mapImg.onload = () => {
+            mapWidth = Math.min(mapImg.width, canvas.width * 0.9);
+            mapHeight = (mapImg.height * mapWidth) / mapImg.width;
+            offsetX = (canvas.width - mapWidth) / 2;
+            offsetY = (canvas.height - mapHeight) / 2;
+            tokens = last.tokens || [];
+            grid = last.grid;
+            document.getElementById('grid-layer').style.opacity = grid ? 0.6 : 0;
+            gridBtn.textContent = `Grid: ${grid ? 'ON' : 'OFF'}`;
+            drawMap();
+        };
+        mapImg.src = last.image;
+    }
+};
+</script>
