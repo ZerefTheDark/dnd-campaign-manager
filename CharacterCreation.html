@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Forge of Heroes — Character Creator (Black Theme)</title>
+  <title>Forge of Heroes — Character Creator (Black + Vault + Animations)</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet" />
   <style>
     :root { 
@@ -13,7 +13,7 @@
       --ink:#eaeaea;        /* primary text */
       --muted:#b9b9b9;      /* secondary text */
       --line:#222;          /* separators */
-      --accent:#d34b4b;     /* crimson accent (original, not DDB's exact) */
+      --accent:#d34b4b;     /* crimson accent (original) */
       --accent-weak:#b53e3e;
     }
     *{box-sizing:border-box}
@@ -21,13 +21,14 @@
     body{margin:0;font-family:'Rajdhani',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--ink)}
     a{color:var(--accent)}
 
-    /* Header / Top Stepper */
-    header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--line)}
+    /* Header */
+    header{position:sticky;top:0;z-index:60;background:var(--bg);border-bottom:1px solid var(--line)}
     .wrap{max-width:1280px;margin:0 auto;padding:16px}
     h1{font-family:'Cinzel',serif;color:var(--ink);margin:0 0 2px;font-weight:900;letter-spacing:.5px}
     .sub{color:var(--muted);margin:0}
 
-    .top-steps{display:flex;gap:12px;align-items:center;margin-top:10px}
+    .header-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .top-steps{display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap}
     .top-step{position:relative;display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--panel)}
     .top-step.active{color:#fff;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
     .dot{width:20px;height:20px;border-radius:999px;background:#111;border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--muted)}
@@ -37,7 +38,7 @@
     main.wrap{display:grid;gap:16px;grid-template-columns:260px 1fr 320px}
     @media (max-width:1100px){ main.wrap{grid-template-columns:1fr} }
 
-    aside.left{position:sticky;top:102px;align-self:start;height:max-content}
+    aside.left{position:sticky;top:152px;align-self:start;height:max-content}
 
     /* Side steps (left rail) */
     .steps{display:flex;flex-direction:column;gap:8px}
@@ -94,6 +95,21 @@
     .btn:hover{border-color:#666}
     .btn-primary{background:var(--accent);border-color:var(--accent);color:#000;font-weight:800}
 
+    /* Animations */
+    @keyframes slideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes slideOutLeft{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(-32px)}}
+    @keyframes slideInLeft{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes slideOutRight{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(32px)}}
+
+    .anim-enter-right{animation:slideInRight .28s ease both}
+    .anim-leave-left{animation:slideOutLeft .28s ease both}
+    .anim-enter-left{animation:slideInLeft .28s ease both}
+    .anim-leave-right{animation:slideOutRight .28s ease both}
+
+    @media (prefers-reduced-motion: reduce){
+      .anim-enter-right,.anim-leave-left,.anim-enter-left,.anim-leave-right{animation:none}
+    }
+
     footer{color:#8a8a8a;text-align:center;padding:18px 0;border-top:1px solid var(--line)}
   </style>
 </head>
@@ -101,7 +117,12 @@
   <header>
     <div class="wrap">
       <h1>Forge of Heroes</h1>
-      <p class="sub">All‑black UI • familiar step flow • SRD‑friendly</p>
+      <p class="sub">All‑black UI • familiar step flow • SRD‑friendly • Vault & animations</p>
+      <div class="header-actions">
+        <button class="btn" id="load-pack" title="Load content pack JSON (SRD 5.2, homebrew, images)">Load Content Pack</button>
+        <input id="pack-file" type="file" accept="application/json" style="display:none" />
+        <button class="btn" id="open-vault">Open Vault</button>
+      </div>
       <div class="top-steps" id="top-steps"></div>
     </div>
   </header>
@@ -115,7 +136,7 @@
     <!-- CENTER: wizard content -->
     <section class="grid" id="content">
       <!-- Step 1: Identity -->
-      <section class="card" data-step="1" data-title="Identity">
+      <section class="card page" data-step="1" data-title="Identity">
         <div class="cols-3">
           <div>
             <label data-help="Your character's given name or chosen alias.">Name</label>
@@ -133,17 +154,17 @@
       </section>
 
       <!-- Step 2: Race -->
-      <section class="card" data-step="2" data-title="Race">
+      <section class="card page" data-step="2" data-title="Race">
         <div class="choices" id="race-grid"></div>
       </section>
 
       <!-- Step 3: Class -->
-      <section class="card" data-step="3" data-title="Class">
+      <section class="card page" data-step="3" data-title="Class">
         <div class="choices" id="class-grid"></div>
       </section>
 
       <!-- Step 4: Abilities -->
-      <section class="card" data-step="4" data-title="Abilities">
+      <section class="card page" data-step="4" data-title="Abilities">
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
           <button class="btn" id="std-array" data-help="Quick-assign the standard array 15,14,13,12,10,8">Apply Standard Array</button>
           <div class="sub">Prof. Bonus: <strong id="prof">+2</strong></div>
@@ -162,7 +183,7 @@
       </section>
 
       <!-- Step 5: Saves & Skills -->
-      <section class="card" data-step="5" data-title="Saves & Skills">
+      <section class="card page" data-step="5" data-title="Saves & Skills">
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px">
           <div id="saves"></div>
           <div>
@@ -175,13 +196,13 @@
       </section>
 
       <!-- Step 6: Backstory -->
-      <section class="card" data-step="6" data-title="Backstory">
+      <section class="card page" data-step="6" data-title="Backstory">
         <label data-help="A paragraph about their past and motivations.">Backstory</label>
         <textarea id="backstory" rows="6" placeholder="They swore to protect the city... then burned it."></textarea>
       </section>
 
       <!-- Step 7: Review & Export -->
-      <section class="card" data-step="7" data-title="Review & Export">
+      <section class="card page" data-step="7" data-title="Review & Export">
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px">
           <div>
             <div class="summary-card">
@@ -205,6 +226,7 @@
                 <label class="btn" for="import-file" title="Import JSON">Import JSON</label>
                 <input id="import-file" type="file" accept="application/json" style="display:none" />
                 <button class="btn btn-primary" id="gen-sheet">Generate Sheet</button>
+                <button class="btn" id="save-to-vault">Save to Vault</button>
               </div>
             </div>
           </div>
@@ -220,6 +242,17 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <!-- Step 8: Vault (Saved Characters) -->
+      <section class="card page" data-step="8" data-title="Vault">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <input id="vault-search" placeholder="Search by name, class, race..." style="max-width:360px" />
+          <button class="btn" id="vault-export-all">Export All</button>
+          <button class="btn" id="vault-import">Import Characters</button>
+          <input id="vault-import-file" type="file" accept="application/json" style="display:none" />
+        </div>
+        <div id="vault-list" class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:12px"></div>
       </section>
 
       <!-- SHEET OUTPUT -->
@@ -281,10 +314,10 @@
 
   <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
 
-  <footer>SRD 5.1/5.2 concepts under CC‑BY‑4.0. Images via Unsplash (demo). Original UI (inspired-by, not identical).</footer>
+  <footer>SRD 5.1/5.2 concepts under CC‑BY‑4.0. Images via Unsplash (demo). Original UI (inspired-by, not identical). Content packs let you load SRD 5.2 or homebrew data.</footer>
 
   <script>
-    // ====== SRD-lite data ======
+    // ====== SRD-lite seed (expand via Content Pack importer) ======
     const RACES = [
       { id:'human',   name:'Human',   img:'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=800&auto=format&fit=crop', blurb:'Versatile and ambitious. No ability penalties.' },
       { id:'elf',     name:'Elf',     img:'https://images.unsplash.com/photo-1526312426976-593c2e615581?q=80&w=800&auto=format&fit=crop', blurb:'Graceful and keen. Often favor DEX/INT builds.' },
@@ -318,13 +351,23 @@
     const pretty=n=>n>=0?`+${n}`:`${n}`;
     const prof=l=>l>=17?6:l>=13?5:l>=9?4:l>=5?3:2;
 
-    const state={ name:'', title:'', race:'human', class:'fighter', level:1, scores:{str:10,dex:10,con:10,int:10,wis:10,cha:10}, profs:{}, saves:{}, backstory:'' };
+    const state={ name:'', title:'', race:'human', class:'fighter', level:1, scores:{str:10,dex:10,con:10,int:10,wis:10,cha:10}, profs:{}, saves:{}, backstory:'', ac:10, hp:8, init:'+0' };
 
-    // ====== steps ======
-    let step=1; const maxStep=7;
+    // ====== steps + animations ======
+    let step=1; const maxStep=8; let lastDir='next';
     function renderSteps(){ const wrap=$('steps'); wrap.innerHTML=''; for(let i=1;i<=maxStep;i++){ const s=document.createElement('div'); s.className='step'+(i===step?' active':''); s.textContent=`${i}. ${qs(`[data-step="${i}"]`).dataset.title}`; wrap.appendChild(s);} }
     function renderTopSteps(){ const wrap=$('top-steps'); wrap.innerHTML=''; for(let i=1;i<=maxStep;i++){ const item=document.createElement('div'); item.className='top-step'+(i===step?' active':''); item.innerHTML=`<span class="dot">${i}</span><span>${qs(`[data-step="${i}"]`).dataset.title}</span>`; wrap.appendChild(item);} }
-    function showStep(){ qsa('[data-step]').forEach(se=>se.style.display=Number(se.dataset.step)===step?'block':'none'); renderSteps(); renderTopSteps(); $('prev').disabled=step===1; $('next').disabled=step===maxStep; }
+    function showStep(){ qsa('[data-step]').forEach(se=>{ const visible=Number(se.dataset.step)===step; se.style.display= visible?'block':'none'; }); renderSteps(); renderTopSteps(); $('prev').disabled=step===1; $('next').disabled=step===maxStep; }
+    function animateTo(next){ const cur=qs(`.page[data-step="${step}"]`); const dir = next>step? 'next':'prev'; lastDir=dir; step=clamp(next,1,maxStep); const nxt=qs(`.page[data-step="${step}"]`);
+      if(!cur||!nxt){ showStep(); return; }
+      cur.classList.remove('anim-enter-right','anim-enter-left','anim-leave-right','anim-leave-left');
+      nxt.classList.remove('anim-enter-right','anim-enter-left','anim-leave-right','anim-leave-left');
+      nxt.style.display='block';
+      if(dir==='next'){ cur.classList.add('anim-leave-left'); nxt.classList.add('anim-enter-right'); }
+      else { cur.classList.add('anim-leave-right'); nxt.classList.add('anim-enter-left'); }
+      const done=()=>{ cur.style.display='none'; cur.removeEventListener('animationend',done); renderSteps(); renderTopSteps(); $('prev').disabled=step===1; $('next').disabled=step===maxStep; };
+      cur.addEventListener('animationend',done);
+    }
 
     // ====== tooltips (1s delay) ======
     const tip=$('tooltip'); let tipTimer=null, tipTarget=null;
@@ -336,9 +379,10 @@
     document.addEventListener('focusout', ()=>{ clearTimeout(tipTimer); hideTip(); });
 
     // ====== race/class selection ======
-    function makeChoiceCard(item, group){ const el=document.createElement('button'); el.type='button'; el.className='choice'; el.setAttribute('data-help', item.blurb); el.dataset.group=group; el.dataset.value=item.id; el.innerHTML=`<div class="choice-img" style="background-image:url('${item.img}')"></div><div class="choice-body"><div class="choice-title">${item.name}</div><div class="choice-sub">${item.blurb}</div></div>`; el.addEventListener('click',()=>selectChoice(group,item.id,el)); return el; }
+    function makeChoiceCard(item, group){ const el=document.createElement('button'); el.type='button'; el.className='choice'; el.setAttribute('data-help', item.blurb||''); el.dataset.group=group; el.dataset.value=item.id; el.innerHTML=`<div class="choice-img" style="background-image:url('${item.img||''}')"></div><div class="choice-body"><div class="choice-title">${item.name}</div><div class="choice-sub">${item.blurb||''}</div></div>`; el.addEventListener('click',()=>selectChoice(group,item.id,el)); return el; }
     function selectChoice(group,id,el){ qsa(`.choice[data-group="${group}"]`).forEach(c=>c.classList.toggle('selected', c.dataset.value===id)); state[group]=id; updateDerived(); updateSummary(); }
-    function buildChoices(){ const rg=$('race-grid'); RACES.forEach(r=>rg.appendChild(makeChoiceCard(r,'race'))); selectChoice('race','human', rg.firstChild); const cg=$('class-grid'); CLASSES.forEach(c=>cg.appendChild(makeChoiceCard(c,'class'))); selectChoice('class','fighter', cg.firstChild); }
+    function buildChoices(){ const rg=$('race-grid'); rg.innerHTML=''; RACES.forEach(r=>rg.appendChild(makeChoiceCard(r,'race'))); const pickRace=RACES.find(r=>r.id===state.race)||RACES[0]; selectChoice('race', pickRace.id, rg.querySelector(`[data-value="${pickRace.id}"]`)||rg.firstChild);
+      const cg=$('class-grid'); cg.innerHTML=''; CLASSES.forEach(c=>cg.appendChild(makeChoiceCard(c,'class'))); const pickClass=CLASSES.find(c=>c.id===state.class)||CLASSES[0]; selectChoice('class', pickClass.id, cg.querySelector(`[data-value="${pickClass.id}"]`)||cg.firstChild); }
 
     // ====== abilities/saves/skills ======
     function readScores(){ ['str','dex','con','int','wis','cha'].forEach(k=>{ const v=parseInt($(k).value,10); state.scores[k]=Number.isFinite(v)?clamp(v,1,30):10; }); }
@@ -347,7 +391,8 @@
 
     function buildSaves(){ const wrap=$('saves'); wrap.innerHTML=''; const defaults={fighter:['str','con'],wizard:['int','wis'],cleric:['wis','cha'],rogue:['dex','int']}[state.class]||[]; ['str','dex','con','int','wis','cha'].forEach(ab=>{ const row=document.createElement('div'); row.className='ability'; row.setAttribute('data-help',`Saving throw using ${ab.toUpperCase()}. Check if proficient.`); const left=document.createElement('div'); left.textContent=`${ab.toUpperCase()} Save`; const right=document.createElement('div'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked = state.saves[ab] ?? defaults.includes(ab); cb.addEventListener('change',()=>{ state.saves[ab]=cb.checked; renderSaves(); updateSummary(); }); right.appendChild(cb); row.append(left,right); wrap.appendChild(row); }); renderSaves(); }
 
-    function renderSaves(){ qsa('#saves .ability').forEach(row=>{ const label=row.firstChild.textContent; const ab=label.slice(0,3).toLowerCase(); const checked=row.querySelector('input').checked; const bonus=mod(state.scores[ab])+(checked?prof(state.level):0); let badge=row.querySelector('.mod'); if(!badge){ badge=document.createElement('div'); badge.className='mod'; row.appendChild(badge); } badge.textContent=pretty(bonus); }); const sum=$('sum-saves'); sum.innerHTML=''; ['str','dex','con','int','wis','cha'].forEach(ab=>{ const checked=(state.saves[ab]??false); const b=mod(state.scores[ab])+(checked?prof(state.level):0); const div=document.createElement('div'); div.className='ability'; div.innerHTML=`<span>${ab.toUpperCase()} ${checked?'⭐':''}</span><span class="score">${pretty(b)}</span>`; sum.appendChild(div); }); }
+    function renderSaves(){ qsa('#saves .ability').forEach(row=>{ const label=row.firstChild.textContent; const ab=label.slice(0,3).toLowerCase(); const checked=row.querySelector('input').checked; const bonus=mod(state.scores[ab])+(checked?prof(state.level):0); let badge=row.querySelector('.mod'); if(!badge){ badge=document.createElement('div'); badge.className='mod'; row.appendChild(badge); } badge.textContent=pretty(bonus); }); const sum=$('sum-saves'); if(sum){ sum.innerHTML=''; ['str','dex','con','int','wis','cha'].forEach(ab=>{ const checked=(state.saves[ab]??false); const b=mod(state.scores[ab])+(checked?prof(state.level):0); const div=document.createElement('div'); div.className='ability'; div.innerHTML=`<span>${ab.toUpperCase()} ${checked?'⭐':''}</span><span class="score">${pretty(b)}</span>`; sum.appendChild(div); }); }
+    }
 
     function buildSkills(){ const body=$('skills'); body.innerHTML=''; SKILLS.forEach(([n,ab])=>{ const tr=document.createElement('tr'); tr.setAttribute('data-help',`${n}: ${ab.toUpperCase()}-based. Check if proficient.`); const td1=document.createElement('td'); td1.textContent=n; const td2=document.createElement('td'); td2.textContent=ab.toUpperCase(); const td3=document.createElement('td'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!state.profs[n]; cb.addEventListener('change',()=>{ state.profs[n]=cb.checked; renderSkills(); updateSummary(); }); td3.appendChild(cb); const td4=document.createElement('td'); td4.className='bonus'; tr.append(td1,td2,td3,td4); body.appendChild(tr); }); renderSkills(); }
     function renderSkills(){ qsa('#skills tr').forEach(tr=>{ const cells=tr.children; if(cells.length<4) return; const n=cells[0].textContent; const ab=cells[1].textContent.toLowerCase(); const checked=cells[2].querySelector('input').checked; const b=mod(state.scores[ab])+(checked?prof(state.level):0); cells[3].textContent=pretty(b); }); }
@@ -355,14 +400,92 @@
     // ====== summary panel ======
     function updateSummary(){ $('live-name').textContent = state.name || 'Unnamed Adventurer'; $('live-sub').textContent = `${state.class.toUpperCase()} • ${state.race.toUpperCase()} • Lv ${state.level}`; $('live-ac').textContent=state.ac; $('live-hp').textContent=state.hp; $('live-init').textContent=state.init; const mods=$('live-mods'); mods.innerHTML=''; ['str','dex','con','int','wis','cha'].forEach(k=>{ const d=document.createElement('div'); d.className='summary-card'; d.innerHTML=`<div class="sub">${k.toUpperCase()}</div><div class="score">${pretty(mod(state.scores[k]))}</div>`; mods.appendChild(d); }); $('sum-name').textContent = (state.name||'Character') + (state.title? ' — '+state.title:''); $('sum-sub').textContent = `${state.class.toUpperCase()} • ${state.race.toUpperCase()} • Level ${state.level}`; $('sum-ac').textContent=state.ac; $('sum-hp').textContent=state.hp; $('sum-init').textContent=state.init; const abWrap=$('sum-abilities'); abWrap.innerHTML=''; ['str','dex','con','int','wis','cha'].forEach(k=>{ const div=document.createElement('div'); div.className='summary-card'; div.innerHTML=`<div class="sub">${k.toUpperCase()}</div><div class="score">${state.scores[k]} (${pretty(mod(state.scores[k]))})</div>`; abWrap.appendChild(div); }); }
 
-    // ====== export/import & sheet ======
+    // ====== collect/export/import ======
     function collect(){ return { schemaVersion:1, id: crypto.randomUUID?.()||Math.random().toString(36).slice(2), name: state.name||'Unknown', title: state.title||'', race: state.race, class: state.class, level: state.level, backstory: state.backstory||'', abilities: {...state.scores}, derived:{ ac: state.ac, hp: state.hp, init: state.init, profBonus: prof(state.level) }, skills: Object.fromEntries(SKILLS.map(([n,ab])=>[n,{ability:ab,proficient:!!state.profs[n]}])), saves:{...state.saves}, updatedAt:new Date().toISOString() }; }
     function download(filename,json){ const blob=new Blob([JSON.stringify(json,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(url),500); }
+
+    // ====== sheet render ======
     function renderSheet(data){ $('sheet-name').textContent = data.name + (data.title? ' — '+data.title:''); $('sheet-sub').textContent = `${capitalize(data.class)} • ${capitalize(data.race)} • Level ${data.level}`; $('sheet-ac').textContent=data.derived.ac; $('sheet-hp').textContent=data.derived.hp; $('sheet-init').textContent=data.derived.init; $('sheet-backstory').textContent=data.backstory||'—'; $('sheet-avatar').textContent = (data.race||'H')[0].toUpperCase(); const ab=$('sheet-abilities'); ab.innerHTML=''; for(const [k,v] of Object.entries(data.abilities)){ const d=document.createElement('div'); d.className='ability'; d.innerHTML=`<span>${capitalize(k)}</span><span class="score">${v} (${pretty(mod(v))})</span>`; ab.appendChild(d); } const sv=$('sheet-saves'); sv.innerHTML=''; ['str','dex','con','int','wis','cha'].forEach(k=>{ const isP=!!data.saves[k]; const b=mod(data.abilities[k])+(isP?data.derived.profBonus:0); const d=document.createElement('div'); d.className='ability'; d.innerHTML=`<span>${k.toUpperCase()} Save ${isP?'⭐':''}</span><span class="score">${pretty(b)}</span>`; sv.appendChild(d); }); const tbody=$('sheet-skills'); tbody.innerHTML=''; SKILLS.forEach(([n,ab])=>{ const isP=!!data.skills[n]?.proficient; const b=mod(data.abilities[ab])+(isP?data.derived.profBonus:0); const tr=document.createElement('tr'); tr.innerHTML=`<td>${n}${isP?' ⭐':''}</td><td>${ab.toUpperCase()}</td><td class="score">${pretty(b)}</td>`; tbody.appendChild(tr); }); const feats=$('sheet-features'); feats.innerHTML = (CLASS_FEATURES[data.class]||[]).map(f=>`<li>${f}</li>`).join('') || '<li>—</li>'; $('sheet').classList.add('show'); window.scrollTo({top:$('sheet').offsetTop-20,behavior:'smooth'}); }
     function capitalize(s){ return s? s[0].toUpperCase()+s.slice(1):'' }
 
+    // ====== Vault (saved characters) ======
+    const VAULT_KEY='foh-vault-v1';
+    function loadVault(){ try{ return JSON.parse(localStorage.getItem(VAULT_KEY)||'[]'); }catch{return []} }
+    function saveVault(list){ localStorage.setItem(VAULT_KEY, JSON.stringify(list)); }
+    function addToVault(ch){ const list=loadVault(); list.push(ch); saveVault(list); renderVault(); alert('Saved to Vault.'); }
+    function deleteFromVault(id){ const list=loadVault().filter(x=>x.id!==id); saveVault(list); renderVault(); }
+    function exportAll(){ const list=loadVault(); download('forge-of-heroes.vault.json', { version:1, exportedAt:new Date().toISOString(), characters:list }); }
+    function importVault(files){ const f=files?.[0]; if(!f) return; f.text().then(txt=>{ try{ const data=JSON.parse(txt); if(Array.isArray(data)) saveVault(data); else if(Array.isArray(data.characters)) saveVault(data.characters); else throw 0; renderVault(); alert('Imported characters into Vault.'); }catch{ alert('Invalid vault JSON'); } }).finally(()=>{$('vault-import-file').value='';}); }
+    function renderVault(){ const q = $('vault-search').value?.toLowerCase?.()||''; const list=loadVault().filter(c=>`${c.name} ${c.class} ${c.race}`.toLowerCase().includes(q)); const wrap=$('vault-list'); wrap.innerHTML=''; if(!list.length){ wrap.innerHTML='<div class="sub">No saved characters yet.</div>'; return; } list.slice().reverse().forEach(ch=>{ const card=document.createElement('div'); card.className='summary-card'; card.innerHTML=`
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="summary-card" style="width:46px;height:46px;display:grid;place-items:center;border-radius:10px">${(ch.race||'H')[0].toUpperCase()}</div>
+              <div>
+                <div style="font-weight:800;color:#fff">${ch.name||'Unknown'}</div>
+                <div class="sub">${(ch.class||'').toUpperCase()} • ${(ch.race||'').toUpperCase()} • Lv ${ch.level||1}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn" data-act="load">Load</button>
+              <button class="btn" data-act="export">Export</button>
+              <button class="btn" data-act="rename">Rename</button>
+              <button class="btn" data-act="delete">Delete</button>
+            </div>
+          </div>`;
+        card.querySelector('[data-act="load"]').addEventListener('click',()=>{ applyCharacter(ch); animateTo(7); });
+        card.querySelector('[data-act="export"]').addEventListener('click',()=>{ download(`${(ch.name||'character').toLowerCase().replace(/[^a-z0-9]+/g,'-')}.character.json`, ch); });
+        card.querySelector('[data-act="rename"]').addEventListener('click',()=>{ const nv=prompt('Rename character', ch.name||''); if(nv!=null){ ch.name=nv; const all=loadVault().map(x=>x.id===ch.id?ch:x); saveVault(all); renderVault(); }});
+        card.querySelector('[data-act="delete"]').addEventListener('click',()=>{ if(confirm('Delete from Vault?')) deleteFromVault(ch.id); });
+        wrap.appendChild(card);
+      }); }
+
+    function applyCharacter(data){ state.name=data.name||''; state.title=data.title||''; state.race=data.race||'human'; state.class=data.class||'fighter'; state.level=Number(data.level||1); $('name').value=state.name; $('title').value=state.title; $('level').value=state.level; ['str','dex','con','int','wis','cha'].forEach(k=>$(k).value=data.abilities?.[k]??10); state.scores=data.abilities||state.scores; state.profs=Object.fromEntries(Object.entries(data.skills||{}).map(([n,v])=>[n,!!v.proficient])); state.saves=data.saves||{}; state.backstory=data.backstory||''; $('backstory').value=state.backstory; buildChoices(); buildSaves(); buildSkills(); updateDerived(); updateSummary(); }
+
+    // ====== Content Pack Importer ======
+    /*
+      Schema example:
+      {
+        "version":"SRD-5.2.1",
+        "races":[ {"id":"goliath","name":"Goliath","img":"https://...","blurb":"Powerful mountain folk."}, ... ],
+        "classes":[ ... ],
+        "spells":[ {"id":"guidance","name":"Guidance","level":0, "school":"Divination", ... } ],
+        "items":[ {"id":"longsword","name":"Longsword", ... } ]
+      }
+    */
+    function loadPack(files){ const f=files?.[0]; if(!f) return; f.text().then(txt=>{ try{ const data=JSON.parse(txt); if(Array.isArray(data.races)){ RACES.length=0; data.races.forEach(r=>RACES.push(r)); } if(Array.isArray(data.classes)){ CLASSES.length=0; data.classes.forEach(c=>CLASSES.push(c)); } buildChoices(); alert('Content pack loaded.'); }catch{ alert('Invalid content pack JSON'); } }).finally(()=>{$('pack-file').value='';}); }
+
     // ====== wiring ======
-    function wire(){ $('name').addEventListener('input', e=>{ state.name=e.target.value; updateSummary(); }); $('title').addEventListener('input', e=>{ state.title=e.target.value; updateSummary(); }); $('level').addEventListener('input', ()=>{ updateDerived(); }); ['str','dex','con','int','wis','cha'].forEach(id=>$(id).addEventListener('input', updateDerived)); $('std-array').addEventListener('click', ()=>{ const arr=[15,14,13,12,10,8]; ['str','dex','con','int','wis','cha'].forEach((id,i)=>$(id).value=arr[i]); updateDerived(); }); buildChoices(); buildSaves(); buildSkills(); updateDerived(); updateSummary(); $('prev').addEventListener('click', ()=>{ step=Math.max(1,step-1); showStep(); }); $('next').addEventListener('click', ()=>{ step=Math.min(maxStep,step+1); showStep(); }); showStep(); $('export').addEventListener('click', ()=>{ const data=collect(); const fn=(state.name||'character').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.character.json'; download(fn,data); }); $('import-file').addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; try{ const txt=await f.text(); const data=JSON.parse(txt); if(data && data.name){ state.name=data.name||''; state.title=data.title||''; state.race=data.race||'human'; state.class=data.class||'fighter'; state.level=Number(data.level||1); $('name').value=state.name; $('title').value=state.title; $('level').value=state.level; ['str','dex','con','int','wis','cha'].forEach(k=>$(k).value=data.abilities?.[k]??10); state.scores=data.abilities||state.scores; state.profs=Object.fromEntries(Object.entries(data.skills||{}).map(([n,v])=>[n,!!v.proficient])); state.saves=data.saves||{}; state.backstory=data.backstory||''; $('backstory').value=state.backstory; qsa('.choice[data-group="race"]').forEach(c=>c.classList.toggle('selected', c.dataset.value===state.race)); qsa('.choice[data-group="class"]').forEach(c=>c.classList.toggle('selected', c.dataset.value===state.class)); buildSaves(); buildSkills(); updateDerived(); updateSummary(); alert('Imported character JSON.'); } else { alert('Unrecognized JSON.'); } }catch{ alert('Invalid JSON'); } e.target.value=''; }); $('gen-sheet').addEventListener('click', ()=>{ const data=collect(); renderSheet(data); }); }
+    function wire(){ // text inputs
+      $('name').addEventListener('input', e=>{ state.name=e.target.value; updateSummary(); });
+      $('title').addEventListener('input', e=>{ state.title=e.target.value; updateSummary(); });
+      $('level').addEventListener('input', ()=>{ updateDerived(); });
+      ['str','dex','con','int','wis','cha'].forEach(id=>$(id).addEventListener('input', updateDerived));
+      $('std-array').addEventListener('click', ()=>{ const arr=[15,14,13,12,10,8]; ['str','dex','con','int','wis','cha'].forEach((id,i)=>$(id).value=arr[i]); updateDerived(); });
+
+      // selections
+      buildChoices(); buildSaves(); buildSkills(); updateDerived(); updateSummary();
+
+      // nav with animations
+      $('prev').addEventListener('click', ()=> animateTo(step-1));
+      $('next').addEventListener('click', ()=> animateTo(step+1));
+      showStep();
+
+      // export/import & sheet & vault
+      $('export').addEventListener('click', ()=>{ const data=collect(); const fn=(state.name||'character').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.character.json'; download(fn,data); });
+      $('import-file').addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; try{ const txt=await f.text(); const data=JSON.parse(txt); if(data && data.name){ applyCharacter(data); alert('Imported character JSON.'); } else { alert('Unrecognized JSON.'); } }catch{ alert('Invalid JSON'); } e.target.value=''; });
+      $('gen-sheet').addEventListener('click', ()=>{ const data=collect(); renderSheet(data); });
+      $('save-to-vault').addEventListener('click', ()=>{ const data=collect(); addToVault(data); });
+
+      $('open-vault').addEventListener('click', ()=>{ animateTo(8); renderVault(); });
+      $('vault-search').addEventListener('input', renderVault);
+      $('vault-export-all').addEventListener('click', exportAll);
+      $('vault-import').addEventListener('click', ()=>$('vault-import-file').click());
+      $('vault-import-file').addEventListener('change', (e)=> importVault(e.target.files));
+
+      // content pack
+      $('load-pack').addEventListener('click', ()=>$('pack-file').click());
+      $('pack-file').addEventListener('change', (e)=> loadPack(e.target.files));
+    }
 
     window.addEventListener('load', wire);
   </script>
