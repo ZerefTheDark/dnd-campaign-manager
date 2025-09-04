@@ -7,46 +7,115 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet" />
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    /* --- same CSS you had, with a few tweaks --- */
-    body { font-family: 'Rajdhani', sans-serif; background: #000 url('https://i.imgur.com/8V7V3sP.jpg') no-repeat center/cover; color: var(--primary); }
-
-    .stat-inputs {
-      display: grid;
-      grid-template-columns: repeat(auto-fit,minmax(80px,1fr));
-      gap: 0.8rem;
-      margin-top: 1rem;
+    :root {
+      --primary: #e6c57f;
+      --accent: #b88c5c;
+      --light: #eee;
+      --panel: #14131a;
     }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Rajdhani', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', sans-serif;
+      background: #000 url('https://i.imgur.com/8V7V3sP.jpg') no-repeat center/cover;
+      color: var(--primary);
+      text-align: center;
+      overflow-x: hidden;
+      transition: filter 2s ease;
+    }
+
+    .ritual-start { filter: blur(8px); opacity: 0.7; transition: all 1.8s ease; }
+
+    .vault-header {
+      padding: 1.6rem;
+      border-bottom: 1px solid var(--accent);
+      margin-bottom: 1.4rem;
+      background: rgba(10, 10, 14, 0.8);
+      backdrop-filter: blur(10px);
+    }
+    .vault-title { font-family: 'Cinzel', serif; font-size: 2.2rem; color: var(--primary); margin: 0; text-shadow: 0 0 10px rgba(230, 197, 127, 0.4); }
+    .subtitle { font-style: italic; color: var(--light); margin: 0.4rem 0 0; font-size: 1.1rem; }
+
+    .identity-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      padding: 0 1.4rem;
+    }
+    .input-glyph {
+      display: flex; flex-direction: column;
+      background: rgba(35, 35, 45, 0.6);
+      border: 1px solid rgba(184, 140, 92, 0.4);
+      border-radius: 12px; padding: 0.8rem;
+      text-align: left;
+    }
+    .input-glyph label { color: var(--primary); font-size: 0.9rem; margin-bottom: 0.4rem; }
+    input, select, textarea {
+      background: #1c1b24; border: 1px solid var(--accent); color: var(--light);
+      padding: 0.5rem; border-radius: 6px; font-family: inherit;
+    }
+    input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+      outline: 2px solid var(--primary); outline-offset: 2px;
+    }
+
+    .stat-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 0.8rem; margin-top: 1rem; }
     .stat-inputs label { font-size: 0.75rem; text-align: center; }
     .stat-inputs input { text-align: center; }
 
+    .backstory { margin: 1.4rem 1.4rem 0; text-align: left; }
+    .backstory textarea { width: 100%; height: 100px; resize: vertical; font-size: 0.9rem; }
+
+    .model-vault { margin: 1.8rem auto; width: 80%; max-width: 520px; aspect-ratio: 1 / 1; position: relative; }
+    #echo-model { width: 100%; height: 100%; border-radius: 16px; box-shadow: 0 0 30px rgba(230, 197, 127, 0.3); opacity: 0; transition: opacity 0.6s ease; background: rgba(0,0,0,.3); }
+    .model-status { position: absolute; inset: auto 0 8px 0; color: var(--light); font-size: 0.9rem; text-shadow: 0 1px 2px #000; }
+
+    .voice-chamber { margin: 1.6rem auto; max-width: 600px; }
+    .actions-row { display: flex; gap: .6rem; flex-wrap: wrap; justify-content: center; }
+    .btn, .btn-ghost {
+      padding: 0.7rem 1.1rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem;
+      border: 1px solid var(--accent); color: var(--primary); background: rgba(184,140,92,.12);
+    }
+    .btn:hover { background: rgba(184, 140, 92, 0.25); }
+    .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); }
+    .btn-primary:hover { filter: brightness(1.05); }
+    .btn-warning { background: #f39c12; color: #000; border-color: #f39c12; }
+
     .speech-bubble {
-      margin: 1rem auto;
-      max-width: 500px;
-      background: rgba(26,27,38,0.8);
-      border: 1px solid var(--accent);
-      border-radius: 12px;
-      padding: 1rem;
-      text-align: center;
-      color: var(--light);
-      font-style: italic;
-      display: none;
-      animation: fadeIn 0.5s ease;
+      margin: 1rem auto; max-width: 600px; background: rgba(26,27,38,0.8);
+      border: 1px solid var(--accent); border-radius: 12px; padding: 1rem;
+      text-align: center; color: var(--light); font-style: italic; display: none;
+      animation: fadeIn 0.3s ease;
     }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
-    @keyframes fadeIn { from {opacity:0; transform:scale(0.95);} to {opacity:1; transform:scale(1);} }
+    .toggle-mechanics { margin: 1.2rem 0; }
 
-    .mechanics-panel {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.5s ease;
-    }
-    .mechanics-panel.open {
-      max-height: 600px;
-      padding: 1.4rem;
+    .mechanics-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; background: rgba(20, 20, 30, 0.6); margin: 0 1.4rem 1.6rem; border-radius: 12px; border: 1px solid rgba(184, 140, 92, 0.3); }
+    .mechanics-panel.open { max-height: 700px; padding: 1.4rem; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; margin-bottom: 1.4rem; }
+    .stat { background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; border: 1px solid rgba(184, 140, 92, 0.4); }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 0.85rem; color: var(--light); text-transform: uppercase; }
+
+    .echo-log { margin: 2rem 1.4rem; padding: 1rem; background: rgba(0,0,0,0.6); border: 1px solid var(--accent); border-radius: 12px; color: var(--light); font-size: 0.95rem; min-height: 60px; text-align: left; }
+    .echo-entry { margin: 0.8rem 0; padding: 0.6rem; background: rgba(230, 197, 127, 0.1); border-left: 3px solid var(--accent); border-radius: 6px; }
+    .echo-voice { font-style: italic; color: #aaa; margin: 0.4rem 0 0; font-size: 0.9rem; }
+    .play-voice { color: var(--accent); cursor: pointer; font-size: 0.85rem; text-decoration: underline; display: inline-block; margin-top: 0.4rem; background: none; border: 0; padding: 0; }
+
+    .sync-panel { margin: 1rem auto; max-width: 720px; display: grid; gap: .6rem; grid-template-columns: 1fr auto; align-items: center; padding: 0 1.4rem; }
+    .sync-panel input { width: 100%; }
+    .sync-help { grid-column: 1 / -1; color: var(--light); font-size: 0.9rem; opacity: .9; text-align: left; }
+
+    @media (prefers-reduced-motion: reduce) {
+      body { transition: none !important; }
+      #echo-model { transition: none !important; }
     }
   </style>
 </head>
-<body>
+<body class="ritual-start">
   <header class="vault-header">
     <h1 class="vault-title">Echo Vault</h1>
     <p class="subtitle">"Speak the name. Recall the soul."</p>
@@ -54,48 +123,74 @@
 
   <main>
     <!-- IDENTITY -->
-    <div class="identity-grid">
-      <div class="input-glyph"><label>Name</label><input type="text" id="char-name" placeholder="e.g. Kael" /></div>
-      <div class="input-glyph"><label>Title</label><input type="text" id="char-title" placeholder="e.g. Oathbreaker" /></div>
-      <div class="input-glyph"><label>Race</label>
-        <select id="race" onchange="updateEcho()"><option value="human">Human</option><option value="elf">Elf</option><option value="dwarf">Dwarf</option><option value="tiefling">Tiefling</option></select>
+    <div class="identity-grid" aria-labelledby="identity-heading">
+      <h2 id="identity-heading" class="sr-only" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">Identity</h2>
+      <div class="input-glyph">
+        <label for="char-name">Name</label>
+        <input type="text" id="char-name" placeholder="e.g. Kael" autocomplete="off" />
       </div>
-      <div class="input-glyph"><label>Class</label>
-        <select id="class" onchange="updateEcho()"><option value="fighter">Fighter</option><option value="wizard">Wizard</option><option value="cleric">Cleric</option><option value="rogue">Rogue</option></select>
+      <div class="input-glyph">
+        <label for="char-title">Title</label>
+        <input type="text" id="char-title" placeholder="e.g. Oathbreaker" autocomplete="off" />
+      </div>
+      <div class="input-glyph">
+        <label for="race">Race</label>
+        <select id="race">
+          <option value="human">Human</option>
+          <option value="elf">Elf</option>
+          <option value="dwarf">Dwarf</option>
+          <option value="tiefling">Tiefling</option>
+        </select>
+      </div>
+      <div class="input-glyph">
+        <label for="class">Class</label>
+        <select id="class">
+          <option value="fighter">Fighter</option>
+          <option value="wizard">Wizard</option>
+          <option value="cleric">Cleric</option>
+          <option value="rogue">Rogue</option>
+        </select>
       </div>
     </div>
 
     <!-- ABILITY SCORES -->
-    <div class="input-glyph">
-      <label>Ability Scores</label>
+    <div class="input-glyph" aria-labelledby="ability-heading" style="margin:1.4rem;">
+      <label id="ability-heading">Ability Scores</label>
       <div class="stat-inputs">
-        <div><label>STR</label><input id="str" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
-        <div><label>DEX</label><input id="dex" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
-        <div><label>CON</label><input id="con" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
-        <div><label>INT</label><input id="int" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
-        <div><label>WIS</label><input id="wis" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
-        <div><label>CHA</label><input id="cha" type="number" min="1" max="30" value="10" onchange="updateMechanics()" /></div>
+        <div><label for="str">STR</label><input id="str" type="number" min="1" max="30" value="10" /></div>
+        <div><label for="dex">DEX</label><input id="dex" type="number" min="1" max="30" value="10" /></div>
+        <div><label for="con">CON</label><input id="con" type="number" min="1" max="30" value="10" /></div>
+        <div><label for="int">INT</label><input id="int" type="number" min="1" max="30" value="10" /></div>
+        <div><label for="wis">WIS</label><input id="wis" type="number" min="1" max="30" value="10" /></div>
+        <div><label for="cha">CHA</label><input id="cha" type="number" min="1" max="30" value="10" /></div>
       </div>
+    </div>
+
+    <!-- BACKSTORY -->
+    <div class="backstory">
+      <label for="backstory">Backstory (What haunts them?)</label>
+      <textarea id="backstory" placeholder="e.g. They swore to protect the city... then burned it."></textarea>
     </div>
 
     <!-- 3D MODEL -->
     <div class="model-vault">
-      <div class="model-scan"></div>
-      <model-viewer id="echo-model"
-        src="https://sbdev2.kavdev.io/demo_site/media/catalog/product/placeholder/d/a/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.glb"
-        alt="Echo of the Hero"
-        auto-rotate camera-controls shadow-intensity="1" exposure="1.2"></model-viewer>
+      <model-viewer id="echo-model" alt="Echo of the Hero" auto-rotate camera-controls shadow-intensity="1" exposure="1.2" autoplay ar-modes="webxr scene-viewer quick-look"></model-viewer>
+      <div class="model-status" id="model-status" aria-live="polite"></div>
     </div>
 
     <!-- VOICE -->
     <div class="voice-chamber">
-      <button id="mic-btn" onclick="recordVoice()">🎤 Speak as Your Character</button>
-      <div id="speech-output" class="speech-bubble"></div>
+      <div class="actions-row">
+        <button id="mic-btn" class="btn-primary" type="button" aria-pressed="false">🎤 Speak as Your Character</button>
+        <button id="copy-last" class="btn" type="button">📋 Copy Last Echo</button>
+        <button id="clear-vault" class="btn-ghost" type="button" title="Remove all saved characters">🧹 Clear Vault</button>
+      </div>
+      <div id="speech-output" class="speech-bubble" role="status" aria-live="polite"></div>
     </div>
 
     <!-- MECHANICS TOGGLE -->
     <div class="toggle-mechanics">
-      <button class="btn-glyph" onclick="toggleMechanics()">📊 Reveal Mechanics</button>
+      <button id="toggle-mech" class="btn" type="button">📊 Reveal Mechanics</button>
     </div>
 
     <!-- MECHANICS PANEL -->
@@ -115,99 +210,268 @@
       </div>
     </div>
 
-    <!-- ACTION -->
-    <div style="text-align:center;margin:2rem 0;">
-      <button class="btn-glyph" onclick="saveEcho()">💾 Etch to Vault</button>
+    <!-- ACTIONS: SAVE / EXPORT / IMPORT / SYNC -->
+    <section style="text-align:center;margin:1.6rem 0;">
+      <div class="actions-row">
+        <button id="save-echo" class="btn" type="button">💾 Etch to Vault</button>
+        <button id="export-vault" class="btn" type="button">⬇️ Export Vault (.json)</button>
+        <button id="export-last" class="btn" type="button">⬇️ Export Last Character</button>
+        <label class="btn-ghost" for="import-file" title="Import a previously exported JSON">📤 Import JSON</label>
+        <input id="import-file" type="file" accept="application/json" style="display:none" />
+      </div>
+    </section>
+
+    <div class="sync-panel">
+      <input id="webhook-url" type="url" placeholder="https://example.com/api/characters" aria-label="Custom upload endpoint (POST)" />
+      <button id="send-webhook" class="btn" type="button" title="POST last character JSON to endpoint">🚀 Send Last to Webhook</button>
+      <p class="sync-help">Provide a URL to your site or service that accepts a <code>POST</code> of JSON. We'll send the most recent character with <code>Content-Type: application/json</code>. Note that CORS must be enabled on the receiving site for browsers.</p>
     </div>
 
-    <div class="echo-log" id="echo-log">No soul recalled.</div>
+    <!-- ECHO LOG -->
+    <div class="echo-log" id="echo-log" aria-live="polite" aria-atomic="true">No soul recalled.</div>
   </main>
 
   <script>
-    function calcMod(score) { return Math.floor((score - 10) / 2); }
+    // ===== Utility & Safety =====
+    const $ = (id) => document.getElementById(id);
+    function escapeHTML(s = '') { return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
 
-    function updateEcho() {
-      const race = document.getElementById('race').value;
-      const cls = document.getElementById('class').value;
-      const model = document.getElementById('echo-model');
-      const models = {
-        tiefling: 'https://opengameart.org/sites/default/files/DemonCharacterGLB.glb',
-        elf: 'https://opengameart.org/sites/default/files/ElvenArcherCharacterGLB.glb',
-        dwarf: 'https://opengameart.org/sites/default/files/DwarfCharacterGLB.glb',
-        human: 'https://sbdev2.kavdev.io/demo_site/media/catalog/product/placeholder/d/a/da2ca97f07a7c70d87a9c88d3e552452e98c9d8d_1.glb',
-        wizard: 'https://opengameart.org/sites/default/files/WizardCharacterGLB.glb'
-      };
-      model.src = cls === 'wizard' ? models.wizard : models[race] || models.human;
-      updateMechanics();
+    function loadVault() {
+      try { return JSON.parse(localStorage.getItem('echo-vault')) || []; }
+      catch { return []; }
     }
+    function storeVault(vault) {
+      try { localStorage.setItem('echo-vault', JSON.stringify(vault.slice(-100))); }
+      catch { /* quota exceeded */ localStorage.removeItem('echo-vault'); }
+    }
+
+    // ===== Ambient hum =====
+    let audioContext, oscillator, gainNode;
+    function playAmbient() {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        oscillator = audioContext.createOscillator();
+        gainNode = audioContext.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(110, audioContext.currentTime);
+        gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2);
+        oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
+        oscillator.start(); oscillator.stop(audioContext.currentTime + 2);
+      } catch (e) { console.warn('Audio not supported'); }
+    }
+
+    // ===== D&D math =====
+    function calcMod(score) { return Math.floor((score - 10) / 2); }
+    function getScore(id) { const v = parseInt($(id).value, 10); return Number.isFinite(v) ? v : 10; }
 
     function updateMechanics() {
       const abilities = ['str','dex','con','int','wis','cha'];
-      const cls = document.getElementById('class').value;
-      abilities.forEach(stat => {
-        const score = parseInt(document.getElementById(stat).value) || 10;
+      const cls = $('class').value;
+      const profs = { fighter:['str','con'], wizard:['int','wis'], cleric:['wis','cha'], rogue:['dex','int'] }[cls] || [];
+
+      for (const stat of abilities) {
+        const score = getScore(stat);
         const mod = calcMod(score);
-        document.getElementById(`${stat}-mod`).textContent = mod>=0?`+${mod}`:`${mod}`;
-        const profs = {fighter:['str','con'], wizard:['int','wis'], cleric:['wis','cha'], rogue:['dex','int']}[cls]||[];
-        const save = mod + (profs.includes(stat)?2:0);
-        document.getElementById(`${stat}-save`).textContent = save>=0?`+${save}`:`${save}`;
-      });
-      const dexMod = calcMod(parseInt(document.getElementById('dex').value));
-      document.getElementById('ac').textContent = 10+dexMod;
-      const conMod = calcMod(parseInt(document.getElementById('con').value));
-      const classHP = {fighter:10, cleric:8, rogue:8, wizard:6}[cls];
-      document.getElementById('hp').textContent = classHP+conMod;
-      document.getElementById('init').textContent = dexMod>=0?`+${dexMod}`:`${dexMod}`;
+        $(stat+'-mod').textContent = mod >= 0 ? `+${mod}` : `${mod}`;
+        const save = mod + (profs.includes(stat) ? 2 : 0);
+        $(stat+'-save').textContent = save >= 0 ? `+${save}` : `${save}`;
+      }
+
+      const dexMod = calcMod(getScore('dex'));
+      const conMod = calcMod(getScore('con'));
+      const classHP = ({ fighter:10, cleric:8, rogue:8, wizard:6 })[cls] ?? 8;
+      $('ac').textContent = 10 + dexMod;
+      $('hp').textContent = classHP + conMod;
+      $('init').textContent = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
     }
 
-    function toggleMechanics() {
-      const panel=document.getElementById('mechanics-panel');
-      const btn=document.querySelector('.toggle-mechanics .btn-glyph');
-      panel.classList.toggle('open');
-      btn.textContent=panel.classList.contains('open')?'❌ Hide Mechanics':'📊 Reveal Mechanics';
+    // ===== Model selection & UX =====
+    function modelMapFor(race, cls) {
+      const variants = ['', '2', '3'];
+      const rv = variants[Math.floor(Math.random() * variants.length)];
+      return {
+        'tiefling-wizard': 'https://opengameart.org/sites/default/files/DemonWizardCharacterGLB.glb',
+        'elf-rogue'      : 'https://opengameart.org/sites/default/files/ElvenRogueCharacterGLB.glb',
+        'dwarf-fighter'  : 'https://opengameart.org/sites/default/files/DwarfFighterCharacterGLB.glb',
+        'tiefling'       : `https://opengameart.org/sites/default/files/DemonCharacterGLB${rv}.glb`,
+        'elf'            : `https://opengameart.org/sites/default/files/ElvenArcherCharacterGLB${rv}.glb`,
+        'dwarf'          : `https://opengameart.org/sites/default/files/DwarfCharacterGLB${rv}.glb`,
+        'wizard'         : `https://opengameart.org/sites/default/files/WizardCharacterGLB${rv}.glb`,
+        'fighter'        : `https://opengameart.org/sites/default/files/FighterCharacterGLB${rv}.glb`,
+        'human'          : 'https://modelviewer.dev/shared-assets/models/Astronaut.glb'
+      };
     }
 
+    function updateEcho() {
+      const race = $('race').value; const cls = $('class').value; const model = $('echo-model'); const status = $('model-status');
+      const map = modelMapFor(race, cls);
+      const key = map[`${race}-${cls}`] ? `${race}-${cls}` : (map[cls] ? cls : race);
+      const src = map[key] || map['human'];
+      status.textContent = 'Loading model…';
+      model.style.opacity = 0;
+      const onLoad = () => { model.style.opacity = 1; status.textContent = ''; model.removeEventListener('load', onLoad); };
+      const onError = () => { model.style.opacity = 1; status.textContent = 'Model failed to load.'; model.removeEventListener('error', onError); };
+      model.addEventListener('load', onLoad);
+      model.addEventListener('error', onError);
+      model.src = src;
+      updateMechanics();
+    }
+
+    // ===== Voice capture =====
     function recordVoice() {
-      const btn=document.getElementById('mic-btn');
-      const output=document.getElementById('speech-output');
-      if('SpeechRecognition'in window||'webkitSpeechRecognition'in window){
-        const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-        const recog=new SR();
-        recog.lang='en-US';
-        btn.classList.add('listening'); btn.textContent='🔊 Listening...';
-        recog.start();
-        recog.onresult=e=>{
-          const transcript=e.results[0][0].transcript;
-          output.textContent=transcript;
-          output.style.display='block';
-          btn.classList.remove('listening'); btn.textContent='✅ Recorded';
-          // Optional: TTS playback
-          const utter=new SpeechSynthesisUtterance(transcript);
-          speechSynthesis.speak(utter);
-        };
-        recog.onerror=()=>{btn.textContent='❌ Error'; btn.classList.remove('listening');};
-        recog.onend=()=>{ if(btn.textContent.includes('Listening')){btn.textContent='🎤 Speak as Your Character'; btn.classList.remove('listening');}};
-      } else { btn.textContent='❌ Voice not supported'; }
+      const btn = $('mic-btn'); const output = $('speech-output');
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { btn.textContent = '❌ Voice not supported'; return; }
+      const recog = new SR();
+      recog.lang = 'en-US';
+      btn.classList.add('listening'); btn.setAttribute('aria-pressed','true'); btn.textContent = '🔊 Listening…';
+      try { recog.start(); } catch {}
+
+      recog.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        output.textContent = `"${transcript}"`;
+        output.style.display = 'block';
+        btn.classList.remove('listening'); btn.setAttribute('aria-pressed','false'); btn.textContent = '✅ Recorded';
+        const utter = new SpeechSynthesisUtterance(transcript); utter.rate = 0.9; utter.pitch = Math.random() * 0.4 + 0.8; speechSynthesis.speak(utter);
+      };
+      recog.onerror = () => { btn.textContent = '❌ Error'; btn.classList.remove('listening'); btn.setAttribute('aria-pressed','false'); };
+      recog.onend = () => { if (btn.textContent.includes('Listening')) { btn.textContent = '🎤 Speak as Your Character'; btn.classList.remove('listening'); btn.setAttribute('aria-pressed','false'); } };
     }
 
-    function saveEcho() {
-      const data={name:document.getElementById('char-name').value||'Unknown', title:document.getElementById('char-title').value,
-        race:document.getElementById('race').value, class:document.getElementById('class').value, savedAt:new Date().toISOString()};
-      let vault=JSON.parse(localStorage.getItem('echo-vault'))||[];
-      vault.push(data); localStorage.setItem('echo-vault',JSON.stringify(vault));
-      alert(`💾 ${data.name} has been archived in the Vault.`); updateLog();
-    }
+    // ===== Vault rendering (safe, no inline handlers) =====
+    function renderLog() {
+      const vault = loadVault();
+      const log = $('echo-log');
+      log.innerHTML = '';
+      if (!vault.length) { log.textContent = 'No soul recalled.'; return; }
 
-    function updateLog() {
-      const vault=JSON.parse(localStorage.getItem('echo-vault'))||[];
-      if(vault.length){
-        const last=vault[vault.length-1]; const then=new Date(last.savedAt);
-        const days=Math.floor((new Date()-then)/86400000);
-        document.getElementById('echo-log').innerHTML=`Last echo: <strong>${last.name}</strong> (${last.class} ${last.race}) — ${days} days ago.`;
+      const last = vault[vault.length - 1];
+      const agoMs = Date.now() - new Date(last.savedAt).getTime();
+      const days = Math.floor(agoMs / 86400000);
+      const hours = Math.floor((agoMs % 86400000) / 3600000);
+
+      const hdr = document.createElement('div');
+      hdr.innerHTML = `<strong>Last echo:</strong> ${escapeHTML(last.name)} (${escapeHTML(last.class)} ${escapeHTML(last.race)}) — ${days>0?days+' days':hours+' hours'} ago`;
+      log.appendChild(hdr);
+      log.appendChild(document.createElement('hr'));
+
+      for (const e of vault.slice(-3).reverse()) {
+        const wrap = document.createElement('div'); wrap.className = 'echo-entry';
+        const title = document.createElement('strong'); title.textContent = e.name; wrap.appendChild(title);
+        if (e.title) { const sep = document.createTextNode(' — '); const t = document.createElement('span'); t.textContent = e.title; wrap.appendChild(sep); wrap.appendChild(t); }
+        const voice = document.createElement('div'); voice.className = 'echo-voice'; voice.textContent = e.voice || 'No voice recorded'; wrap.appendChild(voice);
+        if (e.voice) { const play = document.createElement('button'); play.className = 'play-voice'; play.type = 'button'; play.textContent = '▶️ Hear Echo'; play.addEventListener('click', () => playVoice(e.voice)); wrap.appendChild(play); }
+        log.appendChild(wrap);
       }
     }
 
-    window.onload=()=>{updateEcho(); updateLog();};
+    function playVoice(text) { const utter = new SpeechSynthesisUtterance(String(text).replace(/^"/, '').replace(/"$/, '')); utter.rate = 1; utter.pitch = 1.1; speechSynthesis.speak(utter); }
+
+    // ===== Save / Export / Import =====
+    function collectData() {
+      const name = $('char-name').value.trim() || 'Unknown';
+      const title = $('char-title').value.trim();
+      const race = $('race').value; const cls = $('class').value; const backstory = $('backstory').value.trim();
+      const voice = $('speech-output').textContent || '';
+      return {
+        name, title, race, class: cls, backstory, voice,
+        abilities: {
+          str: getScore('str'), dex: getScore('dex'), con: getScore('con'), int: getScore('int'), wis: getScore('wis'), cha: getScore('cha')
+        },
+        derived: {
+          ac: Number($('ac').textContent), hp: Number($('hp').textContent), init: $('init').textContent
+        },
+        savedAt: new Date().toISOString(),
+        modelSrc: $('echo-model').src
+      };
+    }
+
+    function saveEcho() {
+      const data = collectData();
+      const vault = loadVault(); vault.push(data); storeVault(vault);
+      alert(`💾 ${data.name} has been etched into the Vault.`);
+      renderLog();
+    }
+
+    function download(filename, text) {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function exportVault() { const vault = loadVault(); download('echo-vault.json', JSON.stringify(vault, null, 2)); }
+    function exportLast() {
+      const vault = loadVault(); if (!vault.length) return alert('Vault is empty.');
+      const last = vault[vault.length - 1];
+      const safeName = last.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'character';
+      download(`${safeName}.character.json`, JSON.stringify(last, null, 2));
+    }
+
+    function importJSON(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          const vault = loadVault();
+          if (Array.isArray(data)) { storeVault(vault.concat(data)); }
+          else if (data && typeof data === 'object') { vault.push(data); storeVault(vault); }
+          else { return alert('Unrecognized JSON structure.'); }
+          alert('Import complete.'); renderLog();
+        } catch { alert('Invalid JSON.'); }
+      };
+      reader.readAsText(file);
+    }
+
+    async function postLastToWebhook() {
+      const url = $('webhook-url').value.trim();
+      if (!url) return alert('Enter a webhook URL first.');
+      const vault = loadVault(); if (!vault.length) return alert('Vault is empty.');
+      const last = vault[vault.length - 1];
+      try {
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(last) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        alert('✅ Uploaded last character.');
+      } catch (e) {
+        alert('Upload failed: ' + e.message + '\nTip: Ensure your endpoint allows CORS and accepts JSON.');
+      }
+    }
+
+    function copyLastEcho() {
+      const vault = loadVault(); if (!vault.length) return alert('Vault is empty.');
+      const last = vault[vault.length - 1];
+      const text = `${last.name}${last.title? ' — '+last.title:''} ( ${last.class} ${last.race} )\nAC ${last.derived.ac} | HP ${last.derived.hp} | INIT ${last.derived.init}\nSTR ${last.abilities.str} DEX ${last.abilities.dex} CON ${last.abilities.con} INT ${last.abilities.int} WIS ${last.abilities.wis} CHA ${last.abilities.cha}\nBackstory: ${last.backstory || '—'}`;
+      navigator.clipboard.writeText(text).then(() => alert('Copied!')); }
+
+    function clearVault() { if (!confirm('Erase all saved characters?')) return; localStorage.removeItem('echo-vault'); renderLog(); }
+
+    // ===== Event wiring (no inline handlers) =====
+    function wireEvents() {
+      // inputs
+      $('race').addEventListener('change', updateEcho);
+      $('class').addEventListener('change', updateEcho);
+      for (const id of ['str','dex','con','int','wis','cha']) { $(id).addEventListener('input', updateMechanics); }
+
+      // buttons
+      $('mic-btn').addEventListener('click', recordVoice);
+      $('toggle-mech').addEventListener('click', () => {
+        const panel = $('mechanics-panel'); const open = panel.classList.toggle('open'); $('toggle-mech').textContent = open ? '❌ Hide Mechanics' : '📊 Reveal Mechanics';
+      });
+      $('save-echo').addEventListener('click', saveEcho);
+      $('export-vault').addEventListener('click', exportVault);
+      $('export-last').addEventListener('click', exportLast);
+      $('import-file').addEventListener('change', (e) => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
+      $('send-webhook').addEventListener('click', postLastToWebhook);
+      $('copy-last').addEventListener('click', copyLastEcho);
+      $('clear-vault').addEventListener('click', clearVault);
+    }
+
+    // ===== Init =====
+    window.addEventListener('load', () => {
+      playAmbient();
+      setTimeout(() => { document.body.classList.remove('ritual-start'); updateEcho(); renderLog(); wireEvents(); }, 400);
+    });
   </script>
 </body>
 </html>
