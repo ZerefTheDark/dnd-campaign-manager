@@ -111,6 +111,9 @@
     }
 
     footer{color:#8a8a8a;text-align:center;padding:18px 0;border-top:1px solid var(--line)}
+    .tab{border:1px solid var(--line);background:var(--panel);color:#fff;padding:10px 12px;border-radius:8px;cursor:pointer}
+  .tab.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;color:#000;background:var(--accent);font-weight:900}
+  .tabpanel table{margin-top:6px}
   </style>
 </head>
 <body>
@@ -266,23 +269,59 @@
                 <div id="sheet-sub" class="sub">Class • Race • Level</div>
               </div>
             </div>
-            <h3 style="color:#fff;margin:12px 0 6px">Abilities</h3>
-            <div id="sheet-abilities"></div>
-            <h3 style="color:#fff;margin:12px 0 6px">Saving Throws</h3>
-            <div id="sheet-saves"></div>
-          </aside>
-          <section class="card">
-            <div class="cols-3">
+            <div class="cols-3" style="margin-top:12px">
               <div><label>Armor Class</label><div class="ability"><span>AC</span><span class="score" id="sheet-ac">10</span></div></div>
               <div><label>Hit Points</label><div class="ability"><span>HP</span><span class="score" id="sheet-hp">8</span></div></div>
               <div><label>Initiative</label><div class="ability"><span>INIT</span><span class="score" id="sheet-init">+0</span></div></div>
             </div>
-            <h3 style="color:#fff;margin:12px 0 6px">Skills</h3>
-            <table><thead><tr><th>Skill</th><th>Ability</th><th>Bonus</th></tr></thead><tbody id="sheet-skills"></tbody></table>
-            <h3 style="color:#fff;margin:12px 0 6px">Features</h3>
-            <ul id="sheet-features"></ul>
-            <h3 style="color:#fff;margin:12px 0 6px">Backstory</h3>
-            <div id="sheet-backstory" class="sub"></div>
+            <h3 style="color:#fff;margin:12px 0 6px">Saving Throws</h3>
+            <div id="sheet-saves"></div>
+            <h3 style="color:#fff;margin:12px 0 6px">Ability Scores</h3>
+            <div id="sheet-abilities"></div>
+          </aside>
+
+          <section class="card">
+            <!-- Tabs Nav -->
+            <nav class="sheet-tabs" id="sheet-tabs" style="display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:10px">
+              <button class="btn tab" data-tab="actions">Actions</button>
+              <button class="btn tab" data-tab="abilities">Abilities</button>
+              <button class="btn tab" data-tab="inventory">Inventory</button>
+              <button class="btn tab" data-tab="spells">Spells</button>
+              <button class="btn tab" data-tab="features">Features</button>
+              <button class="btn tab" data-tab="bio">Bio</button>
+              <button class="btn tab" data-tab="notes">Notes</button>
+            </nav>
+
+            <!-- Panels -->
+            <div class="tabpanel" id="panel-actions">
+              <table><thead><tr><th>Name</th><th>To Hit</th><th>Damage</th><th>Notes</th></tr></thead><tbody id="actions-list"></tbody></table>
+            </div>
+
+            <div class="tabpanel" id="panel-abilities" style="display:none">
+              <h3 style="color:#fff;margin:12px 0 6px">Skills</h3>
+              <table><thead><tr><th>Skill</th><th>Ability</th><th>Bonus</th></tr></thead><tbody id="sheet-skills"></tbody></table>
+            </div>
+
+            <div class="tabpanel" id="panel-inventory" style="display:none">
+              <ul id="sheet-inventory"></ul>
+            </div>
+
+            <div class="tabpanel" id="panel-spells" style="display:none">
+              <div class="sub" id="spells-hint">Loaded from Content Pack (if provided).</div>
+              <table><thead><tr><th>Spell</th><th>Level</th><th>School</th></tr></thead><tbody id="sheet-spells"></tbody></table>
+            </div>
+
+            <div class="tabpanel" id="panel-features" style="display:none">
+              <ul id="sheet-features"></ul>
+            </div>
+
+            <div class="tabpanel" id="panel-bio" style="display:none">
+              <div id="sheet-backstory" class="sub"></div>
+            </div>
+
+            <div class="tabpanel" id="panel-notes" style="display:none">
+              <textarea id="sheet-notes" rows="6" placeholder="Session notes, reminders, loot, quests..."></textarea>
+            </div>
           </section>
         </div>
       </section>
@@ -351,6 +390,8 @@
     const pretty=n=>n>=0?`+${n}`:`${n}`;
     const prof=l=>l>=17?6:l>=13?5:l>=9?4:l>=5?3:2;
 
+    window.PACK={spells:[],items:[]};
+
     const state={ name:'', title:'', race:'human', class:'fighter', level:1, scores:{str:10,dex:10,con:10,int:10,wis:10,cha:10}, profs:{}, saves:{}, backstory:'', ac:10, hp:8, init:'+0' };
 
     // ====== steps + animations ======
@@ -405,8 +446,56 @@
     function download(filename,json){ const blob=new Blob([JSON.stringify(json,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(url),500); }
 
     // ====== sheet render ======
-    function renderSheet(data){ $('sheet-name').textContent = data.name + (data.title? ' — '+data.title:''); $('sheet-sub').textContent = `${capitalize(data.class)} • ${capitalize(data.race)} • Level ${data.level}`; $('sheet-ac').textContent=data.derived.ac; $('sheet-hp').textContent=data.derived.hp; $('sheet-init').textContent=data.derived.init; $('sheet-backstory').textContent=data.backstory||'—'; $('sheet-avatar').textContent = (data.race||'H')[0].toUpperCase(); const ab=$('sheet-abilities'); ab.innerHTML=''; for(const [k,v] of Object.entries(data.abilities)){ const d=document.createElement('div'); d.className='ability'; d.innerHTML=`<span>${capitalize(k)}</span><span class="score">${v} (${pretty(mod(v))})</span>`; ab.appendChild(d); } const sv=$('sheet-saves'); sv.innerHTML=''; ['str','dex','con','int','wis','cha'].forEach(k=>{ const isP=!!data.saves[k]; const b=mod(data.abilities[k])+(isP?data.derived.profBonus:0); const d=document.createElement('div'); d.className='ability'; d.innerHTML=`<span>${k.toUpperCase()} Save ${isP?'⭐':''}</span><span class="score">${pretty(b)}</span>`; sv.appendChild(d); }); const tbody=$('sheet-skills'); tbody.innerHTML=''; SKILLS.forEach(([n,ab])=>{ const isP=!!data.skills[n]?.proficient; const b=mod(data.abilities[ab])+(isP?data.derived.profBonus:0); const tr=document.createElement('tr'); tr.innerHTML=`<td>${n}${isP?' ⭐':''}</td><td>${ab.toUpperCase()}</td><td class="score">${pretty(b)}</td>`; tbody.appendChild(tr); }); const feats=$('sheet-features'); feats.innerHTML = (CLASS_FEATURES[data.class]||[]).map(f=>`<li>${f}</li>`).join('') || '<li>—</li>'; $('sheet').classList.add('show'); window.scrollTo({top:$('sheet').offsetTop-20,behavior:'smooth'}); }
-    function capitalize(s){ return s? s[0].toUpperCase()+s.slice(1):'' }
+    function renderSheet(data){
+      // header
+      $('sheet-name').textContent = data.name + (data.title? ' — '+data.title:'');
+      $('sheet-sub').textContent = `${capitalize(data.class)} • ${capitalize(data.race)} • Level ${data.level}`;
+      $('sheet-ac').textContent=data.derived.ac; $('sheet-hp').textContent=data.derived.hp; $('sheet-init').textContent=data.derived.init;
+      $('sheet-backstory').textContent=data.backstory||'—'; $('sheet-avatar').textContent = (data.race||'H')[0].toUpperCase();
+      // abilities block
+      const ab=$('sheet-abilities'); ab.innerHTML='';
+      for(const [k,v] of Object.entries(data.abilities)){
+        const d=document.createElement('div'); d.className='ability';
+        d.innerHTML=`<span>${capitalize(k)}</span><span class="score">${v} (${pretty(mod(v))})</span>`; ab.appendChild(d);
+      }
+      // saves
+      const sv=$('sheet-saves'); sv.innerHTML='';
+      ['str','dex','con','int','wis','cha'].forEach(k=>{
+        const isP=!!data.saves[k]; const b=mod(data.abilities[k])+(isP?data.derived.profBonus:0);
+        const d=document.createElement('div'); d.className='ability';
+        d.innerHTML=`<span>${k.toUpperCase()} Save ${isP?'⭐':''}</span><span class="score">${pretty(b)}</span>`; sv.appendChild(d);
+      });
+      // skills -> Abilities tab
+      const tbody=$('sheet-skills'); tbody.innerHTML='';
+      SKILLS.forEach(([n,ab])=>{ const isP=!!data.skills[n]?.proficient; const b=mod(data.abilities[ab])+(isP?data.derived.profBonus:0);
+        const tr=document.createElement('tr'); tr.innerHTML=`<td>${n}${isP?' ⭐':''}</td><td>${ab.toUpperCase()}</td><td class="score">${pretty(b)}</td>`; tbody.appendChild(tr);
+      });
+      // features tab
+      const feats=$('sheet-features'); feats.innerHTML = (CLASS_FEATURES[data.class]||[]).map(f=>`<li>${f}</li>`).join('') || '<li>—</li>';
+      // actions tab (demo)
+      const actions=$('actions-list'); actions.innerHTML='';
+      const pb=data.derived.profBonus; const s=mod(data.abilities.str), d=mod(data.abilities.dex);
+      const classHint={ fighter:['Longsword','1d8 + STR', pb+s, 'Martial melee (demo)'],
+                        rogue:['Shortsword','1d6 + DEX', pb+d, 'Add Sneak Attack when applicable'],
+                        cleric:['Mace','1d6 + STR', pb+s, 'Simple melee (demo)'],
+                        wizard:['Quarterstaff','1d6 + STR', s, 'Not proficient (demo)'] }[data.class] || ['Attack','1d6 + STR', pb+s, 'Demo action'];
+      const row=document.createElement('tr'); row.innerHTML=`<td>${classHint[0]}</td><td>${pretty(classHint[2])}</td><td>${classHint[1]}</td><td>${classHint[3]}</td>`; actions.appendChild(row);
+      const row2=document.createElement('tr'); row2.innerHTML=`<td>Ranged Attack</td><td>${pretty(pb+d)}</td><td>1d6 + DEX</td><td>Generic ranged (demo)</td>`; actions.appendChild(row2);
+      // inventory tab
+      const inv=$('sheet-inventory'); inv.innerHTML='';
+      const items=Array.isArray(data.items)?data.items:(Array.isArray(window.PACK?.items)?window.PACK.items:[]);
+      inv.innerHTML = items.length? items.map(it=>`<li>${it.name||'Item'}${it.qty?` ×${it.qty}`:''}</li>`).join('') : '<li>—</li>';
+      // spells tab
+      const spellsBody=$('sheet-spells'); spellsBody.innerHTML='';
+      if(Array.isArray(window.PACK?.spells) && window.PACK.spells.length){
+        window.PACK.spells.forEach(sp=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${sp.name}</td><td>${sp.level ?? 0}</td><td>${sp.school||''}</td>`; spellsBody.appendChild(tr); });
+      } else { spellsBody.innerHTML='<tr><td colspan="3" class="sub">No spells loaded. Use “Load Content Pack”.</td></tr>'; }
+      // default active tab
+      setActiveTab('actions');
+      $('sheet').classList.add('show'); window.scrollTo({top:$('sheet').offsetTop-20,behavior:'smooth'});
+    }
+
+    function capitalize((s){ return s? s[0].toUpperCase()+s.slice(1):'' }
 
     // ====== Vault (saved characters) ======
     const VAULT_KEY='foh-vault-v1';
@@ -452,7 +541,14 @@
         "items":[ {"id":"longsword","name":"Longsword", ... } ]
       }
     */
-    function loadPack(files){ const f=files?.[0]; if(!f) return; f.text().then(txt=>{ try{ const data=JSON.parse(txt); if(Array.isArray(data.races)){ RACES.length=0; data.races.forEach(r=>RACES.push(r)); } if(Array.isArray(data.classes)){ CLASSES.length=0; data.classes.forEach(c=>CLASSES.push(c)); } buildChoices(); alert('Content pack loaded.'); }catch{ alert('Invalid content pack JSON'); } }).finally(()=>{$('pack-file').value='';}); }
+    function loadPack(files){ const f=files?.[0]; if(!f) return; f.text().then(txt=>{ try{ const data=JSON.parse(txt);
+        if(Array.isArray(data.races)){ RACES.length=0; data.races.forEach(r=>RACES.push(r)); }
+        if(Array.isArray(data.classes)){ CLASSES.length=0; data.classes.forEach(c=>CLASSES.push(c)); }
+        if(Array.isArray(data.spells)){ window.PACK.spells = data.spells; }
+        if(Array.isArray(data.items)){ window.PACK.items = data.items; }
+        buildChoices(); alert('Content pack loaded.');
+      }catch{ alert('Invalid content pack JSON'); }
+    }).finally(()=>{$('pack-file').value='';}); }
 
     // ====== wiring ======
     function wire(){ // text inputs
@@ -486,6 +582,18 @@
       $('load-pack').addEventListener('click', ()=>$('pack-file').click());
       $('pack-file').addEventListener('change', (e)=> loadPack(e.target.files));
     }
+
+    // tab switching
+    function setActiveTab(id){
+      qsa('#sheet-tabs .tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+      ['actions','abilities','inventory','spells','features','bio','notes'].forEach(p=>{
+        const el=$('panel-'+p); if(el) el.style.display = (p===id)?'block':'none';
+      });
+    }
+
+    document.addEventListener('click', (e)=>{
+      const btn=e.target.closest('.tab'); if(btn){ setActiveTab(btn.dataset.tab); }
+    });
 
     window.addEventListener('load', wire);
   </script>
