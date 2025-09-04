@@ -21,6 +21,9 @@
     body{margin:0;font-family:'Rajdhani',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--ink)}
     a{color:var(--accent)}
 
+    /* Utility */
+    .grid{display:grid}
+
     /* Header */
     header{position:sticky;top:0;z-index:60;background:var(--bg);border-bottom:1px solid var(--line)}
     .wrap{max-width:1280px;margin:0 auto;padding:16px}
@@ -112,19 +115,19 @@
 
     footer{color:#8a8a8a;text-align:center;padding:18px 0;border-top:1px solid var(--line)}
     .tab{border:1px solid var(--line);background:var(--panel);color:#fff;padding:10px 12px;border-radius:8px;cursor:pointer}
-  .tab.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;color:#000;background:var(--accent);font-weight:900}
-  .tabpanel table{margin-top:6px}
+    .tab.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;color:#000;background:var(--accent);font-weight:900}
+    .tabpanel table{margin-top:6px}
   </style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <h1>Forge of Heroes</h1>
-      <p class="sub">All‑black UI • familiar step flow • SRD‑friendly • Vault & animations</p>
+      <p class="sub">All-black UI • familiar step flow • SRD-friendly • Vault & animations</p>
       <div class="header-actions">
-        <button class="btn" id="load-pack" title="Load content pack JSON (SRD 5.2, homebrew, images)">Load Content Pack</button>
+        <button class="btn" id="load-pack" type="button" title="Load content pack JSON (SRD 5.2, homebrew, images)">Load Content Pack</button>
         <input id="pack-file" type="file" accept="application/json" style="display:none" />
-        <button class="btn" id="open-vault">Open Vault</button>
+        <button class="btn" id="open-vault" type="button">Open Vault</button>
       </div>
       <div class="top-steps" id="top-steps"></div>
     </div>
@@ -169,7 +172,7 @@
       <!-- Step 4: Abilities -->
       <section class="card page" data-step="4" data-title="Abilities">
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
-          <button class="btn" id="std-array" data-help="Quick-assign the standard array 15,14,13,12,10,8">Apply Standard Array</button>
+          <button class="btn" id="std-array" type="button" data-help="Quick-assign the standard array 15,14,13,12,10,8">Apply Standard Array</button>
           <div class="sub">Prof. Bonus: <strong id="prof">+2</strong></div>
           <div class="sub">AC: <strong id="ac">10</strong></div>
           <div class="sub">HP: <strong id="hp">8</strong></div>
@@ -225,11 +228,11 @@
 
             <div class="card" style="margin-top:10px">
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button class="btn" id="export">Export JSON</button>
+                <button class="btn" id="export" type="button">Export JSON</button>
                 <label class="btn" for="import-file" title="Import JSON">Import JSON</label>
                 <input id="import-file" type="file" accept="application/json" style="display:none" />
-                <button class="btn btn-primary" id="gen-sheet">Generate Sheet</button>
-                <button class="btn" id="save-to-vault">Save to Vault</button>
+                <button class="btn btn-primary" id="gen-sheet" type="button">Generate Sheet</button>
+                <button class="btn" id="save-to-vault" type="button">Save to Vault</button>
               </div>
             </div>
           </div>
@@ -251,8 +254,8 @@
       <section class="card page" data-step="8" data-title="Vault">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
           <input id="vault-search" placeholder="Search by name, class, race..." style="max-width:360px" />
-          <button class="btn" id="vault-export-all">Export All</button>
-          <button class="btn" id="vault-import">Import Characters</button>
+          <button class="btn" id="vault-export-all" type="button">Export All</button>
+          <button class="btn" id="vault-import" type="button">Import Characters</button>
           <input id="vault-import-file" type="file" accept="application/json" style="display:none" />
         </div>
         <div id="vault-list" class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:12px"></div>
@@ -281,45 +284,45 @@
           </aside>
 
           <section class="card">
-            <!-- Tabs Nav -->
-            <nav class="sheet-tabs" id="sheet-tabs" style="display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:10px">
-              <button class="btn tab" data-tab="actions">Actions</button>
-              <button class="btn tab" data-tab="abilities">Abilities</button>
-              <button class="btn tab" data-tab="inventory">Inventory</button>
-              <button class="btn tab" data-tab="spells">Spells</button>
-              <button class="btn tab" data-tab="features">Features</button>
-              <button class="btn tab" data-tab="bio">Bio</button>
-              <button class="btn tab" data-tab="notes">Notes</button>
+            <!-- Tabs Nav (ARIA) -->
+            <nav class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Character sheet sections" style="display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:10px">
+              <button class="btn tab active" type="button" role="tab" aria-selected="true" aria-controls="panel-actions" id="tab-actions" data-tab="actions">Actions</button>
+              <button class="btn tab" type="button" role="tab" aria-selected="false" aria-controls="panel-abilities" id="tab-abilities" data-tab="abilities">Abilities</button>
+              <button class="btn tab" type="button" role="tab" aria-selected="false" aria-controls="panel-inventory" id="tab-inventory" data-tab="inventory">Inventory</button>
+              <button class="btn tab" type="button" role="tab" aria-selected="false" aria-controls="panel-spells" id="tab-spells" data-tab="spells">Spells</button>
+              <button class="btn tab" type="button" role="tab" aria-selected="false" aria-controls="panel-features" id="tab-features" data-tab="features">Features</button>
+              <button class="btn tab" type="button" role="tab" aria-selected="false" aria-controls="panel-bio" id="tab-bio" data-tab="bio">Bio</button>
+              <button class="btn tab" type="button" role="tab" aria-selected="false" aria-controls="panel-notes" id="tab-notes" data-tab="notes">Notes</button>
             </nav>
 
             <!-- Panels -->
-            <div class="tabpanel" id="panel-actions">
+            <div class="tabpanel" id="panel-actions" role="tabpanel" aria-labelledby="tab-actions" tabindex="0">
               <table><thead><tr><th>Name</th><th>To Hit</th><th>Damage</th><th>Notes</th></tr></thead><tbody id="actions-list"></tbody></table>
             </div>
 
-            <div class="tabpanel" id="panel-abilities" style="display:none">
+            <div class="tabpanel" id="panel-abilities" role="tabpanel" aria-labelledby="tab-abilities" tabindex="0" style="display:none" hidden>
               <h3 style="color:#fff;margin:12px 0 6px">Skills</h3>
               <table><thead><tr><th>Skill</th><th>Ability</th><th>Bonus</th></tr></thead><tbody id="sheet-skills"></tbody></table>
             </div>
 
-            <div class="tabpanel" id="panel-inventory" style="display:none">
+            <div class="tabpanel" id="panel-inventory" role="tabpanel" aria-labelledby="tab-inventory" tabindex="0" style="display:none" hidden>
               <ul id="sheet-inventory"></ul>
             </div>
 
-            <div class="tabpanel" id="panel-spells" style="display:none">
+            <div class="tabpanel" id="panel-spells" role="tabpanel" aria-labelledby="tab-spells" tabindex="0" style="display:none" hidden>
               <div class="sub" id="spells-hint">Loaded from Content Pack (if provided).</div>
               <table><thead><tr><th>Spell</th><th>Level</th><th>School</th></tr></thead><tbody id="sheet-spells"></tbody></table>
             </div>
 
-            <div class="tabpanel" id="panel-features" style="display:none">
+            <div class="tabpanel" id="panel-features" role="tabpanel" aria-labelledby="tab-features" tabindex="0" style="display:none" hidden>
               <ul id="sheet-features"></ul>
             </div>
 
-            <div class="tabpanel" id="panel-bio" style="display:none">
+            <div class="tabpanel" id="panel-bio" role="tabpanel" aria-labelledby="tab-bio" tabindex="0" style="display:none" hidden>
               <div id="sheet-backstory" class="sub"></div>
             </div>
 
-            <div class="tabpanel" id="panel-notes" style="display:none">
+            <div class="tabpanel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes" tabindex="0" style="display:none" hidden>
               <textarea id="sheet-notes" rows="6" placeholder="Session notes, reminders, loot, quests..."></textarea>
             </div>
           </section>
@@ -327,8 +330,8 @@
       </section>
 
       <div class="nav-actions">
-        <button class="btn" id="prev">← Back</button>
-        <button class="btn btn-primary" id="next">Next →</button>
+        <button class="btn" id="prev" type="button">← Back</button>
+        <button class="btn btn-primary" id="next" type="button">Next →</button>
       </div>
     </section>
 
@@ -353,7 +356,7 @@
 
   <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
 
-  <footer>SRD 5.1/5.2 concepts under CC‑BY‑4.0. Images via Unsplash (demo). Original UI (inspired-by, not identical). Content packs let you load SRD 5.2 or homebrew data.</footer>
+  <footer>SRD 5.1/5.2 concepts under CC-BY-4.0. Images via Unsplash (demo). Original UI (inspired-by, not identical). Content packs let you load SRD 5.2 or homebrew data.</footer>
 
   <script>
     // ====== SRD-lite seed (expand via Content Pack importer) ======
@@ -412,11 +415,22 @@
 
     // ====== tooltips (1s delay) ======
     const tip=$('tooltip'); let tipTimer=null, tipTarget=null;
-    function showTip(target){ const text=target.getAttribute('data-help'); if(!text) return; const r=target.getBoundingClientRect(); tip.textContent=text; tip.classList.add('show'); tip.style.top=(r.bottom+10)+'px'; tip.style.left=Math.min(r.left, window.innerWidth-380)+'px'; tip.setAttribute('aria-hidden','false'); }
+    function showTip(target){
+      const text=target.getAttribute('data-help'); if(!text) return;
+      tip.textContent=text; tip.classList.add('show');
+      const r=target.getBoundingClientRect(); const pad=8; const maxW=360;
+      // position inside viewport
+      const top = Math.min(window.innerHeight - tip.offsetHeight - pad, r.bottom + 10);
+      const left = Math.min(Math.max(pad, r.left), window.innerWidth - maxW - pad);
+      tip.style.top = top + 'px'; tip.style.left = left + 'px';
+      tip.setAttribute('aria-hidden','false');
+    }
     function hideTip(){ tip.classList.remove('show'); tip.setAttribute('aria-hidden','true'); }
-    document.addEventListener('mouseover', e=>{ const t=e.target.closest('[data-help]'); if(!t){ clearTimeout(tipTimer); hideTip(); return; } clearTimeout(tipTimer); tipTimer=setTimeout(()=>{ tipTarget=t; showTip(t); },1000); });
-    document.addEventListener('mouseout', e=>{ if(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-help]')===tipTarget) return; clearTimeout(tipTimer); hideTip(); tipTarget=null; });
-    document.addEventListener('focusin', e=>{ const t=e.target.closest('[data-help]'); if(t){ clearTimeout(tipTimer); tipTimer=setTimeout(()=>showTip(t),1000); } });
+    const onOver = e=>{ const t=e.target.closest?.('[data-help]'); if(!t){ clearTimeout(tipTimer); hideTip(); return; } clearTimeout(tipTimer); tipTimer=setTimeout(()=>{ tipTarget=t; showTip(t); },1000); };
+    const onOut  = e=>{ if(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-help]')===tipTarget) return; clearTimeout(tipTimer); hideTip(); tipTarget=null; };
+    document.addEventListener('mouseover', onOver, {passive:true});
+    document.addEventListener('mouseout', onOut, {passive:true});
+    document.addEventListener('focusin', e=>{ const t=e.target.closest?.('[data-help]'); if(t){ clearTimeout(tipTimer); tipTimer=setTimeout(()=>showTip(t),1000); } });
     document.addEventListener('focusout', ()=>{ clearTimeout(tipTimer); hideTip(); });
 
     // ====== race/class selection ======
@@ -430,10 +444,9 @@
     function updateProf(){ const lvl=clamp(parseInt($('level').value,10)||1,1,20); state.level=lvl; $('level').value=lvl; $('prof').textContent = `+${prof(lvl)}`; }
     function updateDerived(){ readScores(); updateProf(); const dexM=mod(state.scores.dex); const conM=mod(state.scores.con); const baseHP={fighter:10,cleric:8,rogue:8,wizard:6}[state.class]||8; const AC=10+dexM; const HP=baseHP+conM; const INIT=pretty(dexM); $('ac').textContent=AC; $('hp').textContent=HP; $('init').textContent=INIT; state.ac=AC; state.hp=HP; state.init=INIT; buildSaves(); renderSkills(); updateSummary(); }
 
-    function buildSaves(){ const wrap=$('saves'); wrap.innerHTML=''; const defaults={fighter:['str','con'],wizard:['int','wis'],cleric:['wis','cha'],rogue:['dex','int']}[state.class]||[]; ['str','dex','con','int','wis','cha'].forEach(ab=>{ const row=document.createElement('div'); row.className='ability'; row.setAttribute('data-help',`Saving throw using ${ab.toUpperCase()}. Check if proficient.`); const left=document.createElement('div'); left.textContent=`${ab.toUpperCase()} Save`; const right=document.createElement('div'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked = state.saves[ab] ?? defaults.includes(ab); cb.addEventListener('change',()=>{ state.saves[ab]=cb.checked; renderSaves(); updateSummary(); }); right.appendChild(cb); row.append(left,right); wrap.appendChild(row); }); renderSaves(); }
+    function buildSaves(){ const wrap=$('saves'); wrap.innerHTML=''; const defaults={fighter:['str','con'],wizard:['int','wis'],cleric:['wis','cha'],rogue:['dex','int']}[state.class]||[]; ['str','dex','con','int','wis','cha'].forEach(ab=>{ const row=document.createElement('div'); row.className='ability'; row.dataset.ability=ab; row.setAttribute('data-help',`Saving throw using ${ab.toUpperCase()}. Check if proficient.`); const left=document.createElement('div'); left.textContent=`${ab.toUpperCase()} Save`; const right=document.createElement('div'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked = state.saves[ab] ?? defaults.includes(ab); cb.addEventListener('change',()=>{ state.saves[ab]=cb.checked; renderSaves(); updateSummary(); }); right.appendChild(cb); row.append(left,right); wrap.appendChild(row); }); renderSaves(); }
 
-    function renderSaves(){ qsa('#saves .ability').forEach(row=>{ const label=row.firstChild.textContent; const ab=label.slice(0,3).toLowerCase(); const checked=row.querySelector('input').checked; const bonus=mod(state.scores[ab])+(checked?prof(state.level):0); let badge=row.querySelector('.mod'); if(!badge){ badge=document.createElement('div'); badge.className='mod'; row.appendChild(badge); } badge.textContent=pretty(bonus); }); const sum=$('sum-saves'); if(sum){ sum.innerHTML=''; ['str','dex','con','int','wis','cha'].forEach(ab=>{ const checked=(state.saves[ab]??false); const b=mod(state.scores[ab])+(checked?prof(state.level):0); const div=document.createElement('div'); div.className='ability'; div.innerHTML=`<span>${ab.toUpperCase()} ${checked?'⭐':''}</span><span class="score">${pretty(b)}</span>`; sum.appendChild(div); }); }
-    }
+    function renderSaves(){ qsa('#saves .ability').forEach(row=>{ const ab=row.dataset.ability; const checked=row.querySelector('input').checked; const bonus=mod(state.scores[ab])+(checked?prof(state.level):0); let badge=row.querySelector('.mod'); if(!badge){ badge=document.createElement('div'); badge.className='mod'; row.appendChild(badge); } badge.textContent=pretty(bonus); }); const sum=$('sum-saves'); if(sum){ sum.innerHTML=''; ['str','dex','con','int','wis','cha'].forEach(ab=>{ const checked=(state.saves[ab]??false); const b=mod(state.scores[ab])+(checked?prof(state.level):0); const div=document.createElement('div'); div.className='ability'; div.innerHTML=`<span>${ab.toUpperCase()} ${checked?'⭐':''}</span><span class="score">${pretty(b)}</span>`; sum.appendChild(div); }); } }
 
     function buildSkills(){ const body=$('skills'); body.innerHTML=''; SKILLS.forEach(([n,ab])=>{ const tr=document.createElement('tr'); tr.setAttribute('data-help',`${n}: ${ab.toUpperCase()}-based. Check if proficient.`); const td1=document.createElement('td'); td1.textContent=n; const td2=document.createElement('td'); td2.textContent=ab.toUpperCase(); const td3=document.createElement('td'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!state.profs[n]; cb.addEventListener('change',()=>{ state.profs[n]=cb.checked; renderSkills(); updateSummary(); }); td3.appendChild(cb); const td4=document.createElement('td'); td4.className='bonus'; tr.append(td1,td2,td3,td4); body.appendChild(tr); }); renderSkills(); }
     function renderSkills(){ qsa('#skills tr').forEach(tr=>{ const cells=tr.children; if(cells.length<4) return; const n=cells[0].textContent; const ab=cells[1].textContent.toLowerCase(); const checked=cells[2].querySelector('input').checked; const b=mod(state.scores[ab])+(checked?prof(state.level):0); cells[3].textContent=pretty(b); }); }
@@ -495,7 +508,9 @@
       $('sheet').classList.add('show'); window.scrollTo({top:$('sheet').offsetTop-20,behavior:'smooth'});
     }
 
-    function capitalize((s){ return s? s[0].toUpperCase()+s.slice(1):'' }
+    function capitalize(s){ 
+      return s ? s[0].toUpperCase() + s.slice(1) : '';
+    }
 
     // ====== Vault (saved characters) ======
     const VAULT_KEY='foh-vault-v1';
@@ -515,10 +530,10 @@
               </div>
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <button class="btn" data-act="load">Load</button>
-              <button class="btn" data-act="export">Export</button>
-              <button class="btn" data-act="rename">Rename</button>
-              <button class="btn" data-act="delete">Delete</button>
+              <button class="btn" data-act="load" type="button">Load</button>
+              <button class="btn" data-act="export" type="button">Export</button>
+              <button class="btn" data-act="rename" type="button">Rename</button>
+              <button class="btn" data-act="delete" type="button">Delete</button>
             </div>
           </div>`;
         card.querySelector('[data-act="load"]').addEventListener('click',()=>{ applyCharacter(ch); animateTo(7); });
@@ -542,8 +557,8 @@
       }
     */
     function loadPack(files){ const f=files?.[0]; if(!f) return; f.text().then(txt=>{ try{ const data=JSON.parse(txt);
-        if(Array.isArray(data.races)){ RACES.length=0; data.races.forEach(r=>RACES.push(r)); }
-        if(Array.isArray(data.classes)){ CLASSES.length=0; data.classes.forEach(c=>CLASSES.push(c)); }
+        if(Array.isArray(data.races)){ RACES.length=0; data.races.forEach(r=>RACES.push({...r, id:String(r.id).trim()})); }
+        if(Array.isArray(data.classes)){ CLASSES.length=0; data.classes.forEach(c=>CLASSES.push({...c, id:String(c.id).trim()})); }
         if(Array.isArray(data.spells)){ window.PACK.spells = data.spells; }
         if(Array.isArray(data.items)){ window.PACK.items = data.items; }
         buildChoices(); alert('Content pack loaded.');
@@ -583,16 +598,37 @@
       $('pack-file').addEventListener('change', (e)=> loadPack(e.target.files));
     }
 
-    // tab switching
+    // tab switching + ARIA maintenance
     function setActiveTab(id){
-      qsa('#sheet-tabs .tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+      qsa('#sheet-tabs .tab').forEach(b=>{
+        const active = b.dataset.tab===id;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-selected', active ? 'true' : 'false');
+        b.setAttribute('tabindex', active ? '0' : '-1');
+      });
       ['actions','abilities','inventory','spells','features','bio','notes'].forEach(p=>{
-        const el=$('panel-'+p); if(el) el.style.display = (p===id)?'block':'none';
+        const el=$('panel-'+p); if(!el) return;
+        const on = (p===id);
+        el.style.display = on ? 'block' : 'none';
+        if(on){ el.removeAttribute('hidden'); } else { el.setAttribute('hidden',''); }
       });
     }
 
     document.addEventListener('click', (e)=>{
       const btn=e.target.closest('.tab'); if(btn){ setActiveTab(btn.dataset.tab); }
+    });
+
+    // keyboard navigation for tabs
+    document.addEventListener('keydown', (e)=>{
+      const tabs = qsa('#sheet-tabs .tab');
+      const current = tabs.findIndex(t=>t.getAttribute('aria-selected')==='true');
+      if(current<0) return;
+      if(e.key==='ArrowRight' || e.key==='ArrowLeft'){
+        e.preventDefault();
+        const next = (current + (e.key==='ArrowRight'?1:-1) + tabs.length) % tabs.length;
+        tabs[next].focus();
+        setActiveTab(tabs[next].dataset.tab);
+      }
     });
 
     window.addEventListener('load', wire);
