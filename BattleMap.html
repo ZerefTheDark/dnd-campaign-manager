@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>The War Vault — Omniverse Edition</title>
+<title>The War Vault — Omniverse Edition (Stabilized)</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Great+Vibes&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -91,7 +91,7 @@
   .token span{pointer-events:none}
   .token.has-img{background-size:cover;background-position:center;color:#fff;text-shadow:0 1px 2px #000}
 
-  /* New Portal style: see-through square lined in gold */
+  /* Portal */
   .portal{
     z-index:8; /* above fog */
     border:3px solid var(--gold);
@@ -186,7 +186,7 @@
     <div class="title">The War Vault</div>
     <div class="byline">Chris Marshall</div>
   </div>
-  <div class="actions">
+  <div class="actions" id="top-actions">
     <button id="btn-zoom-in" class="btn" type="button" title="Zoom in">＋</button>
     <button id="btn-zoom-out" class="btn" type="button" title="Zoom out">－</button>
     <input id="map-upload" type="file" accept="image/*" class="btn" title="Upload map" />
@@ -450,20 +450,20 @@ window.onload = function () {
   let sessions= JSON.parse(localStorage.getItem('warvault-maps')    || '[]');
 
   let currentTool = 'pan';
-  let isPanning = false;
-  let panMouse = { x: 0, y: 0 };
+
+  // Unified action state to prevent conflicting listeners
+  let action = null; // { type: 'pan'|'draw'|'token'|'portal'|'fog', ... }
+
   let selectedToken = null;
   let selectedPortal= null;
   let drawingWall = null; // {points:[], type}
 
-  /* Fog-of-war in world space: draw on an offscreen tex (world size), render to screen with pan/zoom */
+  /* Fog-of-war in world space */
   let fogTex = document.createElement('canvas');
   let fogx   = fogTex.getContext('2d');
   const FOG_LIMIT = 20;
   let fogUndoStack = [];
   let fogRedoStack = [];
-  let paintingFog = false;
-  let beganStroke = false;
 
   /* FX */
   let noiseTile = null;
@@ -512,7 +512,7 @@ window.onload = function () {
     resizeRAF = requestAnimationFrame(fitCanvases);
   });
 
-  /* Grid: draw once at base; movement handled by CSS transform */
+  /* Grid */
   function drawGrid() {
     const dpr = window.devicePixelRatio || 1;
     const w = grid.width / dpr, h = grid.height / dpr;
@@ -562,7 +562,6 @@ window.onload = function () {
   function repositionAll() {
     applyTransform(mapEl);
     [fx, grid, tpl, wallsLayer, fog].forEach(applyTransform);
-    // tokens & portals use transform too (but they also need per-element translate)
     tokens.forEach(t=>{
       const s = worldToScreen(t.x, t.y);
       t.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
@@ -576,7 +575,7 @@ window.onload = function () {
     });
   }
 
-  /* Zoom / Pan */
+  /* Zoom */
   function setScale(newScale, anchorX, anchorY) {
     const old = scale;
     scale = clamp(newScale, 0.2, 6);
@@ -598,29 +597,6 @@ window.onload = function () {
     setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), e.offsetX, e.offsetY);
   }, { passive: false });
 
-  wrap.addEventListener('mousedown', (e)=>{
-    if (currentTool !== 'pan') return;
-    isPanning = true;
-    panMouse = {x:e.clientX, y:e.clientY};
-    wrap.style.cursor = 'grabbing';
-  });
-  window.addEventListener('mousemove', (e)=>{
-    if (!isPanning) return;
-    const dx = e.clientX - panMouse.x;
-    const dy = e.clientY - panMouse.y;
-    panMouse = {x:e.clientX, y:e.clientY};
-    offset.x += dx;
-    offset.y += dy;
-    drawWalls();
-    drawTemplates();
-    drawFogToScreen();
-    repositionAll();
-  });
-  window.addEventListener('mouseup', ()=>{
-    isPanning = false;
-    wrap.style.cursor = 'grab';
-  });
-
   /* Map upload */
   mapUpload.addEventListener('change', e => {
     const file = e.target.files?.[0];
@@ -628,7 +604,6 @@ window.onload = function () {
     const r = new FileReader();
     r.onload = ev => {
       mapEl.onload = () => {
-        // reset world & fog size on new map
         resetFogWorld();
         fitCanvases();
       };
@@ -643,6 +618,7 @@ window.onload = function () {
     currentTool = t;
     toolButtons.forEach(b => b.classList.toggle('toggled', b.dataset.tool === t));
     updateFogInteractivity();
+    mapEl.style.cursor = t==='pan' ? 'grab' : 'crosshair';
   }
   toolButtons.forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
   setTool('pan');
@@ -653,9 +629,8 @@ window.onload = function () {
   fogModeSel.addEventListener('change', updateFogInteractivity);
   updateFogInteractivity();
 
-  /* FOG — world-space offscreen texture */
+  /* FOG */
   function resetFogWorld(){
-    // Set world size to current visual area at scale=1
     const w = wrap.clientWidth  || 1;
     const h = wrap.clientHeight || 1;
     fogTex.width  = w;
@@ -676,24 +651,18 @@ window.onload = function () {
     }
   }
   function drawFogToScreen(){
-    // Render fogTex (world) onto fog canvas (screen) with no scaling here,
-    // since fog canvas is CSS-transformed like the map, it tracks pan/zoom.
     const dpr = window.devicePixelRatio || 1;
     fctx.setTransform(dpr,0,0,dpr,0,0);
     const w = fog.width / dpr, h = fog.height / dpr;
     fctx.clearRect(0,0,w,h);
     fctx.globalCompositeOperation = 'source-over';
-    // Fill full mist, then punch out revealed parts using world-space texture as mask
     fctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
     fctx.fillRect(0,0,w,h);
     fctx.globalCompositeOperation = 'destination-out';
-    fctx.drawImage(fogTex, 0, 0); // fogTex matches world size (scale=1)
+    fctx.drawImage(fogTex, 0, 0);
     fctx.globalCompositeOperation = 'source-over';
   }
-  function beginFogStroke(){ paintingFog = true; beganStroke=false; }
-  function endFogStroke(){ paintingFog = false; pushFogState(); drawFogToScreen(); }
   function paintFogWorld(wx, wy, reveal){
-    if (!beganStroke){ pushFogState(); beganStroke=true; }
     fogx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
     if (!reveal) fogx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
     const r = parseInt(brushSel.value, 10);
@@ -701,35 +670,38 @@ window.onload = function () {
     fogx.globalCompositeOperation = 'source-over';
     drawFogToScreen();
   }
-  fog.addEventListener('mousedown', (e)=>{
+  fog.addEventListener('pointerdown', (e)=>{
     if (fogModeSel.value === 'none') return;
-    beginFogStroke();
     const wpos = screenToWorld(e.offsetX, e.offsetY);
     paintFogWorld(wpos.x, wpos.y, fogModeSel.value==='reveal');
+    action = { type:'fog', reveal: fogModeSel.value==='reveal' };
+    fog.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
   });
-  fog.addEventListener('mousemove', (e)=>{
-    if (!paintingFog) return;
+  fog.addEventListener('pointermove', (e)=>{
+    if (!action || action.type!=='fog') return;
     const wpos = screenToWorld(e.offsetX, e.offsetY);
-    paintFogWorld(wpos.x, wpos.y, fogModeSel.value==='reveal');
+    paintFogWorld(wpos.x, wpos.y, action.reveal);
   });
-  window.addEventListener('mouseup', ()=> paintingFog && endFogStroke());
+  fog.addEventListener('pointerup', ()=>{
+    if (action && action.type==='fog'){ pushFogState(); action=null; }
+  });
   fogUndoBtn.addEventListener('click', () => {
     if (fogUndoStack.length < 2) return;
     const prev = fogUndoStack.pop();
-    fogRedoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height));
+    try { fogRedoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
     try { fogx.putImageData(prev,0,0); } catch {}
     drawFogToScreen();
   });
   fogRedoBtn.addEventListener('click', () => {
     if (!fogRedoStack.length) return;
     const img = fogRedoStack.pop();
-    fogUndoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height));
+    try { fogUndoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
     try { fogx.putImageData(img,0,0); } catch {}
     drawFogToScreen();
   });
 
   /* TEMPLATES (ruler/circle/cone) */
-  let drawing = null; // {type,start:{x,y},end:{x,y},r?,angle?}
   function drawTemplates(){
     const dpr = window.devicePixelRatio || 1;
     const w = tpl.width / dpr, h = tpl.height / dpr;
@@ -754,64 +726,9 @@ window.onload = function () {
       }
     };
     templates.forEach(render);
-    if (drawing) render(drawing);
+    if (action && action.type==='draw' && action.draft) render(action.draft);
   }
   clearTplBtn.addEventListener('click', ()=>{ templates=[]; drawTemplates(); });
-
-  wrap.addEventListener('mousedown', (e)=>{
-    const pos = screenToWorld(e.offsetX, e.offsetY);
-    if (currentTool==='ruler'){
-      drawing = {type:'ruler', start:{x:snap(pos.x),y:snap(pos.y)}, end:{x:snap(pos.x),y:snap(pos.y)}};
-      drawTemplates();
-    } else if (currentTool==='circle'){
-      drawing = {type:'circle', start:{x:snap(pos.x),y:snap(pos.y)}, r:1};
-      drawTemplates();
-    } else if (currentTool==='cone'){
-      drawing = {type:'cone', start:{x:snap(pos.x),y:snap(pos.y)}, r:1, a0:0, a1:0};
-      drawTemplates();
-    } else if (currentTool==='portal'){
-      // start dragging a gold square portal
-      startPortalDrag(pos);
-    } else if (currentTool==='wall'){
-      if (!drawingWall) drawingWall = {points:[], type:'wall'};
-      drawingWall.points.push({x:snap(pos.x),y:snap(pos.y)});
-      drawWalls();
-    }
-  });
-  window.addEventListener('mousemove', (e)=>{
-    const pos = screenToWorld(e.clientX - wrap.getBoundingClientRect().left, e.clientY - wrap.getBoundingClientRect().top);
-    if (!drawing) return;
-    if (drawing.type==='ruler'){
-      drawing.end = {x:snap(pos.x), y:snap(pos.y)};
-    } else if (drawing.type==='circle'){
-      const dx = pos.x - drawing.start.x, dy = pos.y - drawing.start.y;
-      drawing.r = Math.max(1, Math.hypot(dx,dy));
-    } else if (drawing.type==='cone'){
-      const dx = pos.x - drawing.start.x, dy = pos.y - drawing.start.y;
-      const r = Math.max(1, Math.hypot(dx,dy));
-      const ang = Math.atan2(dy,dx);
-      const spread = Math.PI/3; // 60°
-      drawing.r = r; drawing.a0 = ang - spread/2; drawing.a1 = ang + spread/2;
-    }
-    drawTemplates();
-  });
-  window.addEventListener('mouseup', ()=>{
-    if (drawing){
-      templates.push(drawing);
-      drawing = null;
-      drawTemplates();
-    }
-  });
-  document.addEventListener('keydown', (e)=>{
-    if (currentTool!=='wall') return;
-    if (e.key==='Escape'){ drawingWall=null; drawWalls(); }
-    if (e.key==='Enter' && drawingWall?.points?.length>1){
-      for(let i=1;i<drawingWall.points.length;i++){
-        walls.push({ a:drawingWall.points[i-1], b:drawingWall.points[i], type:'wall', open:false });
-      }
-      drawingWall=null; drawWalls();
-    }
-  });
 
   /* WALLS */
   function drawWalls(){
@@ -858,30 +775,7 @@ window.onload = function () {
     const s = worldToScreen(t.x,t.y);
     el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
     el.style.transformOrigin = 'top left';
-    draggableToken(t);
     return t;
-  }
-  function draggableToken(t){
-    let dragging=false, start={x:0,y:0}, tokStart={x:0,y:0};
-    t.el.addEventListener('mousedown', (e)=>{
-      if (currentTool!=='select') return;
-      dragging=true; selectedToken=t; selectedPortal=null;
-      start={x:e.clientX,y:e.clientY};
-      tokStart={x:t.x,y:t.y};
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e)=>{
-      if (!dragging) return;
-      const dx = (e.clientX-start.x)/scale;
-      const dy = (e.clientY-start.y)/scale;
-      const prop = { x: snap(tokStart.x+dx), y: snap(tokStart.y+dy) };
-      if (moveBlocked({x:tokStart.x,y:tokStart.y}, prop)) return;
-      t.x = prop.x; t.y = prop.y;
-      const s = worldToScreen(t.x,t.y);
-      t.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
-      // Optional: LOS reveal: revealLOSFor(t);
-    });
-    window.addEventListener('mouseup', ()=> dragging=false);
   }
   createTokenBtn.addEventListener('click', ()=>{
     const name = tfName.value.trim()||'T';
@@ -900,62 +794,26 @@ window.onload = function () {
   function makePortal(x,y,w,h,targetName){
     const el = document.createElement('div');
     el.className = 'portal';
-    el.style.width = w + 'px';
-    el.style.height = h + 'px';
+    el.style.width = Math.max(1,w) + 'px';
+    el.style.height = Math.max(1,h) + 'px';
     wrap.appendChild(el);
-    const p = {el, x, y, w, h, targetName: targetName||null};
+    const p = {el, x, y, w:Math.max(1,w), h:Math.max(1,h), targetName: targetName||null};
     portals.push(p);
     const s = worldToScreen(x,y);
     el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
     el.style.transformOrigin = 'top left';
     el.addEventListener('mousedown', (e)=>{
-      if (currentTool!=='select') return;
+      if (currentTool!=='select') return; // selecting only
       selectedPortal = p; selectedToken=null;
       e.preventDefault();
     });
     return p;
   }
-  let portalDrag = null;
-  function startPortalDrag(startPos){
-    portalDrag = {start: {x:snap(startPos.x), y:snap(startPos.y)}, ghost: null};
-    if (!portalDrag.ghost){
-      portalDrag.ghost = document.createElement('div');
-      portalDrag.ghost.className = 'portal';
-      portalDrag.ghost.style.width = '1px';
-      portalDrag.ghost.style.height= '1px';
-      wrap.appendChild(portalDrag.ghost);
-    }
-    const s = worldToScreen(portalDrag.start.x, portalDrag.start.y);
-    portalDrag.ghost.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
-  }
-  window.addEventListener('mousemove', (e)=>{
-    if (!portalDrag) return;
-    const pos = screenToWorld(e.clientX - wrap.getBoundingClientRect().left, e.clientY - wrap.getBoundingClientRect().top);
-    const w = snap(pos.x) - portalDrag.start.x;
-    const h = snap(pos.y) - portalDrag.start.y;
-    portalDrag.ghost.style.width  = Math.abs(w) + 'px';
-    portalDrag.ghost.style.height = Math.abs(h) + 'px';
-    const sx = worldToScreen(Math.min(portalDrag.start.x, portalDrag.start.x+w),
-                             Math.min(portalDrag.start.y, portalDrag.start.y+h));
-    portalDrag.ghost.style.transform = `translate(${sx.x}px, ${sx.y}px) scale(${scale})`;
-  });
-  window.addEventListener('mouseup', ()=>{
-    if (!portalDrag) return;
-    const rect = portalDrag.ghost.getBoundingClientRect();
-    portalDrag.ghost.remove();
-    const a = portalDrag.start;
-    const b = screenToWorld(rect.right - wrap.getBoundingClientRect().left, rect.bottom - wrap.getBoundingClientRect().top);
-    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
-    const w = Math.max(1, Math.abs(b.x - a.x));
-    const h = Math.max(1, Math.abs(b.y - a.y));
-    makePortal(x,y,w,h,null);
-    portalDrag = null;
-  });
 
-  /* CONTEXT MENU (Tokens & Portals) */
+  /* CONTEXT MENU */
   wrap.addEventListener('contextmenu', (e)=>{
     e.preventDefault();
-    // detect if portal clicked
+    // detect if portal or token clicked
     selectedPortal = null; selectedToken=null;
     const el = e.target.closest('.portal,.token');
     if (el?.classList.contains('portal')){
@@ -993,16 +851,14 @@ window.onload = function () {
       const exists = submaps.find(s=>s.name===pick);
       if (!exists) return alert('Not found.');
       if (selectedPortal) selectedPortal.targetName = pick;
-      if (selectedToken)  selectedToken.sheet = { submap: pick }; // store as sheet/submap link
+      if (selectedToken)  selectedToken.sheet = { submap: pick };
     } else if (act==='open-submap'){
       if (selectedPortal && selectedPortal.targetName){
         const s = submaps.find(x=>x.name===selectedPortal.targetName);
-        if (s) openSubmap(s.img, s.name);
-        else alert('Assigned submap not found.');
+        if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.');
       } else if (selectedToken && selectedToken.sheet?.submap){
         const s = submaps.find(x=>x.name===selectedToken.sheet.submap);
-        if (s) openSubmap(s.img, s.name);
-        else alert('Assigned submap not found.');
+        if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.');
       } else {
         alert('Nothing assigned. Use "Assign Submap…" first.');
       }
@@ -1125,10 +981,8 @@ window.onload = function () {
     };
   }
   function loadSession(s){
-    // map
     mapEl.onload = ()=>{
       resetFogWorld();
-      // fog
       if (s.fog){
         const img=new Image(); img.onload=()=>{
           fogx.clearRect(0,0,fogTex.width,fogTex.height);
@@ -1137,23 +991,18 @@ window.onload = function () {
         }; img.src=s.fog;
       } else { drawFogToScreen(); }
 
-      // tokens
       tokens.forEach(t=>t.el.remove()); tokens=[];
       (s.tokens||[]).forEach(t=> addToken(t));
 
-      // portals
       portals.forEach(p=>p.el.remove()); portals=[];
       (s.portals||[]).forEach(p=> makePortal(p.x,p.y,p.w,p.h,p.targetName||null));
 
-      // walls
       walls = (s.walls||[]).map(w=>({a:w.a,b:w.b,type:w.type||'wall',open:!!w.open}));
       drawWalls();
 
-      // templates
       templates = s.templates || [];
       drawTemplates();
 
-      // settings
       if (s.settings){
         offset = s.settings.offset || {x:0,y:0};
         scale  = s.settings.scale  || 1;
@@ -1281,6 +1130,141 @@ window.onload = function () {
       rlGrid.appendChild(card);
     });
   }
+
+  /* ===== Unified Pointer Interactions to prevent "crazy" buttons ===== */
+  function startPan(e){
+    action = { type:'pan', startX:e.clientX, startY:e.clientY, ox:offset.x, oy:offset.y };
+    wrap.style.cursor = 'grabbing';
+  }
+  function updatePan(e){
+    const dx = e.clientX - action.startX;
+    const dy = e.clientY - action.startY;
+    offset.x = action.ox + dx;
+    offset.y = action.oy + dy;
+    drawWalls();
+    drawTemplates();
+    drawFogToScreen();
+    repositionAll();
+  }
+  function endPan(){ wrap.style.cursor = currentTool==='pan' ? 'grab' : 'crosshair'; }
+
+  function startDraw(e){
+    const pos = screenToWorld(e.offsetX, e.offsetY);
+    const sx = snap(pos.x), sy = snap(pos.y);
+    if (currentTool==='ruler'){
+      action = { type:'draw', draft:{type:'ruler', start:{x:sx,y:sy}, end:{x:sx,y:sy}} };
+    } else if (currentTool==='circle'){
+      action = { type:'draw', draft:{type:'circle', start:{x:sx,y:sy}, r:1} };
+    } else if (currentTool==='cone'){
+      action = { type:'draw', draft:{type:'cone', start:{x:sx,y:sy}, r:1, a0:0, a1:0} };
+    } else if (currentTool==='wall'){
+      if (!drawingWall) drawingWall = {points:[], type:'wall'};
+      drawingWall.points.push({x:sx,y:sy});
+      drawWalls();
+    } else if (currentTool==='portal'){
+      action = { type:'portal', start:{x:sx,y:sy}, ghost: (()=>{ const g=document.createElement('div'); g.className='portal'; g.style.width='1px'; g.style.height='1px'; wrap.appendChild(g); return g;})() };
+      const s = worldToScreen(sx, sy);
+      action.ghost.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
+    }
+  }
+  function updateDraw(e){
+    if (!action) return;
+    const pos = screenToWorld(e.offsetX, e.offsetY);
+    const sx = snap(pos.x), sy = snap(pos.y);
+    if (action.type==='draw' && action.draft){
+      if (action.draft.type==='ruler'){
+        action.draft.end = {x:sx, y:sy};
+      } else if (action.draft.type==='circle'){
+        const dx = sx - action.draft.start.x, dy = sy - action.draft.start.y;
+        action.draft.r = Math.max(1, Math.hypot(dx,dy));
+      } else if (action.draft.type==='cone'){
+        const dx = sx - action.draft.start.x, dy = sy - action.draft.start.y;
+        const r = Math.max(1, Math.hypot(dx,dy));
+        const ang = Math.atan2(dy,dx);
+        const spread = Math.PI/3;
+        action.draft.r = r; action.draft.a0 = ang - spread/2; action.draft.a1 = ang + spread/2;
+      }
+      drawTemplates();
+    } else if (action.type==='portal' && action.ghost){
+      const w = sx - action.start.x; const h = sy - action.start.y;
+      const gx = worldToScreen(Math.min(action.start.x, action.start.x + w), Math.min(action.start.y, action.start.y + h));
+      action.ghost.style.width  = Math.abs(w) + 'px';
+      action.ghost.style.height = Math.abs(h) + 'px';
+      action.ghost.style.transform = `translate(${gx.x}px, ${gx.y}px) scale(${scale})`;
+    }
+  }
+  function endDraw(){
+    if (!action) return;
+    if (action.type==='draw' && action.draft){
+      templates.push(action.draft);
+      action=null; drawTemplates();
+    } else if (action.type==='portal' && action.ghost){
+      const rect = action.ghost.getBoundingClientRect();
+      action.ghost.remove();
+      const wrapRect = wrap.getBoundingClientRect();
+      const a = action.start;
+      const b = screenToWorld(rect.right - wrapRect.left, rect.bottom - wrapRect.top);
+      const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+      const w = Math.max(1, Math.abs(b.x - a.x));
+      const h = Math.max(1, Math.abs(b.y - a.y));
+      makePortal(x,y,w,h,null);
+      action=null;
+    }
+  }
+
+  function startTokenDrag(token, e){
+    action = { type:'token', token, sx:e.clientX, sy:e.clientY, startX:token.x, startY:token.y };
+  }
+  function updateTokenDrag(e){
+    const tok = action.token;
+    const dx = (e.clientX - action.sx)/scale;
+    const dy = (e.clientY - action.sy)/scale;
+    const prop = { x: snap(action.startX+dx), y: snap(action.startY+dy) };
+    if (moveBlocked({x:action.startX,y:action.startY}, prop)) return;
+    tok.x = prop.x; tok.y = prop.y;
+    const s = worldToScreen(tok.x,tok.y);
+    tok.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
+  }
+
+  // Unified pointer handlers for the map container
+  wrap.addEventListener('pointerdown', (e)=>{
+    // Ignore right/middle in main flow; contextmenu handles right
+    if (e.button !== 0) return;
+    const targetToken = e.target.closest('.token');
+    if (currentTool==='select' && targetToken){
+      selectedToken = tokens.find(t=>t.el===targetToken) || null;
+      if (selectedToken){ startTokenDrag(selectedToken, e); wrap.setPointerCapture?.(e.pointerId); e.preventDefault(); }
+      return;
+    }
+    if (currentTool==='pan') { startPan(e); wrap.setPointerCapture?.(e.pointerId); e.preventDefault(); return; }
+    startDraw(e); wrap.setPointerCapture?.(e.pointerId); e.preventDefault();
+  });
+
+  wrap.addEventListener('pointermove', (e)=>{
+    if (!action) return;
+    if (action.type==='pan') updatePan(e);
+    else if (action.type==='draw' || action.type==='portal') updateDraw(e);
+    else if (action.type==='token') updateTokenDrag(e);
+  });
+
+  wrap.addEventListener('pointerup', ()=>{
+    if (!action) return;
+    if (action.type==='pan') { endPan(); action=null; return; }
+    if (action.type==='draw' || action.type==='portal') { endDraw(); return; }
+    if (action.type==='token') { action=null; return; }
+  });
+
+  // Finish wall drawing via keyboard (unchanged)
+  document.addEventListener('keydown', (e)=>{
+    if (currentTool!=='wall') return;
+    if (e.key==='Escape'){ drawingWall=null; drawWalls(); }
+    if (e.key==='Enter' && drawingWall?.points?.length>1){
+      for(let i=1;i<drawingWall.points.length;i++){
+        walls.push({ a:drawingWall.points[i-1], b:drawingWall.points[i], type:'wall', open:false });
+      }
+      drawingWall=null; drawWalls();
+    }
+  });
 
   /* Init */
   resetFogWorld();
