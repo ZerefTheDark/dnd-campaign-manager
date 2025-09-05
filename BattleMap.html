@@ -78,7 +78,7 @@
     canvas{position:absolute;left:0;top:0;pointer-events:none}
     #grid-layer{z-index:2}
     #template-layer{z-index:3}
-    #fog-layer{z-index:5}
+    #fog-layer{z-index:5} /* keep fog below tokens by default */
 
     .token{
       position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;
@@ -435,7 +435,7 @@
 
       let currentTool = 'pan';
       let isPanning = false;
-      let panStart = { x: 0, y: 0 };
+      let panMouse = { x: 0, y: 0 };
       let selectedToken = null;
 
       const FOG_LIMIT = 15;
@@ -451,7 +451,7 @@
       /* WebSocket */
       let ws = null;
       function ensureWS(){
-        if (ws && ws.readyState === WebSocket.OPEN) return;
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
         ws = new WebSocket('ws://localhost:8080/omniverse');
         ws.onopen = ()=> logOv("Bridge connected");
         ws.onclose = ()=> logOv("Bridge disconnected");
@@ -475,17 +475,28 @@
         };
       }
 
-      /* Canvas sizing & initial draw */
+      /* Canvas sizing & initial draw (HiDPI aware) */
       function fitCanvases() {
         const r = wrap.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+
         [grid, tpl, fog].forEach(cv => {
-          cv.width = r.width;
-          cv.height = r.height;
+          cv.width  = Math.max(1, Math.floor(r.width  * dpr));
+          cv.height = Math.max(1, Math.floor(r.height * dpr));
+          cv.style.width  = r.width + 'px';
+          cv.style.height = r.height + 'px';
         });
+
+        gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
         drawGrid();
         redrawTemplates();
+
         if (!fogUndoStack.length) {
-          fctx.clearRect(0, 0, fog.width, fog.height);
+          // clear using CSS pixel units (after transform)
+          fctx.clearRect(0, 0, grid.width / dpr, grid.height / dpr);
           pushFogState();
         }
         repositionAll();
@@ -505,21 +516,25 @@
         return { x: offset.x + wx * scale, y: offset.y + wy * scale };
       }
       function snap(v) {
-        return document.getElementById('snap').checked ? Math.round(v / cell) * cell : v;
+        return snapChk.checked ? Math.round(v / cell) * cell : v;
       }
 
-      /* Grid */
+      /* Grid (use CSS px after transform) */
       function drawGrid() {
-        const step = cell * scale;
-        gctx.clearRect(0, 0, grid.width, grid.height);
+        const dpr = window.devicePixelRatio || 1;
+        const w = grid.width / dpr;
+        const h = grid.height / dpr;
+
+        gctx.clearRect(0, 0, w, h);
         gctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rune');
         gctx.lineWidth = 1;
 
-        for (let x = (offset.x % step + step) % step; x < grid.width; x += step) {
-          gctx.beginPath(); gctx.moveTo(x, 0); gctx.lineTo(x, grid.height); gctx.stroke();
+        const step = cell * scale;
+        for (let x = (offset.x % step + step) % step; x < w; x += step) {
+          gctx.beginPath(); gctx.moveTo(x, 0); gctx.lineTo(x, h); gctx.stroke();
         }
-        for (let y = (offset.y % step + step) % step; y < grid.height; y += step) {
-          gctx.beginPath(); gctx.moveTo(0, y); gctx.lineTo(grid.width, y); gctx.stroke();
+        for (let y = (offset.y % step + step) % step; y < h; y += step) {
+          gctx.beginPath(); gctx.moveTo(0, y); gctx.lineTo(w, y); gctx.stroke();
         }
       }
 
@@ -557,7 +572,6 @@
         setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), e.offsetX, e.offsetY);
       }, { passive: false });
 
-      let panMouse = {x:0,y:0};
       wrap.addEventListener('mousedown', (e)=>{
         if (currentTool !== 'pan') return;
         isPanning = true;
@@ -611,6 +625,7 @@
       /* Fog paint + undo/redo */
       function pushFogState() {
         try {
+          // getImageData uses pixel coords; pass backing store size
           const img = fctx.getImageData(0, 0, fog.width, fog.height);
           fogUndoStack.push(img);
           if (fogUndoStack.length > FOG_LIMIT) fogUndoStack.shift();
@@ -669,9 +684,10 @@
         }
       });
 
-      /* Templates (ruler/aoe) – stub redraw */
+      /* Templates (ruler/aoe) – stub redraw, HiDPI clear */
       function redrawTemplates(){
-        tctx.clearRect(0,0,tpl.width,tpl.height);
+        const dpr = window.devicePixelRatio || 1;
+        tctx.clearRect(0,0,tpl.width / dpr, tpl.height / dpr);
         // draw your cones/rects/circles here if stored in templates[]
       }
       clearTplBtn.addEventListener('click', ()=>{
@@ -742,7 +758,7 @@
         if (!ctxMenu.contains(e.target)) ctxMenu.style.display='none';
       });
 
-      /* Submaps */
+      /* Submaps (HiDPI sizing) */
       const subOverlay = document.getElementById('submap-overlay');
       const subCanvas = document.getElementById('submap-canvas');
       const subCtx = subCanvas.getContext('2d');
@@ -750,16 +766,25 @@
         document.getElementById('submap-title').textContent = title;
         subOverlay.style.display = 'block';
         subOverlay.setAttribute('aria-hidden','false');
+
         const img = new Image();
         img.onload = ()=>{
-          subCanvas.width = subCanvas.clientWidth;
-          subCanvas.height = subCanvas.clientHeight;
-          // cover-style draw
-          const ratio = Math.max(subCanvas.width/img.width, subCanvas.height/img.height);
-          const w=img.width*ratio, h=img.height*ratio;
-          const x=(subCanvas.width-w)/2, y=(subCanvas.height-h)/2;
-          subCtx.clearRect(0,0,subCanvas.width,subCanvas.height);
-          subCtx.drawImage(img,x,y,w,h);
+          requestAnimationFrame(()=>{
+            const dpr = window.devicePixelRatio || 1;
+            const w = subCanvas.clientWidth || 1;
+            const h = subCanvas.clientHeight || 1;
+
+            subCanvas.width = Math.floor(w * dpr);
+            subCanvas.height = Math.floor(h * dpr);
+            subCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            // cover-style draw (CSS px coords after transform)
+            const ratio = Math.max(w / img.width, h / img.height);
+            const dw = img.width * ratio, dh = img.height * ratio;
+            const dx = (w - dw) / 2, dy = (h - dh) / 2;
+            subCtx.clearRect(0,0,w,h);
+            subCtx.drawImage(img, dx, dy, dw, dh);
+          });
         };
         img.src = imgSrc;
       }
@@ -834,7 +859,6 @@
           const w = mapEl.naturalWidth||mapEl.width;
           const h = mapEl.naturalHeight||mapEl.height;
           if (!w || !h) return alert('No map to save');
-          // Just save the src and a tiny thumb (reuses src)
           const entry = {when: Date.now(), data: mapEl.src, thumb: mapEl.src};
           savedMaps.push(entry);
           localStorage.setItem('warvault-maps', JSON.stringify(savedMaps));
