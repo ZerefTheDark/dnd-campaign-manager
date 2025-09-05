@@ -78,7 +78,7 @@
     canvas{position:absolute;left:0;top:0;pointer-events:none}
     #grid-layer{z-index:2}
     #template-layer{z-index:3}
-    #fog-layer{z-index:5} /* keep fog below tokens by default */
+    #fog-layer{z-index:5; transform-origin: top left;} /* fog now follows map via CSS transform */
 
     .token{
       position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;
@@ -461,7 +461,7 @@
             const msg = JSON.parse(e.data);
             if (msg.type === 'map') {
               mapEl.onload = ()=> fitCanvases();
-              mapEl.src = msg.image;                // data URL from bridge
+              mapEl.src = msg.image;
               logOv("Map loaded.");
             } else if (msg.type === 'list') {
               buildLibrary(msg.items||[]);
@@ -475,13 +475,13 @@
         };
       }
 
-      /* Utilities */
+      /* Utils */
       function esc(s){return String(s).replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
       const CSS = getComputedStyle(document.documentElement);
       const CSS_RUNE = CSS.getPropertyValue('--rune');
       const CSS_MIST = CSS.getPropertyValue('--mist');
 
-      /* Canvas sizing & initial draw (HiDPI aware) */
+      /* Canvas sizing (HiDPI aware) */
       function fitCanvases() {
         const r = wrap.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
@@ -501,7 +501,6 @@
         redrawTemplates();
 
         if (!fogUndoStack.length) {
-          // clear using CSS pixel units (after transform)
           const w = grid.width / dpr, h = grid.height / dpr;
           fctx.clearRect(0, 0, w, h);
           pushFogState();
@@ -515,8 +514,8 @@
       });
       fitCanvases();
 
-      /* Coordinates & helpers */
-      function screenToWorld(sx, sy) {
+      /* Coordinates */
+      function screenToWorld(sx, sy) { // sx/sy are container-relative CSS px
         return { x: (sx - offset.x) / scale, y: (sy - offset.y) / scale };
       }
       function worldToScreen(wx, wy) {
@@ -526,7 +525,7 @@
         return snapChk.checked ? Math.round(v / cell) * cell : v;
       }
 
-      /* Grid (use CSS px after transform) */
+      /* Grid */
       function drawGrid() {
         const dpr = window.devicePixelRatio || 1;
         const w = grid.width / dpr;
@@ -547,7 +546,9 @@
 
       /* Reposition map & overlays */
       function repositionAll() {
-        mapEl.style.transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
+        const tf = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
+        mapEl.style.transform = tf;
+        fog.style.transform   = tf; // fog visually follows the map
         drawGrid();
         tokens.forEach(t => {
           const s = worldToScreen(t.x, t.y);
@@ -560,7 +561,7 @@
         redrawTemplates();
       }
 
-      /* Zoom / Pan (anchor in CSS px, retina-safe) */
+      /* Zoom / Pan */
       function setScale(newScale, anchorX, anchorY) {
         const old = scale;
         scale = Math.max(0.2, Math.min(6, newScale));
@@ -632,10 +633,9 @@
       fogModeSel.addEventListener('change', updateFogInteractivity);
       updateFogInteractivity();
 
-      /* Fog paint + undo/redo */
+      /* Fog paint + undo/redo (world-space painting) */
       function pushFogState() {
         try {
-          // getImageData uses backing-store px
           const img = fctx.getImageData(0, 0, fog.width, fog.height);
           fogUndoStack.push(img);
           if (fogUndoStack.length > FOG_LIMIT) fogUndoStack.shift();
@@ -652,53 +652,57 @@
         paintingFog = false;
         pushFogState();
       }
-      function paintFog(sx, sy, reveal) {
+      function paintFogWorld(wx, wy, reveal) {
         if (!beganStroke) {
           pushFogState();
           beganStroke = true;
         }
+        // Brush size is in CSS px; convert to world units so it stays visually constant
+        const rCss = parseInt(brushSel.value, 10);
+        const rWorld = rCss / scale;
+
         fctx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
         if (!reveal) fctx.fillStyle = CSS_MIST;
-        const r = parseInt(brushSel.value, 10);
-        fctx.beginPath(); fctx.arc(sx, sy, r, 0, Math.PI * 2); fctx.fill();
+        fctx.beginPath();
+        fctx.arc(wx, wy, rWorld, 0, Math.PI * 2);
+        fctx.fill();
         fctx.globalCompositeOperation = 'source-over';
+      }
+      function cursorToWorld(e){
+        const rect = wrap.getBoundingClientRect(); // container, not fog (fog is transformed)
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        return screenToWorld(sx, sy);
       }
       fog.addEventListener('mousedown', (e)=>{
         if (fogModeSel.value === 'none') return;
         beginFogStroke();
-        paintFog(e.offsetX, e.offsetY, fogModeSel.value==='reveal');
+        const w = cursorToWorld(e);
+        paintFogWorld(w.x, w.y, fogModeSel.value==='reveal');
       });
       fog.addEventListener('mousemove', (e)=>{
         if (!paintingFog) return;
-        paintFog(e.offsetX, e.offsetY, fogModeSel.value==='reveal');
+        const w = cursorToWorld(e);
+        paintFogWorld(w.x, w.y, fogModeSel.value==='reveal');
       });
       window.addEventListener('mouseup', ()=> paintingFog && endFogStroke());
       fogUndoBtn.addEventListener('click', () => {
         if (fogUndoStack.length < 2) return;
         const prev = fogUndoStack.pop();
         fogRedoStack.push(fctx.getImageData(0, 0, fog.width, fog.height));
-        try {
-          fctx.putImageData(prev, 0, 0);
-        } catch (e) {
-          console.warn("Fog undo failed");
-        }
+        try { fctx.putImageData(prev, 0, 0); } catch (e) { console.warn("Fog undo failed"); }
       });
       fogRedoBtn.addEventListener('click', () => {
         if (!fogRedoStack.length) return;
         const img = fogRedoStack.pop();
         fogUndoStack.push(fctx.getImageData(0, 0, fog.width, fog.height));
-        try {
-          fctx.putImageData(img, 0, 0);
-        } catch (e) {
-          console.warn("Fog redo failed");
-        }
+        try { fctx.putImageData(img, 0, 0); } catch (e) { console.warn("Fog redo failed"); }
       });
 
-      /* Templates (ruler/aoe) – stub redraw, HiDPI clear */
+      /* Templates (stub) */
       function redrawTemplates(){
         const dpr = window.devicePixelRatio || 1;
         tctx.clearRect(0,0,tpl.width / dpr, tpl.height / dpr);
-        // draw your cones/rects/circles here if stored in templates[]
       }
       clearTplBtn.addEventListener('click', ()=>{
         templates = [];
@@ -757,7 +761,7 @@
         }
       });
 
-      /* Context menu (position relative to container) */
+      /* Context menu */
       wrap.addEventListener('contextmenu', (e)=>{
         e.preventDefault();
         const rect = wrap.getBoundingClientRect();
@@ -769,7 +773,7 @@
         if (!ctxMenu.contains(e.target)) ctxMenu.style.display='none';
       });
 
-      /* Submaps (HiDPI sizing) */
+      /* Submaps */
       const subOverlay = document.getElementById('submap-overlay');
       const subCanvas = document.getElementById('submap-canvas');
       const subCtx = subCanvas.getContext('2d');
@@ -789,7 +793,6 @@
             subCanvas.height = Math.floor(h * dpr);
             subCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-            // cover-style draw (CSS px coords after transform)
             const ratio = Math.max(w / img.width, h / img.height);
             const dw = img.width * ratio, dh = img.height * ratio;
             const dx = (w - dw) / 2, dy = (h - dh) / 2;
@@ -839,7 +842,7 @@
       }
       renderSubmaps();
 
-      /* Saved maps (local) */
+      /* Saved maps */
       function renderSavedMaps(){
         savedMapsDiv.innerHTML='';
         if (!savedMaps.length){
@@ -925,7 +928,6 @@
         ovConsole.scrollTop = ovConsole.scrollHeight;
       }
 
-      // Position help popover near the button (fixed coords)
       ovHelpBtn.onclick = (ev) => {
         const r = ovHelpBtn.getBoundingClientRect();
         ovHelp.style.position = 'fixed';
@@ -977,12 +979,8 @@
       };
 
       /* Previous Renders modal */
-      function openRenders(){
-        rendersModal.style.display='flex';
-      }
-      function closeRenders(){
-        rendersModal.style.display='none';
-      }
+      function openRenders(){ rendersModal.style.display='flex'; }
+      function closeRenders(){ rendersModal.style.display='none'; }
       openRendersBtn.onclick = ()=>{
         openRenders();
         ensureWS();
@@ -1027,7 +1025,7 @@
         });
       }
 
-      /* Global Esc to close overlays/popovers */
+      /* Global Esc to close overlays */
       window.addEventListener('keydown', (e)=>{
         if (e.key !== 'Escape') return;
         if (rendersModal.style.display === 'flex') rendersModal.style.display = 'none';
