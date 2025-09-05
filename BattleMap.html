@@ -1059,51 +1059,83 @@ window.onload = function () {
       settings: { cell, scale, offset }
     };
   }
+  function applySessionState(s){
+    resetFogWorld();
+    // fog
+    if (s.fog){
+      const img=new Image(); img.onload=()=>{
+        fogx.clearRect(0,0,fogTex.width,fogTex.height);
+        fogx.drawImage(img,0,0, fogTex.width, fogTex.height);
+        drawFogToScreen();
+      }; img.src=s.fog;
+    } else { drawFogToScreen(); }
+
+    // tokens
+    tokens.forEach(t=>t.el.remove()); tokens=[];
+    (s.tokens||[]).forEach(t=> addToken(t));
+
+    // portals
+    portals.forEach(p=>p.el.remove()); portals=[];
+    (s.portals||[]).forEach(p=> makePortal(p.x,p.y,p.w,p.h,p.targetName||null));
+
+    // walls
+    walls = (s.walls||[]).map(w=>({a:w.a,b:w.b,type:w.type||'wall',open:!!w.open}));
+    drawWalls();
+
+    // templates
+    templates = s.templates || [];
+    drawTemplates();
+
+    // settings
+    if (s.settings){
+      offset = s.settings.offset || {x:0,y:0};
+      scale  = s.settings.scale  || 1;
+    }
+    repositionAll();
+    drawFX();
+    fitCanvases();
+    setTool('pan');
+  }
   function loadSession(s){
+    // Reset transient state before swapping
     action=null; drawingWall=null; selectedToken=null; selectedPortal=null;
     document.body.classList.remove('fog-edit');
     fog.classList.remove('fog-active');
 
-    mapEl.onload = ()=>{
-      resetFogWorld();
-      if (s.fog){
-        const img=new Image(); img.onload=()=>{
-          fogx.clearRect(0,0,fogTex.width,fogTex.height);
-          fogx.drawImage(img,0,0, fogTex.width, fogTex.height);
-          drawFogToScreen();
-        }; img.src=s.fog;
-      } else { drawFogToScreen(); }
+    const targetSrc = s?.map?.src;
+    if (!targetSrc){ alert('This save has no map reference.'); return; }
 
-      tokens.forEach(t=>t.el.remove()); tokens=[];
-      (s.tokens||[]).forEach(t=> addToken(t));
+    const same = mapEl.src === targetSrc;
+    // If the same image is already loaded, browsers won't fire onload.
+    if (same && mapEl.complete && mapEl.naturalWidth>0){
+      applySessionState(s);
+      return;
+    }
 
-      portals.forEach(p=>p.el.remove()); portals=[];
-      (s.portals||[]).forEach(p=> makePortal(p.x,p.y,p.w,p.h,p.targetName||null));
+    mapEl.onload = ()=>{ applySessionState(s); };
 
-      walls = (s.walls||[]).map(w=>({a:w.a,b:w.b,type:w.type||'wall',open:!!w.open}));
-      drawWalls();
-
-      templates = s.templates || [];
-      drawTemplates();
-
-      if (s.settings){
-        offset = s.settings.offset || {x:0,y:0};
-        scale  = s.settings.scale  || 1;
-      }
-      repositionAll();
-      drawFX();
-      fitCanvases();
-      setTool('pan');
-    };
-    mapEl.src = s.map?.src || mapEl.src;
+    // Force reload if same src to ensure onload fires on some browsers
+    if (same){
+      mapEl.src = '';
+      setTimeout(()=>{ mapEl.src = targetSrc; }, 0);
+    } else {
+      mapEl.src = targetSrc;
+    }
   }
+
   saveMapBtn.addEventListener('click', ()=>{
     const snap = collectSession();
     snap.thumb = mapEl.src;
     sessions.push(snap);
-    localStorage.setItem('warvault-maps', JSON.stringify(sessions));
-    renderSaved();
-    alert('Session saved locally.');
+    try{
+      localStorage.setItem('warvault-maps', JSON.stringify(sessions));
+      renderSaved();
+      alert('Session saved locally.');
+    } catch(e){
+      console.error(e);
+      alert('Save failed (storage full?). Delete older sessions and try again.');
+      sessions.pop();
+    }
   });
   renderSaved();
 
