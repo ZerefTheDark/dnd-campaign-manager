@@ -73,17 +73,17 @@
 
     #map{
       position:absolute;inset:0;object-fit:contain;width:100%;height:100%;
-      transform-origin:top left;cursor:grab;z-index:1;will-change:transform;
+      transform-origin:top left;cursor:grab;z-index:1
     }
     canvas{position:absolute;left:0;top:0;pointer-events:none}
     #grid-layer{z-index:2}
     #template-layer{z-index:3}
-    #fog-layer{z-index:5; transform-origin: top left;} /* fog now follows map via CSS transform */
+    #fog-layer{z-index:5} /* keep fog below tokens by default */
 
     .token{
       position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;
       display:flex;align-items:center;justify-content:center;user-select:none;cursor:grab;
-      z-index:6;border:2px solid #fff;transform-origin:center;overflow:hidden;will-change:transform;
+      z-index:6;border:2px solid #fff;transform-origin:center;overflow:hidden
     }
     .token span{pointer-events:none}
     .token.has-img{background-size:cover;background-position:center;color:#fff;text-shadow:0 1px 2px #000}
@@ -229,7 +229,7 @@
     </aside>
 
     <main id="map-container">
-      <img id="map" src="https://i.imgur.com/8V7V3sP.jpg" alt="Map" />
+      <img id="map" src="https://i.imgur.com/8V7V3sP.jpg" alt="Map" draggable="false" />
       <canvas id="grid-layer"></canvas>
       <canvas id="template-layer"></canvas>
       <canvas id="fog-layer"></canvas>
@@ -448,7 +448,7 @@
       let initiative = [];
       let initIdx = -1;
 
-      /* WebSocket */
+      /* WebSocket (stub bridge hooks preserved) */
       let ws = null;
       function ensureWS(){
         if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
@@ -461,7 +461,7 @@
             const msg = JSON.parse(e.data);
             if (msg.type === 'map') {
               mapEl.onload = ()=> fitCanvases();
-              mapEl.src = msg.image;
+              mapEl.src = msg.image;                // data URL from bridge
               logOv("Map loaded.");
             } else if (msg.type === 'list') {
               buildLibrary(msg.items||[]);
@@ -475,13 +475,7 @@
         };
       }
 
-      /* Utils */
-      function esc(s){return String(s).replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
-      const CSS = getComputedStyle(document.documentElement);
-      const CSS_RUNE = CSS.getPropertyValue('--rune');
-      const CSS_MIST = CSS.getPropertyValue('--mist');
-
-      /* Canvas sizing (HiDPI aware) */
+      /* Canvas sizing & initial draw (HiDPI aware) */
       function fitCanvases() {
         const r = wrap.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
@@ -501,8 +495,7 @@
         redrawTemplates();
 
         if (!fogUndoStack.length) {
-          const w = grid.width / dpr, h = grid.height / dpr;
-          fctx.clearRect(0, 0, w, h);
+          fctx.clearRect(0, 0, grid.width / dpr, grid.height / dpr);
           pushFogState();
         }
         repositionAll();
@@ -514,8 +507,8 @@
       });
       fitCanvases();
 
-      /* Coordinates */
-      function screenToWorld(sx, sy) { // sx/sy are container-relative CSS px
+      /* Coordinates & helpers */
+      function screenToWorld(sx, sy) {
         return { x: (sx - offset.x) / scale, y: (sy - offset.y) / scale };
       }
       function worldToScreen(wx, wy) {
@@ -525,14 +518,14 @@
         return snapChk.checked ? Math.round(v / cell) * cell : v;
       }
 
-      /* Grid */
+      /* Grid (CSS px after transform) */
       function drawGrid() {
         const dpr = window.devicePixelRatio || 1;
         const w = grid.width / dpr;
         const h = grid.height / dpr;
 
         gctx.clearRect(0, 0, w, h);
-        gctx.strokeStyle = CSS_RUNE;
+        gctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rune');
         gctx.lineWidth = 1;
 
         const step = cell * scale;
@@ -544,11 +537,12 @@
         }
       }
 
-      /* Reposition map & overlays */
+      /* Reposition map & overlays (also move Fog!) */
       function repositionAll() {
-        const tf = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
-        mapEl.style.transform = tf;
-        fog.style.transform   = tf; // fog visually follows the map
+        const transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
+        mapEl.style.transform = transform;
+        fog.style.transform = transform;            // <— fog follows map
+        tpl.style.transform = transform;            // templates follow map
         drawGrid();
         tokens.forEach(t => {
           const s = worldToScreen(t.x, t.y);
@@ -565,8 +559,8 @@
       function setScale(newScale, anchorX, anchorY) {
         const old = scale;
         scale = Math.max(0.2, Math.min(6, newScale));
-        const ax = anchorX ?? (grid.clientWidth  / 2);
-        const ay = anchorY ?? (grid.clientHeight / 2);
+        const ax = anchorX ?? grid.width / (window.devicePixelRatio||1) / 2;
+        const ay = anchorY ?? grid.height / (window.devicePixelRatio||1) / 2;
         const wx = (ax - offset.x) / old;
         const wy = (ay - offset.y) / old;
         offset.x = ax - wx * scale;
@@ -577,10 +571,7 @@
       zoomOutBtn.addEventListener('click', () => setScale(scale / 1.2));
       wrap.addEventListener('wheel', e => {
         e.preventDefault();
-        const rect = wrap.getBoundingClientRect();
-        const ax = e.clientX - rect.left;
-        const ay = e.clientY - rect.top;
-        setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), ax, ay);
+        setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), e.offsetX, e.offsetY);
       }, { passive: false });
 
       wrap.addEventListener('mousedown', (e)=>{
@@ -618,22 +609,26 @@
         r.readAsDataURL(file);
       });
 
-      /* Tools */
+      /* Tool interactivity toggles */
+      function updateTemplateInteractivity() {
+        const drawTools = ['ruler','circle','rect','cone'];
+        tpl.style.pointerEvents = drawTools.includes(currentTool) ? 'auto' : 'none';
+      }
+      function updateFogInteractivity() {
+        fog.style.pointerEvents = fogModeSel.value !== 'none' ? 'auto' : 'none';
+      }
       function setTool(t) {
         currentTool = t;
         toolButtons.forEach(b => b.classList.toggle('toggled', b.dataset.tool === t));
         updateFogInteractivity();
+        updateTemplateInteractivity();
       }
       toolButtons.forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
       setTool('pan');
-
-      function updateFogInteractivity() {
-        fog.style.pointerEvents = fogModeSel.value !== 'none' ? 'auto' : 'none';
-      }
       fogModeSel.addEventListener('change', updateFogInteractivity);
       updateFogInteractivity();
 
-      /* Fog paint + undo/redo (world-space painting) */
+      /* Fog paint + undo/redo (paint in screen coords; canvas is transformed with map) */
       function pushFogState() {
         try {
           const img = fctx.getImageData(0, 0, fog.width, fog.height);
@@ -652,61 +647,137 @@
         paintingFog = false;
         pushFogState();
       }
-      function paintFogWorld(wx, wy, reveal) {
+      function paintFog(sx, sy, reveal) {
         if (!beganStroke) {
           pushFogState();
           beganStroke = true;
         }
-        // Brush size is in CSS px; convert to world units so it stays visually constant
-        const rCss = parseInt(brushSel.value, 10);
-        const rWorld = rCss / scale;
-
         fctx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
-        if (!reveal) fctx.fillStyle = CSS_MIST;
-        fctx.beginPath();
-        fctx.arc(wx, wy, rWorld, 0, Math.PI * 2);
-        fctx.fill();
+        if (!reveal) fctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
+        const r = parseInt(brushSel.value, 10);
+        fctx.beginPath(); fctx.arc(sx, sy, r, 0, Math.PI * 2); fctx.fill();
         fctx.globalCompositeOperation = 'source-over';
-      }
-      function cursorToWorld(e){
-        const rect = wrap.getBoundingClientRect(); // container, not fog (fog is transformed)
-        const sx = e.clientX - rect.left;
-        const sy = e.clientY - rect.top;
-        return screenToWorld(sx, sy);
       }
       fog.addEventListener('mousedown', (e)=>{
         if (fogModeSel.value === 'none') return;
         beginFogStroke();
-        const w = cursorToWorld(e);
-        paintFogWorld(w.x, w.y, fogModeSel.value==='reveal');
+        paintFog(e.offsetX, e.offsetY, fogModeSel.value==='reveal');
       });
       fog.addEventListener('mousemove', (e)=>{
         if (!paintingFog) return;
-        const w = cursorToWorld(e);
-        paintFogWorld(w.x, w.y, fogModeSel.value==='reveal');
+        paintFog(e.offsetX, e.offsetY, fogModeSel.value==='reveal');
       });
       window.addEventListener('mouseup', ()=> paintingFog && endFogStroke());
       fogUndoBtn.addEventListener('click', () => {
         if (fogUndoStack.length < 2) return;
         const prev = fogUndoStack.pop();
         fogRedoStack.push(fctx.getImageData(0, 0, fog.width, fog.height));
-        try { fctx.putImageData(prev, 0, 0); } catch (e) { console.warn("Fog undo failed"); }
+        try {
+          fctx.putImageData(prev, 0, 0);
+        } catch (e) {
+          console.warn("Fog undo failed");
+        }
       });
       fogRedoBtn.addEventListener('click', () => {
         if (!fogRedoStack.length) return;
         const img = fogRedoStack.pop();
         fogUndoStack.push(fctx.getImageData(0, 0, fog.width, fog.height));
-        try { fctx.putImageData(img, 0, 0); } catch (e) { console.warn("Fog redo failed"); }
+        try {
+          fctx.putImageData(img, 0, 0);
+        } catch (e) {
+          console.warn("Fog redo failed");
+        }
       });
 
-      /* Templates (stub) */
-      function redrawTemplates(){
+      /* Templates (ruler/aoe) */
+      let drawing = null;
+      tpl.addEventListener('mousedown', (e) => {
+        if (!['ruler','circle','rect','cone'].includes(currentTool)) return;
+        const rect = wrap.getBoundingClientRect();
+        const start = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+        drawing = { tool: currentTool, start, end: {...start} };
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        const rect = wrap.getBoundingClientRect();
+        drawing.end = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+        redrawTemplates(drawing);
+      });
+      window.addEventListener('mouseup', () => {
+        if (!drawing) return;
+        templates.push(drawing);
+        drawing = null;
+        redrawTemplates();
+      });
+
+      function redrawTemplates(ghost){
         const dpr = window.devicePixelRatio || 1;
         tctx.clearRect(0,0,tpl.width / dpr, tpl.height / dpr);
+        const all = ghost ? [...templates, ghost] : templates;
+        all.forEach(drawShape);
       }
+
+      function drawShape(s) {
+        const a = worldToScreen(s.start.x, s.start.y);
+        const b = worldToScreen(s.end.x, s.end.y);
+        tctx.save();
+        tctx.strokeStyle = '#9ad';
+        tctx.fillStyle = 'rgba(150,200,255,0.18)';
+        tctx.lineWidth = 2;
+
+        if (s.tool === 'ruler') {
+          tctx.beginPath(); tctx.moveTo(a.x, a.y); tctx.lineTo(b.x, b.y); tctx.stroke();
+          const dist = Math.hypot(s.end.x - s.start.x, s.end.y - s.start.y) / cell;
+          tctx.fillStyle = '#fff';
+          tctx.font = '12px ui-monospace';
+          tctx.fillText(dist.toFixed(1) + ' squares', (a.x + b.x)/2 + 6, (a.y + b.y)/2 - 6);
+        } else if (s.tool === 'circle') {
+          const r = Math.hypot(b.x - a.x, b.y - a.y);
+          tctx.beginPath(); tctx.arc(a.x, a.y, r, 0, Math.PI * 2); tctx.stroke(); tctx.fill();
+        } else if (s.tool === 'rect') {
+          tctx.beginPath();
+          tctx.rect(Math.min(a.x,b.x), Math.min(a.y,b.y), Math.abs(b.x-a.x), Math.abs(b.y-a.y));
+          tctx.stroke(); tctx.fill();
+        } else if (s.tool === 'cone') {
+          const angle = Math.atan2(b.y - a.y, b.x - a.x);
+          const len = Math.hypot(b.x - a.x, b.y - a.y);
+          const spread = Math.PI / 3; // 60°
+          tctx.beginPath();
+          tctx.moveTo(a.x, a.y);
+          tctx.lineTo(a.x + Math.cos(angle - spread/2) * len, a.y + Math.sin(angle - spread/2) * len);
+          tctx.arc(a.x, a.y, len, angle - spread/2, angle + spread/2);
+          tctx.closePath(); tctx.stroke(); tctx.fill();
+        }
+        tctx.restore();
+      }
+
       clearTplBtn.addEventListener('click', ()=>{
         templates = [];
         redrawTemplates();
+      });
+
+      /* Portals */
+      function addPortal(x, y) {
+        const el = document.createElement('div');
+        el.className = 'portal';
+        wrap.appendChild(el);
+        const p = { el, x, y };
+        portals.push(p);
+        const s = worldToScreen(x, y);
+        el.style.transform = `translate(${s.x - 13}px, ${s.y - 13}px) scale(${scale})`;
+        el.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          if (!selectedToken) return;
+          selectedToken.x = x; selectedToken.y = y;
+          const scr = worldToScreen(x, y);
+          selectedToken.el.style.transform = `translate(${scr.x}px, ${scr.y}px) scale(${scale})`;
+        });
+      }
+      wrap.addEventListener('click', (e) => {
+        if (currentTool !== 'portal') return;
+        const rect = wrap.getBoundingClientRect();
+        const w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+        addPortal(w.x, w.y);
       });
 
       /* Tokens */
@@ -715,17 +786,27 @@
         el.className = 'token';
         el.style.width = el.style.height = (size||42)+'px';
         el.style.background = color || '#f44';
-        el.innerHTML = '<span>'+ (esc(name||'T')) +'</span>';
+        el.innerHTML = '<span>'+ (name||'T') +'</span>';
         if (img){
           el.classList.add('has-img');
           el.style.backgroundImage = `url(${img})`;
         }
         wrap.appendChild(el);
-        const t = {el, name, color, size: size||42, x: x||100, y: y||100};
+        const t = {el, name, color, size: size||42, x: x||100, y: y||100, submap: null, sheetUrl: null};
         tokens.push(t);
         const s = worldToScreen(t.x,t.y);
         el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
         draggableToken(t);
+
+        // Right-click to select + open context menu
+        el.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          selectedToken = t;
+          const rect = wrap.getBoundingClientRect();
+          ctxMenu.style.display = 'block';
+          ctxMenu.style.left = (e.clientX - rect.left) + 'px';
+          ctxMenu.style.top  = (e.clientY - rect.top)  + 'px';
+        });
       }
       function draggableToken(t){
         let dragging=false, start={x:0,y:0}, tokStart={x:0,y:0};
@@ -761,19 +842,70 @@
         }
       });
 
-      /* Context menu */
+      /* Context menu behavior */
       wrap.addEventListener('contextmenu', (e)=>{
-        e.preventDefault();
-        const rect = wrap.getBoundingClientRect();
-        ctxMenu.style.display='block';
-        ctxMenu.style.left = (e.clientX - rect.left) + 'px';
-        ctxMenu.style.top  = (e.clientY - rect.top)  + 'px';
+        // Right-click empty space: show menu but without a token selected
+        if (!e.target.closest('.token')) {
+          e.preventDefault();
+          selectedToken = null;
+          const rect = wrap.getBoundingClientRect();
+          ctxMenu.style.display='block';
+          ctxMenu.style.left = (e.clientX - rect.left) + 'px';
+          ctxMenu.style.top  = (e.clientY - rect.top)  + 'px';
+        }
       });
       window.addEventListener('click', (e)=>{
         if (!ctxMenu.contains(e.target)) ctxMenu.style.display='none';
       });
+      window.addEventListener('keydown', (e)=>{
+        if (e.key === 'Escape') ctxMenu.style.display='none';
+        if (e.key === 'Delete' && selectedToken) {
+          selectedToken.el.remove();
+          tokens = tokens.filter(t => t !== selectedToken);
+          selectedToken = null;
+        }
+      });
+      ctxMenu.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        const act = e.target.dataset.act;
+        ctxMenu.style.display = 'none';
+        if (!selectedToken && act !== 'assign-submap') {
+          if (act==='sheet' || act==='open-submap' || act==='delete') {
+            alert('Right-click a token first.'); 
+          }
+          return;
+        }
+        if (act === 'delete') {
+          selectedToken.el.remove();
+          tokens = tokens.filter(t => t !== selectedToken);
+          selectedToken = null;
+        } else if (act === 'assign-submap') {
+          if (!submaps.length) return alert('No submaps yet.');
+          if (!selectedToken) return alert('Right-click a token first.');
+          const choice = prompt(
+            'Assign submap index:\n' +
+            submaps.map((s,i)=>`${i}: ${s.name}`).join('\n')
+          );
+          const idx = Number(choice);
+          if (Number.isInteger(idx) && submaps[idx]) {
+            selectedToken.submap = idx;
+            alert('Assigned: ' + submaps[idx].name);
+          }
+        } else if (act === 'open-submap') {
+          const idx = selectedToken.submap;
+          if (idx == null || !submaps[idx]) return alert('No submap assigned.');
+          openSubmap(submaps[idx].img, submaps[idx].name);
+        } else if (act === 'sheet') {
+          if (selectedToken.sheetUrl) {
+            window.open(selectedToken.sheetUrl, '_blank');
+          } else {
+            const url = prompt('Paste character sheet URL:');
+            if (url) { selectedToken.sheetUrl = url; window.open(url, '_blank'); }
+          }
+        }
+      });
 
-      /* Submaps */
+      /* Submaps (HiDPI sizing) */
       const subOverlay = document.getElementById('submap-overlay');
       const subCanvas = document.getElementById('submap-canvas');
       const subCtx = subCanvas.getContext('2d');
@@ -826,7 +958,7 @@
           row.innerHTML = `
             <div class="thumb" style="background-image:url('${s.img}')"></div>
             <div style="flex:1">
-              <div>${esc(s.name)}</div>
+              <div>${s.name}</div>
             </div>
             <button class="btn" data-i="${i}" data-act="open">Open</button>
             <button class="btn" data-i="${i}" data-act="del">Delete</button>
@@ -842,7 +974,7 @@
       }
       renderSubmaps();
 
-      /* Saved maps */
+      /* Saved maps (local) */
       function renderSavedMaps(){
         savedMapsDiv.innerHTML='';
         if (!savedMaps.length){
@@ -860,8 +992,15 @@
             <button class="btn" data-act="load">Load</button>
           `;
           row.querySelector('[data-act="load"]').onclick = ()=>{
+            // Force onload even if src is same by resetting first
+            const src = m.data;
             mapEl.onload = ()=> fitCanvases();
-            mapEl.src = m.data;
+            if (mapEl.src === src) {
+              mapEl.src = '';
+              setTimeout(()=> mapEl.src = src, 0);
+            } else {
+              mapEl.src = src;
+            }
           };
           savedMapsDiv.appendChild(row);
         });
@@ -891,7 +1030,7 @@
           row.style.alignItems='center';
           row.innerHTML = `
             <div style="width:28px;text-align:right;color:${idx===initIdx?'#0f0':'#aaa'}">${idx===initIdx?'▶':''}</div>
-            <div style="flex:1">${esc(it.name)}</div>
+            <div style="flex:1">${it.name}</div>
             <div style="width:40px;text-align:right">${it.roll}</div>
             <button class="btn" data-i="${idx}">✕</button>
           `;
@@ -924,18 +1063,11 @@
 
       /* Omniverse Connect / Generate / Library */
       function logOv(msg) {
-        ovConsole.innerHTML += `<div>${new Date().toLocaleTimeString()} — ${esc(msg)}</div>`;
+        ovConsole.innerHTML += `<div>${new Date().toLocaleTimeString()} — ${msg}</div>`;
         ovConsole.scrollTop = ovConsole.scrollHeight;
       }
-
-      ovHelpBtn.onclick = (ev) => {
-        const r = ovHelpBtn.getBoundingClientRect();
-        ovHelp.style.position = 'fixed';
-        ovHelp.style.left = `${Math.round(r.left + r.width/2)}px`;
-        ovHelp.style.top  = `${Math.round(r.bottom + 8)}px`;
-        ovHelp.style.transform = 'translateX(-50%)';
-        ovHelp.style.display = (ovHelp.style.display === 'block') ? 'none' : 'block';
-        ev.stopPropagation();
+      ovHelpBtn.onclick = () => {
+        ovHelp.style.display = ovHelp.style.display === 'block' ? 'none' : 'block';
       };
       document.addEventListener('click', (e) => {
         if (!ovHelp.contains(e.target) && e.target !== ovHelpBtn) {
@@ -1004,8 +1136,8 @@
           card.innerHTML = `
             <div class="rl-shot" style="background-image:url('${thumb}')"></div>
             <div class="rl-meta">
-              <div style="color:#fff">${esc(it.name || 'Render')}</div>
-              <div style="color:#c9b27a">${esc(when)}</div>
+              <div style="color:#fff">${it.name || 'Render'}</div>
+              <div style="color:#c9b27a">${when}</div>
             </div>
             <div class="rl-actions">
               <button class="btn" data-act="load">Load</button>
@@ -1015,27 +1147,15 @@
             ensureWS();
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
             ws.send(JSON.stringify({ action:'get', name: it.name }));
-            logOv('Loading ' + (it.name||''));
+            logOv('Loading ' + it.name);
             closeRenders();
           };
           card.querySelector('[data-act="copy"]').onclick = ()=>{
-            navigator.clipboard.writeText(it.name||'').then(()=>logOv('Name copied.'));
+            navigator.clipboard.writeText(it.name).then(()=>logOv('Name copied.'));
           };
           rlGrid.appendChild(card);
         });
       }
-
-      /* Global Esc to close overlays */
-      window.addEventListener('keydown', (e)=>{
-        if (e.key !== 'Escape') return;
-        if (rendersModal.style.display === 'flex') rendersModal.style.display = 'none';
-        if (subOverlay.style.display === 'block') {
-          subOverlay.style.display = 'none';
-          subOverlay.setAttribute('aria-hidden','true');
-        }
-        if (ovHelp.style.display === 'block') ovHelp.style.display = 'none';
-        if (ctxMenu.style.display === 'block') ctxMenu.style.display = 'none';
-      });
 
       /* Init */
       setTool('pan');
