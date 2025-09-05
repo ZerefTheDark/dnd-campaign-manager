@@ -174,6 +174,10 @@
   #ov-help h4{color:var(--gold);margin:.2rem 0; font-size:1rem}
   #ov-help ul{margin:.5rem 0; padding-left:1.2rem }
 
+  /* While painting fog, route pointer events to fog canvas */
+  .fog-edit .token, .fog-edit .portal { pointer-events: none !important; }
+  #fog-layer.fog-active { z-index: 100 !important; pointer-events: auto !important; }
+
   @media (max-width:1180px){
     #stage{grid-template-columns:0 1fr 360px}
     #left-panel{display:none}
@@ -480,6 +484,7 @@ window.onload = function () {
   function screenToWorld(sx, sy)  { return { x: (sx - offset.x) / scale, y: (sy - offset.y) / scale }; }
   function worldToScreen(wx, wy)  { return { x: offset.x + wx * scale,   y: offset.y + wy * scale   }; }
   function snap(v) { return document.getElementById('snap').checked ? Math.round(v / cell) * cell : v; }
+  function pointerToWrap(e){ const r = wrap.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 
   /* ==== Fit canvases (HiDPI) ==== */
   function fitCanvases() {
@@ -624,7 +629,11 @@ window.onload = function () {
   setTool('pan');
 
   function updateFogInteractivity() {
-    fog.style.pointerEvents = fogModeSel.value !== 'none' ? 'auto' : 'none';
+    const on = fogModeSel.value !== 'none';
+    fog.style.pointerEvents = on ? 'auto' : 'none';
+    document.body.classList.toggle('fog-edit', on);
+    fog.classList.toggle('fog-active', on);
+    if (!on && action && action.type==='fog') action=null;
   }
   fogModeSel.addEventListener('change', updateFogInteractivity);
   updateFogInteractivity();
@@ -672,21 +681,27 @@ window.onload = function () {
   }
   fog.addEventListener('pointerdown', (e)=>{
     if (fogModeSel.value === 'none') return;
-    const wpos = screenToWorld(e.offsetX, e.offsetY);
+    const p = pointerToWrap(e);
+    const wpos = screenToWorld(p.x, p.y);
     paintFogWorld(wpos.x, wpos.y, fogModeSel.value==='reveal');
     action = { type:'fog', reveal: fogModeSel.value==='reveal' };
+    document.body.classList.add('fog-edit');
+    fog.classList.add('fog-active');
     fog.setPointerCapture?.(e.pointerId);
     e.preventDefault();
   });
   fog.addEventListener('pointermove', (e)=>{
     if (!action || action.type!=='fog') return;
-    const wpos = screenToWorld(e.offsetX, e.offsetY);
+    const p = pointerToWrap(e);
+    const wpos = screenToWorld(p.x, p.y);
     paintFogWorld(wpos.x, wpos.y, action.reveal);
   });
   fog.addEventListener('pointerup', ()=>{
     if (action && action.type==='fog'){ pushFogState(); action=null; }
+    document.body.classList.remove('fog-edit');
+    fog.classList.remove('fog-active');
   });
-  fogUndoBtn.addEventListener('click', () => {
+  fogUndoBtn.addEventListener('click', () => ('click', () => {
     if (fogUndoStack.length < 2) return;
     const prev = fogUndoStack.pop();
     try { fogRedoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
@@ -803,11 +818,29 @@ window.onload = function () {
     el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
     el.style.transformOrigin = 'top left';
     el.addEventListener('mousedown', (e)=>{
-      if (currentTool!=='select') return; // selecting only
+      if (currentTool!=='select') return;
       selectedPortal = p; selectedToken=null;
       e.preventDefault();
     });
+    el.addEventListener('dblclick', ()=>{
+      if (p.targetName){
+        const s = submaps.find(x=>x.name===p.targetName);
+        if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.');
+      } else {
+        promptAssignPortal(p);
+      }
+    });
     return p;
+  }
+  function promptAssignPortal(p){
+    if (!submaps.length){ alert('No submaps in library. Add one on the right.'); return; }
+    const pick = prompt('Assign to submap (type name):
+'+ submaps.map(s=>s.name).join('
+'));
+    if (!pick) return;
+    const exists = submaps.find(s=>s.name===pick);
+    if (!exists) { alert('Not found.'); return; }
+    p.targetName = pick;
   }
 
   /* CONTEXT MENU */
@@ -981,6 +1014,10 @@ window.onload = function () {
     };
   }
   function loadSession(s){
+    action=null; drawingWall=null; selectedToken=null; selectedPortal=null;
+    document.body.classList.remove('fog-edit');
+    fog.classList.remove('fog-active');
+
     mapEl.onload = ()=>{
       resetFogWorld();
       if (s.fog){
@@ -1009,6 +1046,8 @@ window.onload = function () {
       }
       repositionAll();
       drawFX();
+      fitCanvases();
+      setTool('pan');
     };
     mapEl.src = s.map?.src || mapEl.src;
   }
@@ -1149,7 +1188,8 @@ window.onload = function () {
   function endPan(){ wrap.style.cursor = currentTool==='pan' ? 'grab' : 'crosshair'; }
 
   function startDraw(e){
-    const pos = screenToWorld(e.offsetX, e.offsetY);
+    const pt = pointerToWrap(e);
+    const pos = screenToWorld(pt.x, pt.y);
     const sx = snap(pos.x), sy = snap(pos.y);
     if (currentTool==='ruler'){
       action = { type:'draw', draft:{type:'ruler', start:{x:sx,y:sy}, end:{x:sx,y:sy}} };
@@ -1166,14 +1206,48 @@ window.onload = function () {
       const s = worldToScreen(sx, sy);
       action.ghost.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
     }
+  }, end:{x:sx,y:sy}} };
+    } else if (currentTool==='circle'){
+      action = { type:'draw', draft:{type:'circle', start:{x:sx,y:sy}, r:1} };
+    } else if (currentTool==='cone'){
+      action = { type:'draw', draft:{type:'cone', start:{x:sx,y:sy}, r:1, a0:0, a1:0} };
+    } else if (currentTool==='wall'){
+      if (!drawingWall) drawingWall = {points:[], type:'wall'};
+      drawingWall.points.push({x:sx,y:sy});
+      drawWalls();
+    } else if (currentTool==='portal'){
+      action = { type:'portal', start:{x:sx,y:sy}, ghost: (()=>{ const g=document.createElement('div'); g.className='portal'; g.style.width='1px'; g.style.height='1px'; wrap.appendChild(g); return g;})() };
+      const s = worldToScreen(sx, sy);
+      action.ghost.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
+    }
   }
   function updateDraw(e){
     if (!action) return;
-    const pos = screenToWorld(e.offsetX, e.offsetY);
+    const pt = pointerToWrap(e);
+    const pos = screenToWorld(pt.x, pt.y);
     const sx = snap(pos.x), sy = snap(pos.y);
     if (action.type==='draw' && action.draft){
       if (action.draft.type==='ruler'){
         action.draft.end = {x:sx, y:sy};
+      } else if (action.draft.type==='circle'){
+        const dx = sx - action.draft.start.x, dy = sy - action.draft.start.y;
+        action.draft.r = Math.max(1, Math.hypot(dx,dy));
+      } else if (action.draft.type==='cone'){
+        const dx = sx - action.draft.start.x, dy = sy - action.draft.start.y;
+        const r = Math.max(1, Math.hypot(dx,dy));
+        const ang = Math.atan2(dy,dx);
+        const spread = Math.PI/3;
+        action.draft.r = r; action.draft.a0 = ang - spread/2; action.draft.a1 = ang + spread/2;
+      }
+      drawTemplates();
+    } else if (action.type==='portal' && action.ghost){
+      const w = sx - action.start.x; const h = sy - action.start.y;
+      const gx = worldToScreen(Math.min(action.start.x, action.start.x + w), Math.min(action.start.y, action.start.y + h));
+      action.ghost.style.width  = Math.abs(w) + 'px';
+      action.ghost.style.height = Math.abs(h) + 'px';
+      action.ghost.style.transform = `translate(${gx.x}px, ${gx.y}px) scale(${scale})`;
+    }
+  };
       } else if (action.draft.type==='circle'){
         const dx = sx - action.draft.start.x, dy = sy - action.draft.start.y;
         action.draft.r = Math.max(1, Math.hypot(dx,dy));
@@ -1199,6 +1273,19 @@ window.onload = function () {
       templates.push(action.draft);
       action=null; drawTemplates();
     } else if (action.type==='portal' && action.ghost){
+      const rect = action.ghost.getBoundingClientRect();
+      action.ghost.remove();
+      const wrapRect = wrap.getBoundingClientRect();
+      const a = action.start;
+      const b = screenToWorld(rect.right - wrapRect.left, rect.bottom - wrapRect.top);
+      const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+      const w = Math.max(1, Math.abs(b.x - a.x));
+      const h = Math.max(1, Math.abs(b.y - a.y));
+      const newP = makePortal(x,y,w,h,null);
+      promptAssignPortal(newP);
+      action=null;
+    }
+  } else if (action.type==='portal' && action.ghost){
       const rect = action.ghost.getBoundingClientRect();
       action.ghost.remove();
       const wrapRect = wrap.getBoundingClientRect();
