@@ -73,7 +73,7 @@
 
     #map{
       position:absolute;inset:0;object-fit:contain;width:100%;height:100%;
-      transform-origin:top left;cursor:grab;z-index:1
+      transform-origin:top left;cursor:grab;z-index:1;will-change:transform;
     }
     canvas{position:absolute;left:0;top:0;pointer-events:none}
     #grid-layer{z-index:2}
@@ -83,7 +83,7 @@
     .token{
       position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;
       display:flex;align-items:center;justify-content:center;user-select:none;cursor:grab;
-      z-index:6;border:2px solid #fff;transform-origin:center;overflow:hidden
+      z-index:6;border:2px solid #fff;transform-origin:center;overflow:hidden;will-change:transform;
     }
     .token span{pointer-events:none}
     .token.has-img{background-size:cover;background-position:center;color:#fff;text-shadow:0 1px 2px #000}
@@ -475,6 +475,12 @@
         };
       }
 
+      /* Utilities */
+      function esc(s){return String(s).replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
+      const CSS = getComputedStyle(document.documentElement);
+      const CSS_RUNE = CSS.getPropertyValue('--rune');
+      const CSS_MIST = CSS.getPropertyValue('--mist');
+
       /* Canvas sizing & initial draw (HiDPI aware) */
       function fitCanvases() {
         const r = wrap.getBoundingClientRect();
@@ -496,7 +502,8 @@
 
         if (!fogUndoStack.length) {
           // clear using CSS pixel units (after transform)
-          fctx.clearRect(0, 0, grid.width / dpr, grid.height / dpr);
+          const w = grid.width / dpr, h = grid.height / dpr;
+          fctx.clearRect(0, 0, w, h);
           pushFogState();
         }
         repositionAll();
@@ -526,7 +533,7 @@
         const h = grid.height / dpr;
 
         gctx.clearRect(0, 0, w, h);
-        gctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rune');
+        gctx.strokeStyle = CSS_RUNE;
         gctx.lineWidth = 1;
 
         const step = cell * scale;
@@ -553,12 +560,12 @@
         redrawTemplates();
       }
 
-      /* Zoom / Pan */
+      /* Zoom / Pan (anchor in CSS px, retina-safe) */
       function setScale(newScale, anchorX, anchorY) {
         const old = scale;
         scale = Math.max(0.2, Math.min(6, newScale));
-        const ax = anchorX ?? grid.width / 2;
-        const ay = anchorY ?? grid.height / 2;
+        const ax = anchorX ?? (grid.clientWidth  / 2);
+        const ay = anchorY ?? (grid.clientHeight / 2);
         const wx = (ax - offset.x) / old;
         const wy = (ay - offset.y) / old;
         offset.x = ax - wx * scale;
@@ -569,7 +576,10 @@
       zoomOutBtn.addEventListener('click', () => setScale(scale / 1.2));
       wrap.addEventListener('wheel', e => {
         e.preventDefault();
-        setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), e.offsetX, e.offsetY);
+        const rect = wrap.getBoundingClientRect();
+        const ax = e.clientX - rect.left;
+        const ay = e.clientY - rect.top;
+        setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), ax, ay);
       }, { passive: false });
 
       wrap.addEventListener('mousedown', (e)=>{
@@ -625,7 +635,7 @@
       /* Fog paint + undo/redo */
       function pushFogState() {
         try {
-          // getImageData uses pixel coords; pass backing store size
+          // getImageData uses backing-store px
           const img = fctx.getImageData(0, 0, fog.width, fog.height);
           fogUndoStack.push(img);
           if (fogUndoStack.length > FOG_LIMIT) fogUndoStack.shift();
@@ -648,7 +658,7 @@
           beganStroke = true;
         }
         fctx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
-        if (!reveal) fctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
+        if (!reveal) fctx.fillStyle = CSS_MIST;
         const r = parseInt(brushSel.value, 10);
         fctx.beginPath(); fctx.arc(sx, sy, r, 0, Math.PI * 2); fctx.fill();
         fctx.globalCompositeOperation = 'source-over';
@@ -701,7 +711,7 @@
         el.className = 'token';
         el.style.width = el.style.height = (size||42)+'px';
         el.style.background = color || '#f44';
-        el.innerHTML = '<span>'+ (name||'T') +'</span>';
+        el.innerHTML = '<span>'+ (esc(name||'T')) +'</span>';
         if (img){
           el.classList.add('has-img');
           el.style.backgroundImage = `url(${img})`;
@@ -747,12 +757,13 @@
         }
       });
 
-      /* Context menu (basic actions stub) */
+      /* Context menu (position relative to container) */
       wrap.addEventListener('contextmenu', (e)=>{
         e.preventDefault();
+        const rect = wrap.getBoundingClientRect();
         ctxMenu.style.display='block';
-        ctxMenu.style.left = e.clientX+'px';
-        ctxMenu.style.top = e.clientY+'px';
+        ctxMenu.style.left = (e.clientX - rect.left) + 'px';
+        ctxMenu.style.top  = (e.clientY - rect.top)  + 'px';
       });
       window.addEventListener('click', (e)=>{
         if (!ctxMenu.contains(e.target)) ctxMenu.style.display='none';
@@ -812,7 +823,7 @@
           row.innerHTML = `
             <div class="thumb" style="background-image:url('${s.img}')"></div>
             <div style="flex:1">
-              <div>${s.name}</div>
+              <div>${esc(s.name)}</div>
             </div>
             <button class="btn" data-i="${i}" data-act="open">Open</button>
             <button class="btn" data-i="${i}" data-act="del">Delete</button>
@@ -877,7 +888,7 @@
           row.style.alignItems='center';
           row.innerHTML = `
             <div style="width:28px;text-align:right;color:${idx===initIdx?'#0f0':'#aaa'}">${idx===initIdx?'▶':''}</div>
-            <div style="flex:1">${it.name}</div>
+            <div style="flex:1">${esc(it.name)}</div>
             <div style="width:40px;text-align:right">${it.roll}</div>
             <button class="btn" data-i="${idx}">✕</button>
           `;
@@ -910,11 +921,19 @@
 
       /* Omniverse Connect / Generate / Library */
       function logOv(msg) {
-        ovConsole.innerHTML += `<div>${new Date().toLocaleTimeString()} — ${msg}</div>`;
+        ovConsole.innerHTML += `<div>${new Date().toLocaleTimeString()} — ${esc(msg)}</div>`;
         ovConsole.scrollTop = ovConsole.scrollHeight;
       }
-      ovHelpBtn.onclick = () => {
-        ovHelp.style.display = ovHelp.style.display === 'block' ? 'none' : 'block';
+
+      // Position help popover near the button (fixed coords)
+      ovHelpBtn.onclick = (ev) => {
+        const r = ovHelpBtn.getBoundingClientRect();
+        ovHelp.style.position = 'fixed';
+        ovHelp.style.left = `${Math.round(r.left + r.width/2)}px`;
+        ovHelp.style.top  = `${Math.round(r.bottom + 8)}px`;
+        ovHelp.style.transform = 'translateX(-50%)';
+        ovHelp.style.display = (ovHelp.style.display === 'block') ? 'none' : 'block';
+        ev.stopPropagation();
       };
       document.addEventListener('click', (e) => {
         if (!ovHelp.contains(e.target) && e.target !== ovHelpBtn) {
@@ -987,8 +1006,8 @@
           card.innerHTML = `
             <div class="rl-shot" style="background-image:url('${thumb}')"></div>
             <div class="rl-meta">
-              <div style="color:#fff">${it.name || 'Render'}</div>
-              <div style="color:#c9b27a">${when}</div>
+              <div style="color:#fff">${esc(it.name || 'Render')}</div>
+              <div style="color:#c9b27a">${esc(when)}</div>
             </div>
             <div class="rl-actions">
               <button class="btn" data-act="load">Load</button>
@@ -998,15 +1017,27 @@
             ensureWS();
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
             ws.send(JSON.stringify({ action:'get', name: it.name }));
-            logOv('Loading ' + it.name);
+            logOv('Loading ' + (it.name||''));
             closeRenders();
           };
           card.querySelector('[data-act="copy"]').onclick = ()=>{
-            navigator.clipboard.writeText(it.name).then(()=>logOv('Name copied.'));
+            navigator.clipboard.writeText(it.name||'').then(()=>logOv('Name copied.'));
           };
           rlGrid.appendChild(card);
         });
       }
+
+      /* Global Esc to close overlays/popovers */
+      window.addEventListener('keydown', (e)=>{
+        if (e.key !== 'Escape') return;
+        if (rendersModal.style.display === 'flex') rendersModal.style.display = 'none';
+        if (subOverlay.style.display === 'block') {
+          subOverlay.style.display = 'none';
+          subOverlay.setAttribute('aria-hidden','true');
+        }
+        if (ovHelp.style.display === 'block') ovHelp.style.display = 'none';
+        if (ctxMenu.style.display === 'block') ctxMenu.style.display = 'none';
+      });
 
       /* Init */
       setTool('pan');
