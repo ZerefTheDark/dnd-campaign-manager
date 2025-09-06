@@ -939,16 +939,26 @@ window.onload = function () {
         const s = submaps.find(x=>x.name===selectedToken.sheet.submap);
         if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.');
       } else {
-        alert('Nothing assigned. Use "Assign Submap…" first.');
-      }
-    } else if (act==='sheet'){
-      if (selectedToken){
-        alert(`Character Sheet\n\nName: ${selectedToken.name || '—'}`);
-      } else {
-        alert('Right-click a token to view its sheet.');
-      }
+        function startDraw(e){
+    const pt = pointerToWrap(e);
+    const pos = screenToWorld(pt.x, pt.y);
+    const sx = snap(pos.x), sy = snap(pos.y);
+    if (currentTool==='ruler'){
+      action = { type:'draw', draft:{type:'ruler', start:{x:sx,y:sy}, end:{x:sx,y:sy}} };
+    } else if (currentTool==='circle'){
+      action = { type:'draw', draft:{type:'circle', start:{x:sx,y:sy}, r:1} };
+    } else if (currentTool==='cone'){
+      action = { type:'draw', draft:{type:'cone', start:{x:sx,y:sy}, r:1, a0:0, a1:0} };
+    } else if (currentTool==='wall'){
+      if (!drawingWall) drawingWall = {points:[], type:'wall'};
+      drawingWall.points.push({x:sx,y:sy});
+      drawWalls();
+    } else if (currentTool==='portal'){
+      action = { type:'portal', start:{x:sx,y:sy}, ghost: (()=>{ const g=document.createElement('div'); g.className='portal'; g.style.width='1px'; g.style.height='1px'; wrap.appendChild(g); return g;})() };
+      const s = worldToScreen(sx, sy);
+      action.ghost.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
     }
-  });
+  }
 
   /* SUBMAPS */
   const subOverlay = document.getElementById('submap-overlay');
