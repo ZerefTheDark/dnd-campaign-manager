@@ -3,37 +3,425 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>The War Vault — Omniverse Edition (Stabilized)</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Great+Vibes&display=swap" rel="stylesheet">
+<title>D&D Character Sheet — DDB‑style</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Cinzel:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --gold:#e6c57f;--accent:#b88c5c;--ink:#eee;--panel:#14131a;--mist:rgba(0,0,0,.55);--rune:rgba(230,197,127,.28);
-    --paper:#f4ecd7;--paperEdge:#c9b27a;
+    --ink:#e9e9ee;--bg:#0f1015;--panel:#14151c;--muted:#9aa2b1;--red:#ef4444;--gold:#f4cc7a;--line:#252838;--pill:#1c1f2b;--accent:#8ecae6;--green:#22c55e;
   }
   *{box-sizing:border-box}
-  body{
-    margin:0;height:100vh;display:flex;flex-direction:column;background:#000;color:var(--ink);
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;overflow:hidden
-  }
+  html,body{height:100%}
+  body{margin:0;background:radial-gradient(1800px 800px at 70% -10%, #1a1c26 0%, #0f1015 55%);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,sans-serif}
+  .sheet{max-width:1180px;margin:18px auto;padding:12px 16px}
+  .topbar{display:flex;align-items:center;gap:12px}
+  .avatar{width:72px;height:72px;border-radius:12px;background:#222 url('https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop') center/cover no-repeat;border:2px solid #303448}
+  .header{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;width:100%}
+  .name{font-family:Cinzel,serif;font-weight:900;letter-spacing:.02em;font-size:28px}
+  .badge{padding:6px 10px;background:var(--pill);border:1px solid var(--line);border-radius:999px;color:var(--muted);font-weight:600}
+  .btn{cursor:pointer;border-radius:10px;border:1px solid var(--line);background:linear-gradient(#1a1d27,#171923);color:var(--ink);padding:8px 10px;font-weight:600}
+  .btn:hover{border-color:#3a3f57}
+  .grid{display:grid;grid-template-columns:300px 1fr 330px;gap:14px;margin-top:12px}
+  @media (max-width:1100px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,#161823,#131520);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .card h3{margin:0 0 6px;font-family:Cinzel,serif;letter-spacing:.04em;color:var(--gold);font-size:16px}
+  .card .pad{padding:10px 12px}
+  .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .ability{position:relative;background:#12131b;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+  .ability .abbr{font-weight:800;color:#d7def5}
+  .ability .score{font-size:28px;font-weight:800;margin:6px 0}
+  .ability .mod{font-weight:800;background:#10121c;border:1px solid #2a2f45;border-radius:8px;padding:6px 0}
+  .pillrow{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{background:var(--pill);border:1px solid var(--line);border-radius:999px;padding:6px 8px;font-weight:600;color:var(--muted)}
 
-  /* Atmospheric background */
-  body::before{
-    content:"";
-    position:fixed; inset:-10%;
-    background:
-      radial-gradient(60% 60% at 16% 10%, rgba(230,197,127,.10), transparent 60%),
-      radial-gradient(55% 55% at 82% 0%, rgba(142,114,79,.08), transparent 60%),
-      radial-gradient(50% 45% at 50% 100%, rgba(184,140,92,.08), transparent 55%),
-      var(--bg-art),
-      linear-gradient(180deg,#0b0a10 0%, #0b0a10 40%, #0a0a12 100%);
-    background-size:auto,auto,auto,cover,100% 100%;
-    filter:saturate(110%) contrast(102%);
-    z-index:-2;
-  }
+  .box{background:#12131b;border:1px dashed var(--line);border-radius:12px;padding:8px}
+  .kv{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  .kv div:nth-child(2){font-weight:800}
 
-  /* Film grain overlay */
-  body::after{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
+  /* right column blocks */
+  .hpac{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .hp{background:#10121c;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+  .hp .ttl{font-weight:700;color:#cbd5e1}
+  .hp .val{font-size:24px;font-weight:900}
+  .hp.good{border-color:#204a33;box-shadow:inset 0 0 0 1px rgba(34,197,94,.35)}
+  .hp.warn{border-color:#4a3a20;box-shadow:inset 0 0 0 1px rgba(244,204,122,.35)}
+
+  /* Tabs */
+  .tabs{margin-top:12px}
+  .tabbar{display:flex;gap:10px;flex-wrap:wrap}
+  .tabbar .tab{border:none;background:transparent;color:#cbd5e1;padding:8px 8px 10px;font-weight:800;letter-spacing:.02em;border-bottom:2px solid transparent;cursor:pointer}
+  .tabbar .tab.active{color:var(--ink);border-bottom-color:var(--gold)}
+  .tabpanel{display:none}
+  .tabpanel.active{display:block}
+
+  .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 8px}
+  .subtabs .sub{background:#171927;border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:#cbd5e1;font-weight:700;cursor:pointer}
+  .subtabs .sub.active{background:#20243a;border-color:#3b4161}
+
+  .list{display:grid;gap:8px}
+  .row{display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr 1fr;gap:8px;align-items:center;background:#12131b;border:1px solid var(--line);border-radius:10px;padding:8px}
+  .row .name{font-weight:700}
+  .row small{color:#9aa2b1}
+
+  .search{display:flex;gap:8px;margin:8px 0}
+  .search input{flex:1;background:#12131b;border:1px solid var(--line);border-radius:10px;padding:8px;color:var(--ink)}
+  .tag{display:inline-flex;align-items:center;gap:6px;background:#12131b;border:1px solid var(--line);border-radius:999px;padding:4px 8px;color:#b7c0d7;font-weight:700}
+
+  .muted{color:var(--muted)}
+  .num{font-feature-settings:"tnum" 1, "ss01" 1}
+  .right{justify-self:end}
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <!-- header -->
+    <div class="card pad">
+      <div class="topbar">
+        <div class="avatar" aria-hidden="true"></div>
+        <div class="header">
+          <div class="name" id="charName">Hjulkyl Foamtankard</div>
+          <div class="badge" id="metaRace">Hill Dwarf • Male</div>
+          <div class="badge" id="metaClass">Cleric 1</div>
+          <div class="badge" id="campaign">Campaigny McCampaignface</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- body grid -->
+    <div class="grid">
+      <!-- left: abilities & saving throws / skills -->
+      <div class="card pad">
+        <h3>Abilities</h3>
+        <div class="statgrid" id="abilityGrid"></div>
+
+        <div style="margin-top:10px" class="pillrow">
+          <span class="pill">Poison Resistance</span>
+          <span class="pill">Darkvision 60 ft.</span>
+        </div>
+
+        <div style="margin-top:12px">
+          <h3>Saving Throws</h3>
+          <div class="box" id="savesBox"></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <h3>Skills</h3>
+          <div class="box" id="skillsBox"></div>
+        </div>
+      </div>
+
+      <!-- middle: tabs -->
+      <div class="card pad">
+        <div class="tabs">
+          <div class="tabbar" role="tablist">
+            <button class="tab active" data-tab="actions" role="tab">ACTIONS</button>
+            <button class="tab" data-tab="spells" role="tab">SPELLS</button>
+            <button class="tab" data-tab="equipment" role="tab">EQUIPMENT</button>
+            <button class="tab" data-tab="features" role="tab">FEATURES & TRAITS</button>
+            <button class="tab" data-tab="description" role="tab">DESCRIPTION</button>
+            <button class="tab" data-tab="notes" role="tab">NOTES</button>
+            <button class="tab" data-tab="extras" role="tab">EXTRAS</button>
+          </div>
+
+          <!-- ACTIONS -->
+          <section class="tabpanel active" id="tab-actions" role="tabpanel">
+            <div class="subtabs" data-subgroup="actions">
+              <button class="sub active" data-sub="atk">Attacks</button>
+              <button class="sub" data-sub="class">Class Actions</button>
+              <button class="sub" data-sub="other">Other</button>
+            </div>
+            <div class="search"><input placeholder="Search actions…"/></div>
+            <div class="list" id="actionsList"></div>
+          </section>
+
+          <!-- SPELLS -->
+          <section class="tabpanel" id="tab-spells" role="tabpanel">
+            <div class="kv"><div>Spellcasting Ability</div><div id="spellAbility" class="right">WIS +2</div></div>
+            <div class="kv"><div>Spell Save DC</div><div id="spellDC" class="right">12</div></div>
+            <div class="kv"><div>Spell Attack Bonus</div><div id="spellAtk" class="right">+4</div></div>
+            <div class="subtabs" data-subgroup="spells">
+              <button class="sub active" data-sub="cantrips">Cantrips</button>
+              <button class="sub" data-sub="lvl1">1st</button>
+              <button class="sub" data-sub="lvl2">2nd</button>
+              <button class="sub" data-sub="prep">Prepared</button>
+            </div>
+            <div class="search"><input placeholder="Search spells…"/></div>
+            <div class="list" id="spellsList"></div>
+          </section>
+
+          <!-- EQUIPMENT -->
+          <section class="tabpanel" id="tab-equipment" role="tabpanel">
+            <div class="subtabs" data-subgroup="equip">
+              <button class="sub active" data-sub="inv">Inventory</button>
+              <button class="sub" data-sub="coins">Coins</button>
+              <button class="sub" data-sub="attun">Attunements</button>
+            </div>
+            <div class="list" id="equipList"></div>
+          </section>
+
+          <!-- FEATURES & TRAITS -->
+          <section class="tabpanel" id="tab-features" role="tabpanel">
+            <div class="subtabs" data-subgroup="feat">
+              <button class="sub active" data-sub="race">Racial</button>
+              <button class="sub" data-sub="class">Class</button>
+              <button class="sub" data-sub="other">Other</button>
+            </div>
+            <div class="list" id="featList"></div>
+          </section>
+
+          <!-- DESCRIPTION -->
+          <section class="tabpanel" id="tab-description" role="tabpanel">
+            <div class="subtabs" data-subgroup="desc">
+              <button class="sub active" data-sub="bio">Bio</button>
+              <button class="sub" data-sub="appearance">Appearance</button>
+              <button class="sub" data-sub="backstory">Backstory</button>
+            </div>
+            <div class="list" id="descList"></div>
+          </section>
+
+          <!-- NOTES -->
+          <section class="tabpanel" id="tab-notes" role="tabpanel">
+            <div class="subtabs" data-subgroup="notes">
+              <button class="sub active" data-sub="session">Session</button>
+              <button class="sub" data-sub="dm">DM</button>
+            </div>
+            <div class="list" id="notesList"></div>
+          </section>
+
+          <!-- EXTRAS -->
+          <section class="tabpanel" id="tab-extras" role="tabpanel">
+            <div class="subtabs" data-subgroup="extras">
+              <button class="sub active" data-sub="pets">Companions</button>
+              <button class="sub" data-sub="custom">Custom</button>
+            </div>
+            <div class="list" id="extrasList"></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- right: HP/AC and conditions -->
+      <div class="card pad">
+        <h3>Defenses</h3>
+        <div class="hpac">
+          <div class="hp good">
+            <div class="ttl">ARMOR CLASS</div>
+            <div class="val num" id="acVal">18</div>
+          </div>
+          <div class="hp good">
+            <div class="ttl">HIT POINTS</div>
+            <div class="val num"><span id="hpCur">12</span> / <span id="hpMax">12</span></div>
+          </div>
+          <div class="hp">
+            <div class="ttl">TEMP HP</div>
+            <div class="val num" id="hpTemp">0</div>
+          </div>
+        </div>
+        <div style="margin-top:10px" class="pillrow">
+          <span class="tag">Poisoned (resist)</span>
+          <span class="tag">Proficiency +2</span>
+          <span class="tag">Speed 25 ft</span>
+          <span class="tag">Initiative -1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// --- minimal data model (demo values) ---
+const state = {
+  abilities: { STR:12, DEX:8, CON:17, INT:10, WIS:15, CHA:13 },
+  proficientSaves: ['WIS','CHA'],
+  profBonus: 2,
+  skills: {
+    Acrobatics:'DEX', AnimalHandling:'WIS', Arcana:'INT', Athletics:'STR', Deception:'CHA',
+    History:'INT', Insight:'WIS', Intimidation:'CHA', Investigation:'INT', Medicine:'WIS',
+    Nature:'INT', Perception:'WIS', Performance:'CHA', Persuasion:'CHA', Religion:'INT',
+    SleightOfHand:'DEX', Stealth:'DEX', Survival:'WIS'
+  },
+  proficientSkills: ['Insight','Medicine','History'],
+  actions:{
+    atk:[{name:'Warhammer',info:'Melee • 1d8 bludgeoning', bonus:'+4', damage:'1d8+2'}, {name:'Handaxe',info:'Melee • 1d6 slashing', bonus:'+4', damage:'1d6+2'}],
+    class:[{name:'Channel Divinity',info:'1/rest • Present at later levels', bonus:'—', damage:'—'}],
+    other:[{name:'Shove',info:'Special', bonus:'—', damage:'—'}]
+  },
+  spells:{
+    cantrips:[{name:'Guidance', time:'1A', range:'Touch', hit:'—', effect:'Buff'}, {name:'Sacred Flame', time:'1A', range:'60 ft.', hit:'DEX 12', effect:'1d8✦'}],
+    lvl1:[{name:'Bless', time:'1A', range:'30 ft.', effect:'Buff'}, {name:'Cure Wounds', time:'1A', range:'Touch', effect:'1d8+2♥'}],
+    lvl2:[], prepared:['Bless','Cure Wounds','Guidance','Sacred Flame']
+  },
+  equipment:{ inv:[
+    {name:'Chain Mail', qty:1, weight:'55 lb', notes:'AC 16'},
+    {name:'Shield', qty:1, weight:'6 lb', notes:'+2 AC'},
+    {name:'Warhammer', qty:1, weight:'2 lb'},
+    {name:'Explorer\'s Pack', qty:1, weight:'-'}
+  ], coins:{gp:15, sp:8, cp:27}, attun:[] },
+  features:{ race:['Dwarven Resilience','Dwarven Toughness'], class:['Spellcasting (Cleric)','Divine Domain TBD'], other:[]},
+  description:{ bio:['Lawful Good • 55 years'], appearance:['Stocky, auburn beard'], backstory:['Left the mountainhold to serve the forge-god.']},
+  notes:{ session:['Met the brewer guild.','Found a silver token.'], dm:['Remember poison traps.'] },
+  extras:{ pets:['Mule (Pakko)'], custom:[] }
+};
+
+// --- helpers ---
+const mod = s => Math.floor((s-10)/2);
+const sign = n => (n>=0?'+':'')+n;
+
+// --- abilities UI ---
+const abilityGrid = document.getElementById('abilityGrid');
+Object.entries(state.abilities).forEach(([abbr,score])=>{
+  const el = document.createElement('div');
+  el.className='ability';
+  el.innerHTML = `<div class="abbr">${abbr}</div>
+                  <div class="score num">${score}</div>
+                  <div class="mod">${sign(mod(score))}</div>`;
+  abilityGrid.appendChild(el);
+});
+
+// saves
+const savesBox = document.getElementById('savesBox');
+const saves = Object.entries(state.abilities).map(([abbr,score])=>{
+  const isProf = state.proficientSaves.includes(abbr);
+  const total = mod(score) + (isProf?state.profBonus:0);
+  return `<div class="kv">
+    <div>${abbr} Save ${isProf?'<span class="muted">(prof)</span>':''}</div>
+    <div class="num">${sign(total)}</div>
+  </div>`;
+}).join('');
+savesBox.innerHTML = saves;
+
+// skills
+const skillsBox = document.getElementById('skillsBox');
+const skillsRows = Object.entries(state.skills).map(([name,stat])=>{
+  const isProf = state.proficientSkills.includes(name);
+  const total = mod(state.abilities[stat]) + (isProf?state.profBonus:0);
+  const label = name.replace(/([A-Z])/g,' $1').trim();
+  return `<div class="kv"><div>${label} <span class="muted">(${stat})</span> ${isProf?'<span class="muted">(prof)</span>':''}</div><div class="num">${sign(total)}</div></div>`;
+}).join('');
+skillsBox.innerHTML = skillsRows;
+
+// --- tabs & subtabs ---
+const tabs = document.querySelectorAll('.tabbar .tab');
+const panels = document.querySelectorAll('.tabpanel');
+tabs.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    tabs.forEach(b=>b.classList.remove('active'));
+    panels.forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+function wireSubtabs(group, cb){
+  const wrap = document.querySelector(`.subtabs[data-subgroup="${group}"]`);
+  if (!wrap) return;
+  wrap.addEventListener('click', e=>{
+    const t = e.target.closest('.sub'); if(!t) return;
+    wrap.querySelectorAll('.sub').forEach(s=>s.classList.remove('active'));
+    t.classList.add('active');
+    cb(t.dataset.sub);
+  });
+}
+
+// ACTIONS
+const actionsList = document.getElementById('actionsList');
+function renderActions(kind='atk'){
+  const items = state.actions[kind]||[];
+  actionsList.innerHTML = items.map(a=>`
+    <div class="row">
+      <div class="name">${a.name}<br><small>${a.info||''}</small></div>
+      <div class="num">${a.bonus||''}</div>
+      <div class="num">${a.damage||''}</div>
+      <div class="muted">—</div>
+      <button class="btn right">Roll</button>
+    </div>`).join('') || '<div class="muted">No actions.</div>';
+}
+renderActions();
+wireSubtabs('actions', renderActions);
+
+// SPELLS
+const spellsList = document.getElementById('spellsList');
+function renderSpells(sub='cantrips'){
+  let items=[];
+  if(sub==='cantrips') items = state.spells.cantrips;
+  else if(sub==='lvl1') items = state.spells.lvl1;
+  else if(sub==='lvl2') items = state.spells.lvl2;
+  else if(sub==='prep') items = (state.spells.prepared||[]).map(n=>({name:n, time:'—', range:'—', hit:'—', effect:'Prepared'}));
+  spellsList.innerHTML = items.map(s=>`
+    <div class="row">
+      <div class="name">${s.name}</div>
+      <div>${s.time||''}</div>
+      <div>${s.range||''}</div>
+      <div class="num">${s.hit||''}</div>
+      <div>${s.effect||''}</div>
+    </div>`).join('') || '<div class="muted">No spells.</div>';
+}
+renderSpells();
+wireSubtabs('spells', renderSpells);
+
+document.getElementById('spellAbility').textContent = 'WIS '+sign(mod(state.abilities.WIS));
+document.getElementById('spellDC').textContent = (8 + state.profBonus + mod(state.abilities.WIS));
+document.getElementById('spellAtk').textContent = sign(state.profBonus + mod(state.abilities.WIS));
+
+// EQUIPMENT
+const equipList = document.getElementById('equipList');
+function renderEquip(sub='inv'){
+  if (sub==='inv'){
+    equipList.innerHTML = state.equipment.inv.map(i=>`
+      <div class="row">
+        <div class="name">${i.name}</div>
+        <div>${i.qty||1}x</div>
+        <div>${i.weight||'-'}</div>
+        <div class="muted">—</div>
+        <div>${i.notes||''}</div>
+      </div>`).join('');
+  } else if (sub==='coins'){
+    const c = state.equipment.coins; equipList.innerHTML = `
+      <div class="row"><div class="name">Copper</div><div>${c.cp||0}</div><div></div><div></div><div></div></div>
+      <div class="row"><div class="name">Silver</div><div>${c.sp||0}</div><div></div><div></div><div></div></div>
+      <div class="row"><div class="name">Gold</div><div>${c.gp||0}</div><div></div><div></div><div></div></div>`;
+  } else if (sub==='attun'){
+    equipList.innerHTML = state.equipment.attun.length? state.equipment.attun.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('') : '<div class="muted">No attuned items.</div>';
+  }
+}
+renderEquip();
+wireSubtabs('equip', renderEquip);
+
+// FEATURES & TRAITS
+const featList = document.getElementById('featList');
+function renderFeats(sub='race'){
+  const items = state.features[sub]||[];
+  featList.innerHTML = items.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('')||'<div class="muted">No features.</div>';
+}
+renderFeats();
+wireSubtabs('feat', renderFeats);
+
+// DESCRIPTION
+const descList = document.getElementById('descList');
+function renderDesc(sub='bio'){
+  const items = state.description[sub]||[];
+  descList.innerHTML = items.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('')||'<div class="muted">No description.</div>';
+}
+renderDesc();
+wireSubtabs('desc', renderDesc);
+
+// NOTES
+const notesList = document.getElementById('notesList');
+function renderNotes(sub='session'){
+  const items = state.notes[sub]||[];
+  notesList.innerHTML = items.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('')||'<div class="muted">No notes.</div>';
+}
+renderNotes();
+wireSubtabs('notes', renderNotes);
+
+// EXTRAS
+const extrasList = document.getElementById('extrasList');
+function renderExtras(sub='pets'){
+  const items = state.extras[sub]||[];
+  extrasList.innerHTML = items.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('')||'<div class="muted">No extras.</div>';
+}
+renderExtras();
+wireSubtabs('extras', renderExtras);
+</script>
+</body>
+</html>
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
     opacity:var(--grain-strength, .12);
     mix-blend-mode:overlay;
