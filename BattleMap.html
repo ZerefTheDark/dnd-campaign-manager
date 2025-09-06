@@ -368,46 +368,6 @@ window.addEventListener('resize', () => {
   resizeRAF = requestAnimationFrame(fitCanvases);
 });
 
-    <li>Enter your <strong>Nucleus URL</strong> (e.g. <code>omniverse://your-server</code>)</li>
-    <li>Set the <strong>USD Path</strong> to your scene</li>
-    <li>Click <strong>Connect</strong> to sync</li>
-    <li>Use <strong>Generate Map</strong> to pull terrain, lighting, and props</li>
-  </ul>
-  <p>Ensure Omniverse is running and accessible.</p>
-</div>
-
-<script>
-window.onload = function () {
-  /* Element refs */
-  const wrap  = document.getElementById('map-container');
-  const mapEl = document.getElementById('map');
-  const fx    = document.getElementById('fx-layer');
-  const grid  = document.getElementById('grid-layer');
-  const tpl   = document.getElementById('template-layer');
-  const wallsLayer = document.getElementById('walls-layer');
-  const fog   = document.getElementById('fog-layer');
-
-  const fxx = fx.getContext('2d');
-  const gctx = grid.getContext('2d');
-  const tctx = tpl.getContext('2d');
-  const wctx = wallsLayer.getContext('2d');
-  const fctx = fog.getContext('2d');
-
-  const zoomInBtn  = document.getElementById('btn-zoom-in');
-  const zoomOutBtn = document.getElementById('btn-zoom-out');
-  const mapUpload  = document.getElementById('map-upload');
-  const saveMapBtn = document.getElementById('btn-save-map');
-
-  const toolButtons = Array.from(document.querySelectorAll('.tool'));
-  const snapChk     = document.getElementById('snap');
-  const fogModeSel  = document.getElementById('fog-mode');
-  const brushSel    = document.getElementById('brush');
-  const clearTplBtn = document.getElementById('btn-clear-templates');
-  const fogUndoBtn  = document.getElementById('btn-fog-undo');
-  const fogRedoBtn  = document.getElementById('btn-fog-redo');
-
-  const ctxMenu = document.getElementById('ctx');
-
   const tfName  = document.getElementById('tf-name');
   // Fog: Undo
 fogUndoBtn.addEventListener('click', () => {
@@ -449,19 +409,24 @@ fogRedoBtn.addEventListener('click', () => {
   const openRendersBtn = document.getElementById('btn-open-renders');
   const rendersModal   = document.getElementById('renders-modal');
   const rendersClose   = document.getElementById('renders-close');
-  const rlGrid         = document.getElementById('renders-grid');
+  // Fog: Undo
+fogUndoBtn.addEventListener('click', () => {
+  if (fogUndoStack.length < 2) return;
+  const prev = fogUndoStack.pop();
+  try { fogRedoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
+  try { fogx.putImageData(prev,0,0); } catch {}
+  drawFogToScreen();
+});
 
-  /* Global state (world space == canvas CSS px at scale=1) */
-  let scale = 1;
-  let offset = { x: 0, y: 0 };
-  const cell = 50;
+// Fog: Redo
+fogRedoBtn.addEventListener('click', () => {
+  if (!fogRedoStack.length) return;
+  const img = fogRedoStack.pop();
+  try { fogUndoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
+  try { fogx.putImageData(img,0,0); } catch {}
+  drawFogToScreen();
+});
 
-  let tokens   = [];   // {el,name,color,size,x,y,img?, sheet?}
-  let portals  = [];   // {el,x,y,w,h,targetName?}
-  let templates= [];   // {type, ...}
-  let walls    = [];   // {a:{x,y}, b:{x,y}, type, open}
-
-  let submaps = JSON.parse(localStorage.getItem('warvault-submaps') || '[]');
   let sessions= JSON.parse(localStorage.getItem('warvault-maps')    || '[]');
 
   let currentTool = 'pan';
@@ -618,27 +583,17 @@ fogUndoBtn.addEventListener('click', () => {
     r.readAsDataURL(file);
   });
 
-  /* Tools */
-  function setTool(t) {
-    currentTool = t;
-    toolButtons.forEach(b => b.classList.toggle('toggled', b.dataset.tool === t));
-    updateFogInteractivity();
-    mapEl.style.cursor = t==='pan' ? 'grab' : 'crosshair';
+  function pushFogState() {
+  try {
+    const img = fogx.getImageData(0, 0, fogTex.width, fogTex.height);
+    fogUndoStack.push(img);
+    if (fogUndoStack.length > FOG_LIMIT) fogUndoStack.shift();
+    fogRedoStack = [];
+  } catch (e) {
+    console.warn('Fog undo snapshot failed', e);
   }
-  toolButtons.forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
-  setTool('pan');
+}
 
-  function updateFogInteractivity() {
-    const on = fogModeSel.value !== 'none';
-    fog.style.pointerEvents = on ? 'auto' : 'none';
-    document.body.classList.toggle('fog-edit', on);
-    fog.classList.toggle('fog-active', on);
-    if (!on && action && action.type==='fog') action=null;
-  }
-  fogModeSel.addEventListener('change', updateFogInteractivity);
-  updateFogInteractivity();
-
-  /* FOG */
   function resetFogWorld(){
     const w = wrap.clientWidth  || 1;
     const h = wrap.clientHeight || 1;
@@ -1075,19 +1030,18 @@ function startDraw(e){
   renderSaved();
 
   /* Initiative */
-  function renderInit(){
-    initList.innerHTML='';
-    initiative.forEach((it,idx)=>{
-      const row = document.createElement('div');
-      row.style.display='flex';
-      row.style.gap='.5rem';
-      row.style.alignItems='center';
-      row.innerHTML = `
-        <div style="width:28px;text-align:right;color:${idx===initIdx?'#0f0':'#aaa'}">${idx===initIdx?'▶':''}</div>
-        <div style="flex:1">${it.name}</div>
-        <div style="width:40px;text-align:right">${it.roll}</div>
-        <button class="btn" data-i="${idx}">✕</button>
-      `;
+} else if (act==='open-submap'){
+  if (selectedPortal && selectedPortal.targetName){
+    const s = submaps.find(x=>x.name===selectedPortal.targetName);
+    if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.');
+  } else if (selectedToken && selectedToken.sheet?.submap){
+    const s = submaps.find(x=>x.name===selectedToken.sheet.submap);
+    if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.');
+  } else {
+    alert('Nothing selected with an assigned submap.');
+  }
+}
+
       row.querySelector('button').onclick = ()=>{
         initiative.splice(idx,1);
         if (initIdx >= initiative.length) initIdx = initiative.length-1;
@@ -1269,16 +1223,13 @@ function startDraw(e){
         const r = Math.max(1, Math.hypot(dx,dy));
         const ang = Math.atan2(dy,dx);
         const spread = Math.PI/3;
-        action.draft.r = r; action.draft.a0 = ang - spread/2; action.draft.a1 = ang + spread/2;
-      }
-      drawTemplates();
-    } else if (action.type==='portal' && action.ghost){
-      const w = sx - action.start.x; const h = sy - action.start.y;
-      const gx = worldToScreen(Math.min(action.start.x, action.start.x + w), Math.min(action.start.y, action.start.y + h));
-      action.ghost.style.width  = Math.abs(w) + 'px';
-      action.ghost.style.height = Math.abs(h) + 'px';
-      action.ghost.style.transform = `translate(${gx.x}px, ${gx.y}px) scale(${scale})`;
-    }
+row.querySelector('[data-act="del"]').onclick  = ()=>{
+  submaps.splice(i,1);
+  localStorage.setItem('warvault-submaps', JSON.stringify(submaps));
+  renderSubmaps();
+};
+return;
+
   }
   function endDraw(){
     if (!action) return;
