@@ -3,64 +3,882 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>D&D Character Sheet — DDB‑style</title>
+<title>The War Vault + Character Sheets</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Cinzel:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#e9e9ee;--bg:#0f1015;--panel:#14151c;--muted:#9aa2b1;--red:#ef4444;--gold:#f4cc7a;--line:#252838;--pill:#1c1f2b;--accent:#8ecae6;--green:#22c55e;
+    --gold:#e6c57f;--accent:#b88c5c;--ink:#eee;--panel:#14131a;--mist:rgba(0,0,0,.55);--rune:rgba(230,197,127,.28);
+    --paper:#f4ecd7;--paperEdge:#c9b27a;--line:#252838;--pill:#1c1f2b;
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;background:radial-gradient(1800px 800px at 70% -10%, #1a1c26 0%, #0f1015 55%);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,sans-serif}
-  .sheet{max-width:1180px;margin:18px auto;padding:12px 16px}
-  .topbar{display:flex;align-items:center;gap:12px}
-  .avatar{width:72px;height:72px;border-radius:12px;background:#222 url('https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop') center/cover no-repeat;border:2px solid #303448}
-  .header{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;width:100%}
-  .name{font-family:Cinzel,serif;font-weight:900;letter-spacing:.02em;font-size:28px}
-  .badge{padding:6px 10px;background:var(--pill);border:1px solid var(--line);border-radius:999px;color:var(--muted);font-weight:600}
-  .btn{cursor:pointer;border-radius:10px;border:1px solid var(--line);background:linear-gradient(#1a1d27,#171923);color:var(--ink);padding:8px 10px;font-weight:600}
-  .btn:hover{border-color:#3a3f57}
-  .grid{display:grid;grid-template-columns:300px 1fr 330px;gap:14px;margin-top:12px}
-  @media (max-width:1100px){.grid{grid-template-columns:1fr}}
-  .card{background:linear-gradient(180deg,#161823,#131520);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
-  .card h3{margin:0 0 6px;font-family:Cinzel,serif;letter-spacing:.04em;color:var(--gold);font-size:16px}
-  .card .pad{padding:10px 12px}
-  .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .ability{position:relative;background:#12131b;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
-  .ability .abbr{font-weight:800;color:#d7def5}
-  .ability .score{font-size:28px;font-weight:800;margin:6px 0}
-  .ability .mod{font-weight:800;background:#10121c;border:1px solid #2a2f45;border-radius:8px;padding:6px 0}
-  .pillrow{display:flex;gap:8px;flex-wrap:wrap}
-  .pill{background:var(--pill);border:1px solid var(--line);border-radius:999px;padding:6px 8px;font-weight:600;color:var(--muted)}
+  body{margin:0;height:100vh;display:flex;flex-direction:column;background:#0b0a10;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;overflow:hidden}
+  header{
+    display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;
+    border-bottom:1px solid var(--accent);background:rgba(10,10,14,.9);backdrop-filter:blur(6px);z-index:20;
+    box-shadow: 0 2px 20px rgba(230,197,127,.06);
+  }
+  .brand{display:flex;flex-direction:column}
+  .brand .title{font-family:'Cinzel',serif;font-weight:900;letter-spacing:.06em;color:var(--gold);text-shadow:0 0 12px rgba(230,197,127,.35);font-size:1.4rem}
+  .brand .byline{font-family:'Great Vibes',cursive;font-size:1.5rem;line-height:1;color:var(--gold)}
+  .actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .btn{
+    background:rgba(35,35,45,.85);border:1px solid var(--accent);color:var(--ink);padding:.35rem .6rem;border-radius:8px;cursor:pointer
+  }
+  .btn:hover{background:var(--accent);color:#000;box-shadow:0 0 14px rgba(230,197,127,.35)}
+  .btn.toggled{background:var(--accent);color:#000}
+  input,select{
+    background:#1c1b24;border:1px solid var(--accent);color:var(--ink);
+    padding:.35rem;border-radius:6px
+  }
 
-  .box{background:#12131b;border:1px dashed var(--line);border-radius:12px;padding:8px}
-  .kv{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
-  .kv div:nth-child(2){font-weight:800}
+  #stage{flex:1;display:grid;grid-template-columns:320px 1fr 360px;min-height:0}
+  #left-panel{
+    background:#14131a;border-right:1px solid var(--accent);overflow:auto;display:flex;flex-direction:column;
+    box-shadow: inset 0 0 0 1px rgba(184,140,92,.22), inset 0 0 24px rgba(230,197,127,.06);
+  }
+  #right-panel{
+    background:#14131a;border-left:1px solid var(--accent);overflow:auto;
+    box-shadow: inset 0 0 0 1px rgba(184,140,92,.22), inset 0 0 24px rgba(230,197,127,.06);
+  }
+  #map-container{position:relative;overflow:hidden;background:#111}
+  .section{padding:12px;border-bottom:1px solid rgba(255,255,255,.06);position:relative;background:linear-gradient(180deg, rgba(235,220,185,.05), transparent 40%)}
+  .section h3{margin:.1rem 0 .6rem;font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;position:relative;padding-bottom:.35rem}
+  .row{display:flex;gap:.5rem;align-items:center;margin:.4rem 0}
+  .row.stacked{flex-direction:column;align-items:stretch}
 
-  /* right column blocks */
-  .hpac{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .hp{background:#10121c;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
-  .hp .ttl{font-weight:700;color:#cbd5e1}
-  .hp .val{font-size:24px;font-weight:900}
-  .hp.good{border-color:#204a33;box-shadow:inset 0 0 0 1px rgba(34,197,94,.35)}
-  .hp.warn{border-color:#4a3a20;box-shadow:inset 0 0 0 1px rgba(244,204,122,.35)}
+  #map{position:absolute;inset:0;object-fit:contain;width:100%;height:100%;transform-origin:top left;cursor:grab;z-index:1}
 
-  /* Tabs */
-  .tabs{margin-top:12px}
-  .tabbar{display:flex;gap:10px;flex-wrap:wrap}
-  .tabbar .tab{border:none;background:transparent;color:#cbd5e1;padding:8px 8px 10px;font-weight:800;letter-spacing:.02em;border-bottom:2px solid transparent;cursor:pointer}
-  .tabbar .tab.active{color:var(--ink);border-bottom-color:var(--gold)}
-  .tabpanel{display:none}
-  .tabpanel.active{display:block}
+  /* overlay layers that track map transform */
+  canvas, .portal{position:absolute;left:0;top:0;pointer-events:none}
+  #fx-layer{z-index:2}
+  #grid-layer{z-index:3}
+  #template-layer{z-index:4}
+  #walls-layer{z-index:5}
+  #fog-layer{z-index:6}
+  .token{
+    position:absolute;border-radius:50%;background:#f44;color:#000;font-weight:800;
+    display:flex;align-items:center;justify-content:center;user-select:none;cursor:grab;
+    z-index:7;border:2px solid #fff;transform-origin:center;overflow:hidden
+  }
+  .token span{pointer-events:none}
+  .token.has-img{background-size:cover;background-position:center;color:#fff;text-shadow:0 1px 2px #000}
 
-  .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 8px}
-  .subtabs .sub{background:#171927;border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:#cbd5e1;font-weight:700;cursor:pointer}
-  .subtabs .sub.active{background:#20243a;border-color:#3b4161}
+  .portal{
+    z-index:8;border:3px solid var(--gold);background:transparent;
+    box-shadow:0 0 14px rgba(230,197,127,.35), inset 0 0 12px rgba(230,197,127,.18);
+    border-radius:6px;pointer-events:auto;transform-origin:top left;
+  }
 
-  .list{display:grid;gap:8px}
-  .row{display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr 1fr;gap:8px;align-items:center;background:#12131b;border:1px solid var(--line);border-radius:10px;padding:8px}
-  .row .name{font-weight:700}
-  .row small{color:#9aa2b1}
+  /* context menu */
+  #ctx{position:absolute;z-index:50;background:#1b1a22;border:1px solid var(--accent);border-radius:8px;overflow:hidden;display:none;min-width:220px}
+  #ctx button{display:block;width:100%;text-align:left;padding:.5rem .7rem;background:transparent;color:var(--ink);border:none;cursor:pointer}
+  #ctx button:hover{background:rgba(255,255,255,.08)}
+
+  /* submap overlay */
+  #submap-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:none;z-index:30}
+  .parchment{position:absolute;inset:6% 10%;background:var(--paper) url('https://i.imgur.com/2mJvRjF.png') center/cover no-repeat;box-shadow:0 20px 60px rgba(0,0,0,.6);border:2px solid var(--paperEdge);border-radius:14px;overflow:hidden}
+  .parchment .head{display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:linear-gradient(#f6eed9,#eadfbf);border-bottom:1px solid var(--paperEdge)}
+  .parchment .head .ttl{font-family:'Cinzel',serif;color:#5a4829}
+  .parchment .head .x{background:#7a1;color:#fff;border:none;padding:.3rem .55rem;border-radius:999px;cursor:pointer}
+  .parchment .body{position:absolute;inset:42px 8px 8px 8px;background:#d7ccb0}
+  #submap-canvas{position:absolute;inset:0}
+
+  /* Character Sheet overlay (scoped styling) */
+  #sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;z-index:70;align-items:center;justify-content:center}
+  .sheet-modal{width:min(1100px,96vw);max-height:92vh;overflow:auto;border:1px solid var(--accent);border-radius:14px;background:linear-gradient(180deg,#161823,#131520);box-shadow:0 40px 120px rgba(0,0,0,.6);padding:10px}
+  .sheet-close{position:sticky;top:0;display:flex;justify-content:flex-end;z-index:5}
+  .sheet-close .btn{background:#1c1f2b;border-color:#2f3550}
+
+  /* DDB-ish sheet (scoped to #sheet-overlay to avoid conflicts) */
+  #sheet-overlay .hdr{display:flex;gap:10px;align-items:center}
+  #sheet-overlay .avatar{width:64px;height:64px;border-radius:12px;background:#222 url('https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop') center/cover no-repeat;border:2px solid #303448}
+  #sheet-overlay .name{font-family:Cinzel,serif;font-weight:900;font-size:26px;letter-spacing:.02em}
+  #sheet-overlay .badge{padding:6px 10px;background:var(--pill);border:1px solid var(--line);border-radius:999px;color:#9aa2b1;font-weight:600}
+  #sheet-overlay .grid{display:grid;grid-template-columns:300px 1fr 330px;gap:14px;margin-top:10px}
+  @media (max-width:1100px){ #sheet-overlay .grid{grid-template-columns:1fr} }
+  #sheet-overlay .card{background:linear-gradient(180deg,#181a26,#141621);border:1px solid #2a2f45;border-radius:14px}
+  #sheet-overlay .pad{padding:10px 12px}
+  #sheet-overlay h3{margin:0 0 6px;font-family:Cinzel,serif;letter-spacing:.04em;color:var(--gold);font-size:16px}
+  #sheet-overlay .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  #sheet-overlay .ability{background:#12131b;border:1px solid #2a2f45;border-radius:12px;padding:10px;text-align:center}
+  #sheet-overlay .ability .abbr{font-weight:800;color:#d7def5}
+  #sheet-overlay .ability .score{font-size:26px;font-weight:800;margin:6px 0}
+  #sheet-overlay .ability .mod{font-weight:800;background:#10121c;border:1px solid #2a2f45;border-radius:8px;padding:6px 0}
+  #sheet-overlay .pillrow{display:flex;gap:8px;flex-wrap:wrap}
+  #sheet-overlay .pill{background:#1c1f2b;border:1px solid #2a2f45;border-radius:999px;padding:6px 8px;font-weight:600;color:#9aa2b1}
+  #sheet-overlay .box{background:#11131b;border:1px dashed #2a2f45;border-radius:12px;padding:8px}
+  #sheet-overlay .kv{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  #sheet-overlay .kv div:nth-child(2){font-weight:800}
+  #sheet-overlay .hpac{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  #sheet-overlay .hp{background:#10121c;border:1px solid #2a2f45;border-radius:12px;padding:10px;text-align:center}
+  #sheet-overlay .hp .ttl{font-weight:700;color:#cbd5e1}
+  #sheet-overlay .hp .val{font-size:22px;font-weight:900}
+  #sheet-overlay .tabs{margin-top:10px}
+  #sheet-overlay .tabbar{display:flex;gap:10px;flex-wrap:wrap}
+  #sheet-overlay .tabbar .tab{border:none;background:transparent;color:#cbd5e1;padding:8px 8px 10px;font-weight:800;letter-spacing:.02em;border-bottom:2px solid transparent;cursor:pointer}
+  #sheet-overlay .tabbar .tab.active{color:var(--ink);border-bottom-color:var(--gold)}
+  #sheet-overlay .tabpanel{display:none}
+  #sheet-overlay .tabpanel.active{display:block}
+  #sheet-overlay .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 8px}
+  #sheet-overlay .sub{background:#171927;border:1px solid #2a2f45;border-radius:999px;padding:6px 10px;color:#cbd5e1;font-weight:700;cursor:pointer}
+  #sheet-overlay .sub.active{background:#20243a;border-color:#3b4161}
+  #sheet-overlay .list{display:grid;gap:8px}
+  #sheet-overlay .row{display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr 1fr;gap:8px;align-items:center;background:#12131b;border:1px solid #2a2f45;border-radius:10px;padding:8px}
+  #sheet-overlay .row .name{font-weight:700}
+  #sheet-overlay .muted{color:#9aa2b1}
+  #sheet-overlay .num{font-feature-settings:"tnum" 1, "ss01" 1}
+  #sheet-overlay .search{display:flex;gap:8px;margin:8px 0}
+  #sheet-overlay .search input{flex:1;background:#12131b;border:1px solid #2a2f45;border-radius:10px;padding:8px;color:var(--ink)}
+
+  @media (max-width:1180px){
+    #stage{grid-template-columns:0 1fr 360px}
+    #left-panel{display:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="title">The War Vault</div>
+    <div class="byline">Omniverse Edition</div>
+  </div>
+  <div class="actions" id="top-actions">
+    <button id="btn-zoom-in" class="btn" type="button" title="Zoom in">＋</button>
+    <button id="btn-zoom-out" class="btn" type="button" title="Zoom out">－</button>
+    <input id="map-upload" type="file" accept="image/*" class="btn" title="Upload map" />
+    <button id="btn-save-map" class="btn" type="button" title="Save map">💾 Save</button>
+  </div>
+</header>
+
+<div id="stage">
+  <aside id="left-panel">
+    <div class="section" id="token-forge">
+      <h3>Token Forge</h3>
+      <div id="forge-grid">
+        <div class="row"><input id="tf-name" placeholder="Name" /></div>
+        <div class="row">
+          <label for="tf-color" style="min-width:60px">Color</label>
+          <input id="tf-color" type="color" value="#ff4444" />
+        </div>
+        <div class="row">
+          <label for="tf-size" style="min-width:60px">Size (px)</label>
+          <input id="tf-size" type="number" min="24" max="120" value="42" />
+        </div>
+        <div class="row"><input id="tf-photo" type="file" accept="image/*" /></div>
+        <div class="row"><button id="btn-create-token" class="btn" type="button" style="width:100%">➕ Create Token</button></div>
+
+        <div style="margin-top:.6rem;color:#cbb27d">Saved Sessions</div>
+        <div id="saved-maps" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.35rem"></div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="map-container">
+    <img id="map" src="https://i.imgur.com/8V7V3sP.jpg" alt="Map" />
+    <canvas id="fx-layer"></canvas>
+    <canvas id="grid-layer"></canvas>
+    <canvas id="template-layer"></canvas>
+    <canvas id="walls-layer"></canvas>
+    <canvas id="fog-layer"></canvas>
+
+    <div id="ctx" role="menu">
+      <button data-act="sheet" type="button">View Character Sheet</button>
+      <button data-act="attach-sheet" type="button">Attach Sample Sheet</button>
+      <button data-act="assign-submap" type="button">Assign Submap…</button>
+      <button data-act="open-submap" type="button">Open Submap</button>
+      <button data-act="delete" type="button">Delete</button>
+    </div>
+
+    <div id="submap-overlay" aria-hidden="true">
+      <div class="parchment" role="dialog" aria-modal="true" aria-labelledby="submap-title">
+        <div class="head">
+          <div class="ttl" id="submap-title">Submap</div>
+          <button class="x" id="close-submap" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="body"><canvas id="submap-canvas"></canvas></div>
+      </div>
+    </div>
+  </main>
+
+  <aside id="right-panel">
+    <div class="section">
+      <h3>Tools</h3>
+      <div class="row" style="flex-wrap:wrap">
+        <button class="btn tool" type="button" data-tool="pan">🖐️ Pan</button>
+        <button class="btn tool" type="button" data-tool="select">🖱️ Select</button>
+        <button class="btn tool" type="button" data-tool="ruler">📏 Ruler</button>
+        <button class="btn tool" type="button" data-tool="circle">⭕ Circle</button>
+        <button class="btn tool" type="button" data-tool="cone">🔺 Cone</button>
+        <button class="btn tool" type="button" data-tool="wall">🧱 Wall</button>
+        <button class="btn tool" type="button" data-tool="portal">🌀 Portal</button>
+      </div>
+      <div class="row">
+        <button id="btn-clear-templates" class="btn" type="button" style="flex:1">Clear Templates</button>
+        <label style="display:flex;align-items:center;gap:.35rem"><input type="checkbox" id="snap" /> Snap-to-grid</label>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Character Sheet Modal -->
+<div id="sheet-overlay">
+  <div class="sheet-modal">
+    <div class="sheet-close"><button id="sheet-close" class="btn">✕ Close</button></div>
+    <div id="sheet-root"></div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Minimal battle map engine
+   ========================= */
+(function(){
+  // ---- DOM refs
+  const wrap = document.getElementById('map-container');
+  const mapEl = document.getElementById('map');
+  const fx = document.getElementById('fx-layer');
+  const grid = document.getElementById('grid-layer');
+  const tpl = document.getElementById('template-layer');
+  const wallsLayer = document.getElementById('walls-layer');
+  const fog = document.getElementById('fog-layer');
+  const fxx = fx.getContext('2d');
+  const gctx = grid.getContext('2d');
+  const tctx = tpl.getContext('2d');
+  const wctx = wallsLayer.getContext('2d');
+  const fctx = fog.getContext('2d');
+
+  const zoomInBtn = document.getElementById('btn-zoom-in');
+  const zoomOutBtn = document.getElementById('btn-zoom-out');
+  const mapUpload = document.getElementById('map-upload');
+  const saveMapBtn = document.getElementById('btn-save-map');
+  const clearTplBtn = document.getElementById('btn-clear-templates');
+  const ctxMenu = document.getElementById('ctx');
+  const savedMapsDiv = document.getElementById('saved-maps');
+
+  const tfName  = document.getElementById('tf-name');
+  const tfColor = document.getElementById('tf-color');
+  const tfSize  = document.getElementById('tf-size');
+  const tfPhoto = document.getElementById('tf-photo');
+  const createTokenBtn = document.getElementById('btn-create-token');
+
+  // ---- State
+  let sessions = JSON.parse(localStorage.getItem('warvault-maps')||'[]');
+  let submaps  = JSON.parse(localStorage.getItem('warvault-submaps')||'[]');
+  let tokens = [], portals = [], walls = [], templates = [];
+
+  let currentTool = 'pan';
+  let action = null;
+
+  let scale = 1;
+  let offset = { x: 0, y: 0 };
+  let cell = 50;
+
+  // Fog buffer (static screen-space buffer; saved/loaded with session)
+  const fogTex = document.createElement('canvas');
+  let fogx = fogTex.getContext('2d');
+
+  // ---- Utils
+  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+  function screenToWorld(sx, sy){ return { x:(sx - offset.x)/scale, y:(sy - offset.y)/scale }; }
+  function worldToScreen(wx, wy){ return { x:offset.x + wx*scale, y:offset.y + wy*scale }; }
+  function pointerToWrap(e){ const r = wrap.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; }
+  function snapVal(v){ return document.getElementById('snap').checked ? Math.round(v / cell) * cell : v; }
+
+  function setScale(next, cx=null, cy=null){
+    next = clamp(next, 0.2, 6);
+    if (cx==null || cy==null){ const rect = wrap.getBoundingClientRect(); cx=rect.width/2; cy=rect.height/2; }
+    const before = screenToWorld(cx, cy);
+    scale = next;
+    const after = worldToScreen(before.x, before.y);
+    offset.x += (cx - after.x);
+    offset.y += (cy - after.y);
+    repositionAll();
+    drawFX(); drawGrid(); drawWalls(); drawTemplates(); drawFogToScreen();
+  }
+
+  // ---- Canvas sizing
+  function fitCanvases(){
+    const r = wrap.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    [fx, grid, tpl, wallsLayer, fog].forEach(cv => {
+      cv.width  = Math.max(1, Math.floor(r.width  * dpr));
+      cv.height = Math.max(1, Math.floor(r.height * dpr));
+      cv.style.width  = r.width + 'px';
+      cv.style.height = r.height + 'px';
+    });
+    fxx.setTransform(dpr,0,0,dpr,0,0);
+    gctx.setTransform(dpr,0,0,dpr,0,0);
+    tctx.setTransform(dpr,0,0,dpr,0,0);
+    wctx.setTransform(dpr,0,0,dpr,0,0);
+    fctx.setTransform(dpr,0,0,dpr,0,0);
+
+    drawFX(); drawGrid(); drawWalls(); drawTemplates(); drawFogToScreen(); repositionAll();
+  }
+  let resizeRAF = 0;
+  window.addEventListener('resize', ()=>{ cancelAnimationFrame(resizeRAF); resizeRAF = requestAnimationFrame(fitCanvases); });
+
+  // ---- Grid & FX
+  function drawGrid(){
+    const dpr = window.devicePixelRatio || 1;
+    const w = grid.width / dpr, h = grid.height / dpr;
+    gctx.clearRect(0,0,w,h);
+    gctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--rune');
+    gctx.lineWidth = 1;
+    const step = cell*scale;
+    for (let x= (offset.x%step); x<w; x+=step){ gctx.beginPath(); gctx.moveTo(x,0); gctx.lineTo(x,h); gctx.stroke(); }
+    for (let y= (offset.y%step); y<h; y+=step){ gctx.beginPath(); gctx.moveTo(0,y); gctx.lineTo(w,y); gctx.stroke(); }
+  }
+  function makeNoiseTile(){ const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d'); const img=x.createImageData(128,128); for(let i=0;i<img.data.length;i+=4){const v=200+Math.random()*55; img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=10;} x.putImageData(img,0,0); return c; }
+  let noiseTile=null;
+  function drawFX(){
+    const w = fx.clientWidth, h = fx.clientHeight;
+    fxx.clearRect(0,0,w,h);
+    const g = fxx.createRadialGradient(w*0.5,h*0.55, Math.min(w,h)*0.15, w*0.5,h*0.55, Math.max(w,h)*0.65);
+    g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.45)');
+    fxx.globalCompositeOperation='multiply'; fxx.fillStyle=g; fxx.fillRect(0,0,w,h);
+    if(!noiseTile) noiseTile=makeNoiseTile();
+    fxx.globalCompositeOperation='overlay'; fxx.globalAlpha=0.35; fxx.fillStyle=fxx.createPattern(noiseTile,'repeat'); fxx.fillRect(0,0,w,h);
+    fxx.globalAlpha=1; fxx.globalCompositeOperation='source-over';
+  }
+  function applyTransform(el){ el.style.transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`; el.style.transformOrigin='top left'; }
+  function repositionAll(){
+    applyTransform(mapEl);
+    [fx, grid, tpl, wallsLayer, fog].forEach(applyTransform);
+    tokens.forEach(t=>{ const s=worldToScreen(t.x,t.y); t.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`; t.el.style.transformOrigin='top left'; });
+    portals.forEach(p=>{ const s=worldToScreen(p.x,p.y); p.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`; p.el.style.transformOrigin='top left'; });
+  }
+
+  // ---- Templates
+  function drawTemplates(){
+    const dpr = window.devicePixelRatio || 1;
+    const w = tpl.width / dpr, h = tpl.height / dpr; tctx.clearRect(0,0,w,h);
+    tctx.lineWidth = Math.max(2, 2*scale); tctx.strokeStyle = '#80d8ff'; tctx.fillStyle='rgba(128,216,255,.15)';
+    const render=(t)=>{
+      if (t.type==='ruler'){ const a=worldToScreen(t.start.x,t.start.y), b=worldToScreen(t.end.x,t.end.y); tctx.beginPath(); tctx.moveTo(a.x,a.y); tctx.lineTo(b.x,b.y); tctx.stroke(); }
+      else if (t.type==='circle'){ const c=worldToScreen(t.start.x,t.start.y); tctx.beginPath(); tctx.arc(c.x,c.y, t.r*scale, 0, Math.PI*2); tctx.fill(); tctx.stroke(); }
+      else if (t.type==='cone'){ const c=worldToScreen(t.start.x,t.start.y); tctx.beginPath(); tctx.moveTo(c.x,c.y); tctx.arc(c.x,c.y, t.r*scale, t.a0, t.a1); tctx.closePath(); tctx.fill(); tctx.stroke(); }
+    };
+    templates.forEach(render);
+    if (action && action.type==='draw' && action.draft) render(action.draft);
+  }
+
+  // ---- Walls (visual)
+  function drawWalls(){
+    const dpr = window.devicePixelRatio || 1; const w = wallsLayer.width/dpr, h=wallsLayer.height/dpr; wctx.clearRect(0,0,w,h); wctx.lineWidth = Math.max(2,2*scale);
+    walls.forEach(seg=>{ const A=worldToScreen(seg.a.x,seg.a.y), B=worldToScreen(seg.b.x,seg.b.y); wctx.strokeStyle = '#ff7961'; wctx.beginPath(); wctx.moveTo(A.x,A.y); wctx.lineTo(B.x,B.y); wctx.stroke(); });
+    if (action?.type==='wall' && action.points?.length){ wctx.strokeStyle='#ffd54f'; wctx.setLineDash([6,6]); action.points.forEach((p,i)=>{ const s=worldToScreen(p.x,p.y); if(i===0){wctx.beginPath(); wctx.moveTo(s.x,s.y);} else wctx.lineTo(s.x,s.y); }); wctx.stroke(); wctx.setLineDash([]); }
+  }
+
+  // ---- Fog (static buffer)
+  function resetFogWorld(){ const w = wrap.clientWidth||1, h=wrap.clientHeight||1; fogTex.width=w; fogTex.height=h; fogx = fogTex.getContext('2d'); fogx.clearRect(0,0,w,h); drawFogToScreen(); }
+  function drawFogToScreen(){ const dpr=window.devicePixelRatio||1; const w=fog.width/dpr, h=fog.height/dpr; fctx.clearRect(0,0,w,h); fctx.globalAlpha=0.0; fctx.drawImage(fogTex,0,0,w,h); fctx.globalAlpha=1; }
+
+  // ---- Tokens & Portals
+  function addToken({name,color,size,img,x,y,sheet}){
+    const el = document.createElement('div'); el.className='token'; el.style.width=el.style.height=(size||42)+'px'; el.style.background=color||'#f44'; el.innerHTML='<span>'+ (name||'T') +'</span>';
+    if (img){ el.classList.add('has-img'); el.style.backgroundImage=`url(${img})`; }
+    wrap.appendChild(el);
+    const t = {el, name, color, size:size||42, x:x??100, y:y??100, img, sheet: sheet||null};
+    tokens.push(t); const s=worldToScreen(t.x,t.y); el.style.transform=`translate(${s.x}px, ${s.y}px) scale(${scale})`; el.style.transformOrigin='top left';
+    return t;
+  }
+
+  function makePortal(x,y,w,h,targetName){
+    const el = document.createElement('div'); el.className='portal'; el.style.width=Math.max(1,w)+'px'; el.style.height=Math.max(1,h)+'px'; wrap.appendChild(el);
+    const p = {el, x, y, w:Math.max(1,w), h:Math.max(1,h), targetName: targetName||null}; portals.push(p);
+    const s = worldToScreen(x,y); el.style.transform=`translate(${s.x}px, ${s.y}px) scale(${scale})`; el.style.transformOrigin='top left';
+    el.addEventListener('mousedown', (e)=>{ if (currentTool!=='select') return; action = { type:'portalDrag', portal:p, sx:e.clientX, sy:e.clientY, startX:p.x, startY:p.y }; e.preventDefault(); });
+    el.addEventListener('dblclick', ()=>{ if (p.targetName){ const s = submaps.find(x=>x.name===p.targetName); if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.'); } else { promptAssignPortal(p); } });
+    return p;
+  }
+
+  function promptAssignPortal(p){
+    const name = prompt('Submap name?'); if (!name) return;
+    const url  = prompt('Submap image URL? (direct link to image)'); if (!url) return;
+    const existing = submaps.find(s=>s.name===name);
+    if (existing) existing.img = url; else submaps.push({name, img:url});
+    localStorage.setItem('warvault-submaps', JSON.stringify(submaps));
+    p.targetName = name;
+  }
+
+  // ---- Context menu
+  let selectedToken=null, selectedPortal=null;
+  wrap.addEventListener('contextmenu', (e)=>{
+    e.preventDefault(); const el=e.target.closest('.portal,.token');
+    selectedPortal = null; selectedToken=null;
+    if (el?.classList.contains('portal')) selectedPortal = portals.find(p=>p.el===el)||null;
+    else if (el?.classList.contains('token')) selectedToken = tokens.find(t=>t.el===el)||null;
+    ctxMenu.style.display='block'; ctxMenu.style.left = e.clientX+'px'; ctxMenu.style.top = e.clientY+'px';
+  });
+  window.addEventListener('click', (e)=>{ if (!ctxMenu.contains(e.target)) ctxMenu.style.display='none'; });
+
+  ctxMenu.addEventListener('click', (e)=>{
+    const act = e.target.getAttribute('data-act'); if (!act) return; ctxMenu.style.display='none';
+    if (act==='delete'){
+      if (selectedPortal){ selectedPortal.el.remove(); portals = portals.filter(p=>p!==selectedPortal); }
+      else if (selectedToken){ selectedToken.el.remove(); tokens = tokens.filter(t=>t!==selectedToken); }
+    } else if (act==='assign-submap'){
+      if (!selectedPortal) return alert('Right-click a portal to assign.');
+      promptAssignPortal(selectedPortal);
+    } else if (act==='open-submap'){
+      if (selectedPortal?.targetName){ const s=submaps.find(x=>x.name===selectedPortal.targetName); if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.'); }
+      else alert('No portal selected or assigned.');
+    } else if (act==='sheet'){
+      if (!selectedToken) return alert('Right-click a token, then choose Character Sheet.');
+      if (!selectedToken.sheet) return alert('No sheet attached to this token (use “Attach Sample Sheet” to try).');
+      openCharacterSheet(selectedToken.sheet);
+    } else if (act==='attach-sheet'){
+      if (!selectedToken) return alert('Right-click a token to attach a sheet.');
+      selectedToken.sheet = getSampleSheetData(selectedToken.name||'Hero');
+      alert('Sample sheet attached. Choose “View Character Sheet”.');
+    }
+  });
+
+  // ---- Submap overlay
+  const subOverlay = document.getElementById('submap-overlay');
+  const subCanvas  = document.getElementById('submap-canvas');
+  const subCtx     = subCanvas.getContext('2d');
+  function openSubmap(imgSrc, title='Submap'){
+    document.getElementById('submap-title').textContent = title;
+    subOverlay.style.display='block'; subOverlay.setAttribute('aria-hidden','false');
+    const img = new Image(); img.onload = ()=>{ requestAnimationFrame(()=>{ const dpr=window.devicePixelRatio||1; const w=subCanvas.clientWidth||1; const h=subCanvas.clientHeight||1; subCanvas.width=Math.floor(w*dpr); subCanvas.height=Math.floor(h*dpr); subCtx.setTransform(dpr,0,0,dpr,0,0); const ratio=Math.max(w/img.width, h/img.height); const dw=img.width*ratio, dh=img.height*ratio; const dx=(w-dw)/2, dy=(h-dh)/2; subCtx.clearRect(0,0,w,h); subCtx.drawImage(img,dx,dy,dw,dh); }); }; img.src=imgSrc; }
+  document.getElementById('close-submap').addEventListener('click', ()=>{ subOverlay.style.display='none'; subOverlay.setAttribute('aria-hidden','true'); });
+
+  // ---- Input handling & tools
+  function setTool(tool){ currentTool=tool; document.querySelectorAll('.tool').forEach(b=> b.classList.toggle('toggled', b.dataset.tool===tool)); wrap.style.cursor = (tool==='pan') ? 'grab' : 'crosshair'; }
+  document.querySelectorAll('.tool').forEach(b=> b.addEventListener('click', ()=> setTool(b.dataset.tool)) );
+  clearTplBtn.addEventListener('click', ()=>{ templates=[]; drawTemplates(); });
+
+  zoomInBtn.addEventListener('click', ()=> setScale(scale*1.2));
+  zoomOutBtn.addEventListener('click', ()=> setScale(scale/1.2));
+  wrap.addEventListener('wheel', (e)=>{ e.preventDefault(); setScale(scale * (e.deltaY < 0 ? 1.15 : 0.87), e.offsetX, e.offsetY); }, {passive:false});
+
+  mapUpload.addEventListener('change', (e)=>{ const file=e.target.files?.[0]; if(!file) return; const r=new FileReader(); r.onload = ev=>{ mapEl.onload=()=>{ resetFogWorld(); fitCanvases(); }; mapEl.src = ev.target.result; }; r.onerror=()=>alert('Failed to load image'); r.readAsDataURL(file); });
+
+  function startPan(e){ action = { type:'pan', startX:e.clientX, startY:e.clientY, ox:offset.x, oy:offset.y }; wrap.style.cursor='grabbing'; }
+  function updatePan(e){ const dx=e.clientX-action.startX, dy=e.clientY-action.startY; offset.x=action.ox+dx; offset.y=action.oy+dy; drawWalls(); drawTemplates(); drawFogToScreen(); repositionAll(); }
+  function endPan(){ wrap.style.cursor = currentTool==='pan' ? 'grab' : 'crosshair'; }
+
+  function startDraw(e){ const pt=pointerToWrap(e); const pos=screenToWorld(pt.x,pt.y); const sx=snapVal(pos.x), sy=snapVal(pos.y);
+    if (currentTool==='ruler') action={type:'draw', draft:{type:'ruler', start:{x:sx,y:sy}, end:{x:sx,y:sy}}};
+    else if (currentTool==='circle') action={type:'draw', draft:{type:'circle', start:{x:sx,y:sy}, r:1}};
+    else if (currentTool==='cone') action={type:'draw', draft:{type:'cone', start:{x:sx,y:sy}, r:1, a0:0, a1:0}};
+    else if (currentTool==='wall') action={type:'wall', points:[{x:sx,y:sy}]};
+    else if (currentTool==='portal'){ const ghost=document.createElement('div'); ghost.className='portal'; ghost.style.width='1px'; ghost.style.height='1px'; wrap.appendChild(ghost); const s=worldToScreen(sx,sy); ghost.style.transform=`translate(${s.x}px, ${s.y}px) scale(${scale})`; action={type:'portal', start:{x:sx,y:sy}, ghost}; }
+  }
+  function updateDraw(e){ if(!action) return; const pt=pointerToWrap(e); const pos=screenToWorld(pt.x,pt.y); const sx=snapVal(pos.x), sy=snapVal(pos.y);
+    if (action.type==='draw' && action.draft){ const d=action.draft; if(d.type==='ruler'){ d.end={x:sx,y:sy}; } else if(d.type==='circle'){ const dx=sx-d.start.x, dy=sy-d.start.y; d.r=Math.max(1,Math.hypot(dx,dy)); } else if(d.type==='cone'){ const dx=sx-d.start.x, dy=sy-d.start.y; const r=Math.max(1,Math.hypot(dx,dy)); const ang=Math.atan2(dy,dx), spread=Math.PI/3; d.r=r; d.a0=ang-spread/2; d.a1=ang+spread/2; } drawTemplates(); }
+    else if (action.type==='wall'){ action.points.push({x:sx,y:sy}); drawWalls(); }
+    else if (action.type==='portal' && action.ghost){ const w=sx-action.start.x; const h=sy-action.start.y; const topLeft=worldToScreen(Math.min(action.start.x, action.start.x+w), Math.min(action.start.y, action.start.y+h)); action.ghost.style.width=Math.abs(w)+'px'; action.ghost.style.height=Math.abs(h)+'px'; action.ghost.style.transform=`translate(${topLeft.x}px, ${topLeft.y}px) scale(${scale})`; }
+  }
+  function endDraw(){ if(!action) return; if(action.type==='draw' && action.draft){ templates.push(action.draft); action=null; drawTemplates(); }
+    else if (action.type==='portal' && action.ghost){ const rect=action.ghost.getBoundingClientRect(); action.ghost.remove(); const wrapRect=wrap.getBoundingClientRect(); const a=action.start; const b=screenToWorld(rect.right-wrapRect.left, rect.bottom-wrapRect.top); const x=Math.min(a.x,b.x), y=Math.min(a.y,b.y); const w=Math.max(1,Math.abs(b.x-a.x)); const h=Math.max(1,Math.abs(b.y-a.y)); const newP=makePortal(x,y,w,h,null); promptAssignPortal(newP); action=null; }
+    else if (action.type==='wall'){ if (action.points.length>1){ for(let i=1;i<action.points.length;i++){ walls.push({ a:action.points[i-1], b:action.points[i], type:'wall', open:false }); } } action=null; drawWalls(); }
+  }
+
+  function startTokenDrag(token, e){ action = { type:'token', token, sx:e.clientX, sy:e.clientY, startX:token.x, startY:token.y }; }
+  function updateTokenDrag(e){ const tok=action.token; const dx=(e.clientX-action.sx)/scale; const dy=(e.clientY-action.sy)/scale; tok.x=snapVal(action.startX+dx); tok.y=snapVal(action.startY+dy); const s=worldToScreen(tok.x,tok.y); tok.el.style.transform=`translate(${s.x}px, ${s.y}px) scale(${scale})`; }
+
+  // unified pointer
+  wrap.addEventListener('pointerdown', (e)=>{
+    if (e.button!==0) return; const targetToken = e.target.closest('.token');
+    if (currentTool==='select' && targetToken){ const t = tokens.find(tt=>tt.el===targetToken); if (t){ startTokenDrag(t, e); wrap.setPointerCapture?.(e.pointerId); e.preventDefault(); } return; }
+    if (currentTool==='pan'){ startPan(e); wrap.setPointerCapture?.(e.pointerId); e.preventDefault(); return; }
+    startDraw(e); wrap.setPointerCapture?.(e.pointerId); e.preventDefault();
+  });
+  wrap.addEventListener('pointermove', (e)=>{ if (!action) return; if (action.type==='pan') updatePan(e); else if (action.type==='draw' || action.type==='portal' || action.type==='wall') updateDraw(e); else if (action.type==='token') updateTokenDrag(e); });
+  wrap.addEventListener('pointerup', ()=>{ if (!action) return; if (action.type==='pan'){ endPan(); action=null; return; } if (action.type==='draw' || action.type==='portal' || action.type==='wall'){ endDraw(); return; } if (action.type==='token'){ action=null; return; } });
+
+  // Token forge
+  createTokenBtn.addEventListener('click', ()=>{
+    const name=tfName.value.trim()||'T'; const color=tfColor.value; const size=clamp(parseInt(tfSize.value||42,10),24,120);
+    if (tfPhoto.files?.[0]){ const r=new FileReader(); r.onload = ev=> addToken({name,color,size,img:ev.target.result}); r.readAsDataURL(tfPhoto.files[0]); }
+    else addToken({name,color,size});
+  });
+
+  // Save/Load sessions
+  function renderSaved(){ savedMapsDiv.innerHTML=''; sessions.slice().reverse().forEach((m, idxFromEnd)=>{ const idx=sessions.length-1-idxFromEnd; const row=document.createElement('div'); row.className='map-item'; row.style.display='flex'; row.style.alignItems='center'; row.style.gap='.5rem'; row.style.margin='.3rem 0'; row.innerHTML = `
+      <div style="width:42px;height:42px;background:#222;border:1px solid rgba(255,255,255,.12);background-size:cover;background-position:center;border-radius:6px;${m.thumb||m.map?.src?`background-image:url('${m.thumb||m.map?.src}')`:''}"></div>
+      <div style="flex:1"><div>${m.name||'Session'} — ${new Date(m.when).toLocaleString()}</div></div>
+      <button class="btn" data-act="load">Load</button>
+      <button class="btn" data-act="remove">Delete</button>`;
+    row.querySelector('[data-act="load"]').onclick = ()=> loadSession(m);
+    row.querySelector('[data-act="remove"]').onclick = ()=>{ sessions.splice(idx,1); localStorage.setItem('warvault-maps', JSON.stringify(sessions)); renderSaved(); };
+    savedMapsDiv.appendChild(row);
+  }); }
+  function collectSession(){ return { when:Date.now(), name:'WarVault Session', map:{src:mapEl.src}, fog: fogTex.toDataURL('image/webp',0.85), tokens: tokens.map(t=>({name:t.name,color:t.color,size:t.size,x:t.x,y:t.y,img:t.img||null,sheet:t.sheet||null})), portals: portals.map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,targetName:p.targetName||null})), walls: walls.map(w=>({a:w.a,b:w.b,type:w.type||'wall',open:!!w.open})), templates, settings:{ cell, scale, offset } }; }
+  function applySessionState(s){ resetFogWorld(); if (s.fog){ const img=new Image(); img.onload=()=>{ fogx.clearRect(0,0,fogTex.width,fogTex.height); fogx.drawImage(img,0,0,fogTex.width,fogTex.height); drawFogToScreen(); }; img.src=s.fog; } else { drawFogToScreen(); }
+    tokens.forEach(t=>t.el.remove()); tokens=[]; (s.tokens||[]).forEach(t=> addToken(t));
+    portals.forEach(p=>p.el.remove()); portals=[]; (s.portals||[]).forEach(p=> makePortal(p.x,p.y,p.w,p.h,p.targetName||null));
+    walls = (s.walls||[]).map(w=>({a:w.a,b:w.b,type:w.type||'wall',open:!!w.open})); drawWalls();
+    templates = s.templates||[]; drawTemplates();
+    if (s.settings){ offset=s.settings.offset||{x:0,y:0}; scale=s.settings.scale||1; }
+    repositionAll(); drawFX(); fitCanvases(); setTool('pan');
+  }
+  function loadSession(s){ const targetSrc = s.map?.src||''; const same = mapEl.src === targetSrc; const apply=()=>{ applySessionState(s); }; if (!targetSrc){ apply(); return; } mapEl.onload = apply; if (same){ mapEl.src=''; setTimeout(()=> mapEl.src = targetSrc, 0); } else { mapEl.src = targetSrc; } }
+  saveMapBtn.addEventListener('click', ()=>{ const snap=collectSession(); snap.thumb = mapEl.src; sessions.push(snap); try{ localStorage.setItem('warvault-maps', JSON.stringify(sessions)); renderSaved(); alert('Session saved locally.'); } catch(e){ console.error(e); alert('Save failed (storage full?). Delete older sessions and try again.'); sessions.pop(); } });
+  renderSaved();
+
+  // Init
+  mapEl.style.filter = 'contrast(1.06) saturate(1.08) brightness(1.02)';
+  resetFogWorld();
+  fitCanvases();
+  setTool('pan');
+})();
+
+/* ==========================================
+   Character Sheet modal (DDB-style, scoped)
+   ========================================== */
+const sheetOverlay = document.getElementById('sheet-overlay');
+document.getElementById('sheet-close').addEventListener('click', ()=> sheetOverlay.style.display='none');
+
+function openCharacterSheet(data){
+  sheetOverlay.style.display='flex';
+  const root = document.getElementById('sheet-root');
+  root.innerHTML = `
+    <div class="card pad">
+      <div class="hdr">
+        <div class="avatar" aria-hidden="true"></div>
+        <div style="display:grid;gap:6px">
+          <div class="name" id="cs-name">${data.name||'Adventurer'}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="badge" id="cs-race">${data.metaRace||''}</div>
+            <div class="badge" id="cs-class">${data.metaClass||''}</div>
+            <div class="badge" id="cs-campaign">${data.campaign||''}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card pad">
+        <h3>Abilities</h3>
+        <div class="statgrid" id="cs-abilities"></div>
+
+        <div style="margin-top:10px" class="pillrow" id="cs-traits"></div>
+
+        <div style="margin-top:12px">
+          <h3>Saving Throws</h3>
+          <div class="box" id="cs-saves"></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <h3>Skills</h3>
+          <div class="box" id="cs-skills"></div>
+        </div>
+      </div>
+
+      <div class="card pad">
+        <div class="tabs">
+          <div class="tabbar" role="tablist">
+            <button class="tab active" data-tab="actions">ACTIONS</button>
+            <button class="tab" data-tab="spells">SPELLS</button>
+            <button class="tab" data-tab="equipment">EQUIPMENT</button>
+            <button class="tab" data-tab="features">FEATURES & TRAITS</button>
+            <button class="tab" data-tab="description">DESCRIPTION</button>
+            <button class="tab" data-tab="notes">NOTES</button>
+            <button class="tab" data-tab="extras">EXTRAS</button>
+          </div>
+
+          <section class="tabpanel active" id="cs-tab-actions">
+            <div class="subtabs" data-subgroup="actions">
+              <button class="sub active" data-sub="atk">Attacks</button>
+              <button class="sub" data-sub="class">Class Actions</button>
+              <button class="sub" data-sub="other">Other</button>
+            </div>
+            <div class="search"><input id="cs-search-actions" placeholder="Search actions…"/></div>
+            <div class="list" id="cs-actions-list"></div>
+          </section>
+
+          <section class="tabpanel" id="cs-tab-spells">
+            <div class="kv"><div>Spellcasting Ability</div><div id="cs-sp-ability" class="right"></div></div>
+            <div class="kv"><div>Spell Save DC</div><div id="cs-sp-dc" class="right"></div></div>
+            <div class="kv"><div>Spell Attack Bonus</div><div id="cs-sp-atk" class="right"></div></div>
+            <div class="subtabs" data-subgroup="spells">
+              <button class="sub active" data-sub="cantrips">Cantrips</button>
+              <button class="sub" data-sub="lvl1">1st</button>
+              <button class="sub" data-sub="lvl2">2nd</button>
+              <button class="sub" data-sub="prep">Prepared</button>
+            </div>
+            <div class="search"><input id="cs-search-spells" placeholder="Search spells…"/></div>
+            <div class="list" id="cs-spells-list"></div>
+          </section>
+
+          <section class="tabpanel" id="cs-tab-equipment">
+            <div class="subtabs" data-subgroup="equip">
+              <button class="sub active" data-sub="inv">Inventory</button>
+              <button class="sub" data-sub="coins">Coins</button>
+              <button class="sub" data-sub="attun">Attunements</button>
+            </div>
+            <div class="list" id="cs-equip-list"></div>
+          </section>
+
+          <section class="tabpanel" id="cs-tab-features">
+            <div class="subtabs" data-subgroup="feat">
+              <button class="sub active" data-sub="race">Racial</button>
+              <button class="sub" data-sub="class">Class</button>
+              <button class="sub" data-sub="other">Other</button>
+            </div>
+            <div class="list" id="cs-feat-list"></div>
+          </section>
+
+          <section class="tabpanel" id="cs-tab-description">
+            <div class="subtabs" data-subgroup="desc">
+              <button class="sub active" data-sub="bio">Bio</button>
+              <button class="sub" data-sub="appearance">Appearance</button>
+              <button class="sub" data-sub="backstory">Backstory</button>
+            </div>
+            <div class="list" id="cs-desc-list"></div>
+          </section>
+
+          <section class="tabpanel" id="cs-tab-notes">
+            <div class="subtabs" data-subgroup="notes">
+              <button class="sub active" data-sub="session">Session</button>
+              <button class="sub" data-sub="dm">DM</button>
+            </div>
+            <div class="list" id="cs-notes-list"></div>
+          </section>
+
+          <section class="tabpanel" id="cs-tab-extras">
+            <div class="subtabs" data-subgroup="extras">
+              <button class="sub active" data-sub="pets">Companions</button>
+              <button class="sub" data-sub="custom">Custom</button>
+            </div>
+            <div class="list" id="cs-extras-list"></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="card pad">
+        <h3>Defenses</h3>
+        <div class="hpac">
+          <div class="hp"><div class="ttl">ARMOR CLASS</div><div class="val num" id="cs-ac">—</div></div>
+          <div class="hp"><div class="ttl">HIT POINTS</div><div class="val num"><span id="cs-hpCur">—</span> / <span id="cs-hpMax">—</span></div></div>
+          <div class="hp"><div class="ttl">TEMP HP</div><div class="val num" id="cs-hpTemp">0</div></div>
+        </div>
+        <div style="margin-top:10px" class="pillrow" id="cs-tags"></div>
+      </div>
+    </div>
+  `;
+
+  // ----- Populate
+  const state = dataStateFromSheet(data);
+
+  const mod = s => Math.floor((s-10)/2);
+  const sign = n => (n>=0?'+':'')+n;
+
+  // abilities
+  const abilityGrid = root.querySelector('#cs-abilities');
+  Object.entries(state.abilities).forEach(([abbr,score])=>{
+    const el = document.createElement('div');
+    el.className='ability';
+    el.innerHTML = `<div class="abbr">${abbr}</div>
+                    <div class="score num">${score}</div>
+                    <div class="mod">${sign(mod(score))}</div>`;
+    abilityGrid.appendChild(el);
+  });
+
+  // traits/tags
+  const traits = root.querySelector('#cs-traits');
+  (state.traits||[]).forEach(t=>{ const s=document.createElement('span'); s.className='pill'; s.textContent=t; traits.appendChild(s); });
+
+  // saves
+  const savesBox = root.querySelector('#cs-saves');
+  const saves = Object.entries(state.abilities).map(([abbr,score])=>{
+    const isProf = state.proficientSaves.includes(abbr);
+    const total = mod(score) + (isProf?state.profBonus:0);
+    return `<div class="kv"><div>${abbr} Save ${isProf?'<span class="muted">(prof)</span>':''}</div><div class="num">${sign(total)}</div></div>`;
+  }).join('');
+  savesBox.innerHTML = saves;
+
+  // skills
+  const skillsBox = root.querySelector('#cs-skills');
+  const skillsRows = Object.entries(state.skills).map(([name,stat])=>{
+    const isProf = state.proficientSkills.includes(name);
+    const total = mod(state.abilities[stat]) + (isProf?state.profBonus:0);
+    const label = name.replace(/([A-Z])/g,' $1').trim();
+    return `<div class="kv"><div>${label} <span class="muted">(${stat})</span> ${isProf?'<span class="muted">(prof)</span>':''}</div><div class="num">${sign(total)}</div></div>`;
+  }).join('');
+  skillsBox.innerHTML = skillsRows;
+
+  // defenses
+  root.querySelector('#cs-ac').textContent = state.ac??'—';
+  root.querySelector('#cs-hpCur').textContent = state.hp?.current??'—';
+  root.querySelector('#cs-hpMax').textContent = state.hp?.max??'—';
+  const tagRow = root.querySelector('#cs-tags'); (state.tags||[]).forEach(t=>{ const s=document.createElement('span'); s.className='pill'; s.textContent=t; tagRow.appendChild(s); });
+
+  // tabs
+  const tabs = root.querySelectorAll('.tabbar .tab');
+  const panels = root.querySelectorAll('.tabpanel');
+  tabs.forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      tabs.forEach(b=>b.classList.remove('active'));
+      panels.forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      root.querySelector('#cs-tab-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  function wireSubtabs(group, cb){
+    const wrap = root.querySelector(`.subtabs[data-subgroup="${group}"]`);
+    if (!wrap) return;
+    wrap.addEventListener('click', e=>{
+      const t = e.target.closest('.sub'); if(!t) return;
+      wrap.querySelectorAll('.sub').forEach(s=>s.classList.remove('active'));
+      t.classList.add('active');
+      cb(t.dataset.sub);
+    });
+  }
+
+  // actions
+  const actionsList = root.querySelector('#cs-actions-list');
+  function renderActions(kind='atk'){
+    const items = (state.actions?.[kind])||[];
+    const q = (root.querySelector('#cs-search-actions').value||'').toLowerCase();
+    actionsList.innerHTML = items
+      .filter(a=>!q || (a.name+a.info).toLowerCase().includes(q))
+      .map(a=>`<div class="row"><div class="name">${a.name}<br><small class="muted">${a.info||''}</small></div><div class="num">${a.bonus||''}</div><div class="num">${a.damage||''}</div><div class="muted">—</div><button class="btn right">Roll</button></div>`).join('') || '<div class="muted">No actions.</div>';
+  }
+  renderActions(); wireSubtabs('actions', renderActions);
+  root.querySelector('#cs-search-actions').addEventListener('input', ()=> renderActions(root.querySelector('.subtabs[data-subgroup="actions"] .sub.active').dataset.sub));
+
+  // spells
+  const spellsList = root.querySelector('#cs-spells-list');
+  function renderSpells(sub='cantrips'){
+    let items=[];
+    if(sub==='cantrips') items = state.spells.cantrips;
+    else if(sub==='lvl1') items = state.spells.lvl1;
+    else if(sub==='lvl2') items = state.spells.lvl2;
+    else if(sub==='prep') items = (state.spells.prepared||[]).map(n=>({name:n, time:'—', range:'—', hit:'—', effect:'Prepared'}));
+    const q = (root.querySelector('#cs-search-spells').value||'').toLowerCase();
+    spellsList.innerHTML = items
+      .filter(s=>!q || (s.name+(s.effect||'')).toLowerCase().includes(q))
+      .map(s=>`<div class="row"><div class="name">${s.name}</div><div>${s.time||''}</div><div>${s.range||''}</div><div class="num">${s.hit||''}</div><div>${s.effect||''}</div></div>`).join('') || '<div class="muted">No spells.</div>';
+  }
+  renderSpells(); wireSubtabs('spells', renderSpells);
+  root.querySelector('#cs-search-spells').addEventListener('input', ()=> renderSpells(root.querySelector('.subtabs[data-subgroup="spells"] .sub.active').dataset.sub));
+  const spMod = Math.floor((state.abilities[state.spellAbility]-10)/2);
+  root.querySelector('#cs-sp-ability').textContent = state.spellAbility + ' ' + (spMod>=0?'+':'')+spMod;
+  root.querySelector('#cs-sp-dc').textContent = 8 + state.profBonus + spMod;
+  root.querySelector('#cs-sp-atk').textContent = (state.profBonus + spMod >=0?'+':'') + (state.profBonus + spMod);
+
+  // equipment
+  const equipList = root.querySelector('#cs-equip-list');
+  function renderEquip(sub='inv'){
+    if (sub==='inv'){
+      equipList.innerHTML = state.equipment.inv.map(i=>`<div class="row"><div class="name">${i.name}</div><div>${i.qty||1}x</div><div>${i.weight||'-'}</div><div class="muted">—</div><div>${i.notes||''}</div></div>`).join('');
+    } else if (sub==='coins'){
+      const c = state.equipment.coins; equipList.innerHTML = `
+        <div class="row"><div class="name">Copper</div><div>${c.cp||0}</div><div></div><div></div><div></div></div>
+        <div class="row"><div class="name">Silver</div><div>${c.sp||0}</div><div></div><div></div><div></div></div>
+        <div class="row"><div class="name">Gold</div><div>${c.gp||0}</div><div></div><div></div><div></div></div>`;
+    } else if (sub==='attun'){
+      equipList.innerHTML = state.equipment.attun.length? state.equipment.attun.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('') : '<div class="muted">No attuned items.</div>';
+    }
+  }
+  renderEquip(); wireSubtabs('equip', renderEquip);
+
+  // features
+  const featList = root.querySelector('#cs-feat-list');
+  function renderFeats(sub='race'){
+    const items = state.features[sub]||[];
+    featList.innerHTML = items.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('')||'<div class="muted">No features.</div>';
+  }
+  renderFeats(); wireSubtabs('feat', renderFeats);
+
+  // description
+  const descList = root.querySelector('#cs-desc-list');
+  function renderDesc(sub='bio'){
+    const items = state.description[sub]||[];
+    descList.innerHTML = items.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('')||'<div class="muted">No description.</div>';
+  }
+  renderDesc(); wireSubtabs('desc', renderDesc);
+
+  // notes
+  const notesList = root.querySelector('#cs-notes-list');
+  function renderNotes(sub='session'){
+    const items = state.notes[sub]||[];
+    notesList.innerHTML = items.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('')||'<div class="muted">No notes.</div>';
+  }
+  renderNotes(); wireSubtabs('notes', renderNotes);
+
+  // extras
+  const extrasList = root.querySelector('#cs-extras-list');
+  function renderExtras(sub='pets'){
+    const items = state.extras[sub]||[];
+    extrasList.innerHTML = items.map(n=>`<div class="row"><div class="name">${n}</div><div></div><div></div><div></div><div></div></div>`).join('')||'<div class="muted">No extras.</div>';
+  }
+  renderExtras(); wireSubtabs('extras', renderExtras);
+}
+
+// Helper: convert token.sheet (or sample) into sheet state expected above
+function dataStateFromSheet(s){
+  // If already in our internal structure, return as-is
+  if (s.abilities && s.actions) return s;
+  // Else accept a looser shape and normalize
+  const name = s.name || 'Adventurer';
+  const abilities = s.abilities || { STR:12, DEX:8, CON:17, INT:10, WIS:15, CHA:13 };
+  return {
+    name,
+    metaRace: s.metaRace || 'Hill Dwarf • Male',
+    metaClass: s.metaClass || 'Cleric 1',
+    campaign: s.campaign || 'Campaign',
+    abilities,
+    traits: s.traits || ['Darkvision 60 ft.','Poison Resistance'],
+    tags: s.tags || ['Proficiency +2','Speed 25 ft','Initiative -1'],
+    profBonus: s.profBonus ?? 2,
+    proficientSaves: s.proficientSaves || ['WIS','CHA'],
+    skills: s.skills || {
+      Acrobatics:'DEX', AnimalHandling:'WIS', Arcana:'INT', Athletics:'STR', Deception:'CHA',
+      History:'INT', Insight:'WIS', Intimidation:'CHA', Investigation:'INT', Medicine:'WIS',
+      Nature:'INT', Perception:'WIS', Performance:'CHA', Persuasion:'CHA', Religion:'INT',
+      SleightOfHand:'DEX', Stealth:'DEX', Survival:'WIS'
+    },
+    proficientSkills: s.proficientSkills || ['Insight','Medicine','History'],
+    actions: s.actions || {
+      atk:[{name:'Warhammer',info:'Melee • 1d8 bludgeoning', bonus:'+4', damage:'1d8+2'}, {name:'Handaxe',info:'Melee • 1d6 slashing', bonus:'+4', damage:'1d6+2'}],
+      class:[{name:'Channel Divinity',info:'1/rest', bonus:'—', damage:'—'}],
+      other:[{name:'Shove',info:'Special', bonus:'—', damage:'—'}]
+    },
+    spells: s.spells || {
+      cantrips:[{name:'Guidance', time:'1A', range:'Touch', hit:'—', effect:'Buff'}, {name:'Sacred Flame', time:'1A', range:'60 ft.', hit:'DEX 12', effect:'1d8✦'}],
+      lvl1:[{name:'Bless', time:'1A', range:'30 ft.', effect:'Buff'}, {name:'Cure Wounds', time:'1A', range:'Touch', effect:'1d8+2♥'}],
+      lvl2:[], prepared:['Bless','Cure Wounds','Guidance','Sacred Flame']
+    },
+    equipment: s.equipment || { inv:[
+      {name:'Chain Mail', qty:1, weight:'55 lb', notes:'AC 16'},
+      {name:'Shield', qty:1, weight:'6 lb', notes:'+2 AC'},
+      {name:'Warhammer', qty:1, weight:'2 lb'},
+      {name:'Explorer\'s Pack', qty:1, weight:'-'}
+    ], coins:{gp:15, sp:8, cp:27}, attun:[] },
+    features: s.features || { race:['Dwarven Resilience','Dwarven Toughness'], class:['Spellcasting (Cleric)'], other:[]},
+    description: s.description || { bio:['Lawful Good • 55 years'], appearance:['Stocky, auburn beard'], backstory:['Left the mountainhold to serve the forge-god.']},
+    notes: s.notes || { session:['Met the brewer guild.','Found a silver token.'], dm:['Remember poison traps.'] },
+    extras: s.extras || { pets:['Mule (Pakko)'], custom:[] },
+    ac: s.ac ?? 18,
+    hp: s.hp || { current: 12, max: 12, temp: 0 },
+    spellAbility: s.spellAbility || 'WIS'
+  };
+}
+
+// Quick demo sheet to attach from context menu
+function getSampleSheetData(name='Adventurer'){
+  return {
+    name,
+    metaRace:'Hill Dwarf • Male',
+    metaClass:'Cleric 1',
+    campaign:'Campaigny McCampaignface',
+    profBonus:2,
+    abilities:{ STR:12, DEX:8, CON:17, INT:10, WIS:15, CHA:13 },
+    proficientSaves:['WIS','CHA'],
+    proficientSkills:['Insight','Medicine','History'],
+    ac:18, hp:{current:12,max:12,temp:0},
+    spellAbility:'WIS'
+  };
+}
+</script>
+</body>
+</html>
 
   .search{display:flex;gap:8px;margin:8px 0}
   .search input{flex:1;background:#12131b;border:1px solid var(--line);border-radius:10px;padding:8px;color:var(--ink)}
