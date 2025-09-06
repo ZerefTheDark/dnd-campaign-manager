@@ -537,15 +537,15 @@ window.onload = function () {
     const r = wrap.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
 
-    [fx, grid, tpl, wallsLayer, fog].forEach(cv => {
-      cv.width  = Math.max(1, Math.floor(r.width  * dpr));
-      cv.height = Math.max(1, Math.floor(r.height * dpr));
-      cv.style.width  = r.width + 'px';
-      cv.style.height = r.height + 'px';
-    });
+// Fog: Undo
+fogUndoBtn.addEventListener('click', () => {
+  if (fogUndoStack.length < 2) return;
+  const prev = fogUndoStack.pop();
+  try { fogRedoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
+  try { fogx.putImageData(prev,0,0); } catch {}
+  drawFogToScreen();
+});
 
-    fxx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -697,70 +697,9 @@ window.onload = function () {
   }
   function pushFogState() {
     try {
-      const img = fogx.getImageData(0, 0, fogTex.width, fogTex.height);
-      fogUndoStack.push(img);
-      if (fogUndoStack.length > FOG_LIMIT) fogUndoStack.shift();
-      fogRedoStack = [];
-    } catch (e) {
-      console.warn("Fog undo failed");
+          } else {
+      alert('Nothing selected with an assigned submap.');
     }
-  }
-  function drawFogToScreen(){
-    const dpr = window.devicePixelRatio || 1;
-    fctx.setTransform(dpr,0,0,dpr,0,0);
-    const w = fog.width / dpr, h = fog.height / dpr;
-    fctx.clearRect(0,0,w,h);
-    fctx.globalCompositeOperation = 'source-over';
-    fctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
-    fctx.fillRect(0,0,w,h);
-    fctx.globalCompositeOperation = 'destination-out';
-    fctx.drawImage(fogTex, 0, 0);
-    fctx.globalCompositeOperation = 'source-over';
-  }
-  function paintFogWorld(wx, wy, reveal){
-    fogx.globalCompositeOperation = reveal ? 'destination-out' : 'source-over';
-    if (!reveal) fogx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--mist');
-    const r = parseInt(brushSel.value, 10);
-    fogx.beginPath(); fogx.arc(wx, wy, r, 0, Math.PI*2); fogx.fill();
-    fogx.globalCompositeOperation = 'source-over';
-    drawFogToScreen();
-  }
-  fog.addEventListener('pointerdown', (e)=>{
-    if (fogModeSel.value === 'none') return;
-    const p = pointerToWrap(e);
-    const wpos = screenToWorld(p.x, p.y);
-    paintFogWorld(wpos.x, wpos.y, fogModeSel.value==='reveal');
-    action = { type:'fog', reveal: fogModeSel.value==='reveal' };
-    document.body.classList.add('fog-edit');
-    fog.classList.add('fog-active');
-    fog.setPointerCapture?.(e.pointerId);
-    e.preventDefault();
-  });
-  fog.addEventListener('pointermove', (e)=>{
-    if (!action || action.type!=='fog') return;
-    const p = pointerToWrap(e);
-    const wpos = screenToWorld(p.x, p.y);
-    paintFogWorld(wpos.x, wpos.y, action.reveal);
-  });
-  fog.addEventListener('pointerup', ()=>{
-    if (action && action.type==='fog'){ pushFogState(); action=null; }
-    document.body.classList.remove('fog-edit');
-    fog.classList.remove('fog-active');
-  });
-  fogUndoBtn.addEventListener('click', () => ('click', () => {
-    if (fogUndoStack.length < 2) return;
-    const prev = fogUndoStack.pop();
-    try { fogRedoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
-    try { fogx.putImageData(prev,0,0); } catch {}
-    drawFogToScreen();
-  });
-  fogRedoBtn.addEventListener('click', () => {
-    if (!fogRedoStack.length) return;
-    const img = fogRedoStack.pop();
-    try { fogUndoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
-    try { fogx.putImageData(img,0,0); } catch {}
-    drawFogToScreen();
-  });
 
   /* TEMPLATES (ruler/circle/cone) */
   function drawTemplates(){
