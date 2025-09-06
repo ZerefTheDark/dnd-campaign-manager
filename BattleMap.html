@@ -337,77 +337,37 @@
           <option value="reveal">Fog: reveal</option>
           <option value="hide">Fog: hide</option>
         </select>
-        <select id="brush" aria-label="Brush size">
-          <option value="20">Brush 20</option>
-          <option value="40" selected>Brush 40</option>
-          <option value="80">Brush 80</option>
-        </select>
-      </div>
-      <div class="row" style="gap:.5rem">
-        <button id="btn-fog-undo" class="btn" type="button" style="flex:1">⟲ Fog Undo</button>
-        <button id="btn-fog-redo" class="btn" type="button" style="flex:1">⟳ Fog Redo</button>
-      </div>
-    </div>
+        /* ==== Fit canvases (HiDPI) ==== */
+function fitCanvases() {
+  const r = wrap.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
 
-    <div class="section" id="submap-manager">
-      <h3>Submap Manager</h3>
-      <div class="row"><input type="file" id="submap-file" accept="image/*" aria-label="Submap image"></div>
-      <div class="row"><input type="text" id="submap-name" placeholder="Name" aria-label="Submap name"></div>
-      <div class="row"><button id="btn-add-submap" class="btn" type="button" style="width:100%">➕ Add Submap</button></div>
-      <div id="submap-list"></div>
-    </div>
+  [fx, grid, tpl, wallsLayer, fog].forEach(cv => {
+    cv.width  = Math.max(1, Math.floor(r.width  * dpr));
+    cv.height = Math.max(1, Math.floor(r.height * dpr));
+    cv.style.width  = r.width + 'px';
+    cv.style.height = r.height + 'px';
+  });
 
-    <div class="section" id="omniverse-lab">
-      <h3>Omniverse Lab (beta)</h3>
-      <div class="ov-box">
-        <div class="ov-row">
-          <label for="ov-url">Nucleus URL</label>
-          <input id="ov-url" placeholder="omniverse://server/Projects/WarVault" />
-        </div>
-        <div class="ov-row">
-          <label for="ov-usd">USD Path</label>
-          <input id="ov-usd" placeholder="/Scenes/Dungeon.usd" />
-        </div>
-        <div class="ov-row">
-          <label for="ov-res">Resolution</label>
-          <input id="ov-res" placeholder="4096x3072" />
-        </div>
-        <div class="ov-row">
-          <label for="ov-format">Format</label>
-          <select id="ov-format">
-            <option value="webp" selected>WebP</option>
-            <option value="png">PNG</option>
-          </select>
-        </div>
-        <div class="row" style="gap:.5rem;flex-wrap:wrap">
-          <button id="ov-connect" class="btn" type="button">🔗 Connect</button>
-          <button id="ov-generate" class="btn" type="button">✨ Generate Map</button>
-          <button id="ov-refresh" class="btn" type="button">↻ Refresh</button>
-          <button id="ov-open-library" class="btn" type="button">📂 Open Library</button>
-          <button id="ov-help-btn" class="btn" type="button" style="padding:0.35rem 0.5rem; font-size:0.8rem">?</button>
-        </div>
-        <div id="ov-console" aria-live="polite">Omniverse console ready.</div>
-      </div>
-    </div>
-  </aside>
-</div>
+  fxx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-<!-- Previous Renders Modal -->
-<div id="renders-modal" role="dialog" aria-modal="true" aria-labelledby="renders-title">
-  <div id="renders-dialog">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <h3 id="renders-title" style="margin:.2rem 0;font-family:'Cinzel',serif;color:var(--gold)">Previous Renders</h3>
-      <button id="renders-close" class="btn" type="button">✕ Close</button>
-    </div>
-    <div id="renders-grid" class="rl-grid"></div>
-  </div>
-</div>
+  drawGrid();
+  drawWalls();
+  drawTemplates();
+  drawFX();
+  drawFogToScreen();
+  repositionAll();
+}
+let resizeRAF = 0;
+window.addEventListener('resize', () => {
+  cancelAnimationFrame(resizeRAF);
+  resizeRAF = requestAnimationFrame(fitCanvases);
+});
 
-<!-- Omniverse Help Popover -->
-<div id="ov-help">
-  <h4>How to Use Omniverse</h4>
-  <p>To connect your battlemap to NVIDIA Omniverse:</p>
-  <ul>
     <li>Enter your <strong>Nucleus URL</strong> (e.g. <code>omniverse://your-server</code>)</li>
     <li>Set the <strong>USD Path</strong> to your scene</li>
     <li>Click <strong>Connect</strong> to sync</li>
@@ -449,19 +409,24 @@ window.onload = function () {
   const ctxMenu = document.getElementById('ctx');
 
   const tfName  = document.getElementById('tf-name');
-  const tfColor = document.getElementById('tf-color');
-  const tfSize  = document.getElementById('tf-size');
-  const tfPhoto = document.getElementById('tf-photo');
-  const createTokenBtn = document.getElementById('btn-create-token');
-  const savedMapsDiv   = document.getElementById('saved-maps');
+  // Fog: Undo
+fogUndoBtn.addEventListener('click', () => {
+  if (fogUndoStack.length < 2) return;
+  const prev = fogUndoStack.pop();
+  try { fogRedoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
+  try { fogx.putImageData(prev,0,0); } catch {}
+  drawFogToScreen();
+});
 
-  const subFile = document.getElementById('submap-file');
-  const subName = document.getElementById('submap-name');
-  const subAddBtn = document.getElementById('btn-add-submap');
-  const subList   = document.getElementById('submap-list');
+// Fog: Redo
+fogRedoBtn.addEventListener('click', () => {
+  if (!fogRedoStack.length) return;
+  const img = fogRedoStack.pop();
+  try { fogUndoStack.push(fogx.getImageData(0,0,fogTex.width,fogTex.height)); } catch {}
+  try { fogx.putImageData(img,0,0); } catch {}
+  drawFogToScreen();
+});
 
-  const initName = document.getElementById('init-name');
-  const initRoll = document.getElementById('init-roll');
   const initAdd  = document.getElementById('btn-init-add');
   const initNext = document.getElementById('btn-init-next');
   const initReset= document.getElementById('btn-init-reset');
@@ -617,28 +582,17 @@ fogUndoBtn.addEventListener('click', () => {
       const s = worldToScreen(t.x, t.y);
       t.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
       t.el.style.transformOrigin = 'top left';
-    });
-    portals.forEach(p=>{
-      const s = worldToScreen(p.x, p.y);
-      p.el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
-      p.el.style.width = p.w + 'px';
-      p.el.style.height= p.h + 'px';
-    });
+    function pushFogState() {
+  try {
+    const img = fogx.getImageData(0, 0, fogTex.width, fogTex.height);
+    fogUndoStack.push(img);
+    if (fogUndoStack.length > FOG_LIMIT) fogUndoStack.shift();
+    fogRedoStack = [];
+  } catch (e) {
+    console.warn('Fog undo snapshot failed', e);
   }
+}
 
-  /* Zoom */
-  function setScale(newScale, anchorX, anchorY) {
-    const old = scale;
-    scale = clamp(newScale, 0.2, 6);
-    const ax = anchorX ?? grid.clientWidth / 2;
-    const ay = anchorY ?? grid.clientHeight / 2;
-    const wx = (ax - offset.x) / old;
-    const wy = (ay - offset.y) / old;
-    offset.x = ax - wx * scale;
-    offset.y = ay - wy * scale;
-    drawWalls();
-    drawTemplates();
-    drawFogToScreen();
     repositionAll();
   }
   zoomInBtn.addEventListener('click', () => setScale(scale * 1.2));
@@ -1077,18 +1031,18 @@ function startDraw(e){
     fitCanvases();
     setTool('pan');
   }
-  function loadSession(s){
-    // Reset transient state before swapping
-    action=null; drawingWall=null; selectedToken=null; selectedPortal=null;
-    document.body.classList.remove('fog-edit');
-    fog.classList.remove('fog-active');
+  function} else if (act==='open-submap'){
+  if (selectedPortal && selectedPortal.targetName){
+    const s = submaps.find(x=>x.name===selectedPortal.targetName);
+    if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.');
+  } else if (selectedToken && selectedToken.sheet?.submap){
+    const s = submaps.find(x=>x.name===selectedToken.sheet.submap);
+    if (s) openSubmap(s.img, s.name); else alert('Assigned submap not found.');
+  } else {
+    alert('Nothing selected with an assigned submap.');
+  }
+}
 
-    const targetSrc = s?.map?.src;
-    if (!targetSrc){ alert('This save has no map reference.'); return; }
-
-    const same = mapEl.src === targetSrc;
-    // If the same image is already loaded, browsers won't fire onload.
-    if (same && mapEl.complete && mapEl.naturalWidth>0){
       applySessionState(s);
       return;
     }
